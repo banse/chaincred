@@ -1,0 +1,13 @@
+{
+  "name": "chaincred",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun run --filter '*' test",
+    "dev:api": "bun run --filter @chaincred/api dev",
+    "dev:frontend": "bun run --filter @chaincred/frontend dev"
+  }
+}

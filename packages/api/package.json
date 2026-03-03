@@ -1,0 +1,24 @@
+{
+  "name": "@chaincred/api",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/app.ts",
+  "scripts": {
+    "dev": "bun run --hot src/app.ts",
+    "start": "bun run src/app.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@chaincred/common": "workspace:*",
+    "@chaincred/scoring": "workspace:*",
+    "hono": "^4.6.0",
+    "postgres": "^3.4.0",
+    "ioredis": "^5.4.0",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/bun": "latest"
+  }
+}

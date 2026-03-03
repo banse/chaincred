@@ -1,0 +1,24 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+*.log
+
+# Foundry
+packages/contracts/out/
+packages/contracts/cache/
+
+# SvelteKit
+packages/frontend/.svelte-kit/
+packages/frontend/build/
+
+# Bun
+bun.lockb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store

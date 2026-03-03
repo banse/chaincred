@@ -1,0 +1,21 @@
+{
+  "name": "@chaincred/indexer",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@chaincred/common": "workspace:*",
+    "@envio-dev/hypersync-client": "^0.7.0",
+    "postgres": "^3.4.0",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/bun": "latest"
+  }
+}
