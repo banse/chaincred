@@ -37,7 +37,7 @@ export function fetchLeaderboard(category = 'overall', limit = 50, offset = 0) {
 }
 
 export interface TimelineEvent {
-  type: 'first_tx' | 'first_deployment' | 'first_governance' | 'chain_added';
+  type: 'first_tx' | 'first_deployment' | 'first_governance' | 'chain_added' | 'badge_earned';
   timestamp: number;
   chain?: string;
   detail?: string;

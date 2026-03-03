@@ -29,8 +29,17 @@ export function calculateBuilderScore(activity: WalletActivity): CategoryScore {
   // Signal 6: ERC-4337 operations (handleOps/handleAggregatedOps) — 40 pts each, cap 200
   const erc4337Score = Math.min(activity.erc4337Operations * 40, 200);
 
+  // Signal 7: Deployment longevity — 60 pts per 6-month period since first deployment, cap 180
+  const now = Math.floor(Date.now() / 1000);
+  const deploymentAgeMonths =
+    activity.earliestDeploymentTimestamp > 0
+      ? (now - activity.earliestDeploymentTimestamp) / 2592000
+      : 0;
+  const longevityScore =
+    deploymentAgeMonths >= 6 ? Math.min(Math.floor(deploymentAgeMonths / 6) * 60, 180) : 0;
+
   const raw = Math.min(
-    deployScore + chainScore + constructorScore + focusScore + create2Score + erc4337Score,
+    deployScore + chainScore + constructorScore + focusScore + create2Score + erc4337Score + longevityScore,
     MAX_CATEGORY_SCORE,
   );
   return {

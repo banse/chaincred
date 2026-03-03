@@ -49,6 +49,12 @@ export interface WalletActivity {
   smartWalletInteractions: number;
   /** PRD 4.2 — ERC-4337 handleOps/handleAggregatedOps calls */
   erc4337Operations: number;
+  /** PRD 4.5 — Protocols used within 6 months of launch (early adopter) */
+  earlyAdoptions: number;
+  /** PRD 4.3 — Governance votes with support != 1 (against/abstain = independent thinking) */
+  independentVotes: number;
+  /** PRD 4.2 — Timestamp of earliest contract deployment */
+  earliestDeploymentTimestamp: number;
 }
 
 export interface WalletProfile {

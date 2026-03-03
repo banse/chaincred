@@ -17,6 +17,7 @@
     first_deployment: 'First Deployment',
     first_governance: 'First Governance',
     chain_added: 'Chain Added',
+    badge_earned: 'Badge Earned',
   };
 
   function formatDate(ts: number): string {
@@ -70,6 +71,10 @@
     <meta property="fc:frame:button:1" content="View Score" />
     <meta property="fc:frame:button:1:action" content="link" />
     <meta property="fc:frame:button:1:target" content={pageUrl} />
+    <meta property="fc:frame:input:text" content="Enter an Ethereum address" />
+    <meta property="fc:frame:button:2" content="Look Up" />
+    <meta property="fc:frame:button:2:action" content="post" />
+    <meta property="fc:frame:post_url" content={`${apiBase}/frame`} />
   {/if}
 </svelte:head>
 
@@ -128,7 +133,9 @@
             <div
               class="absolute -left-[31px] top-1 h-3 w-3 rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-bg)]"
             ></div>
-            <p class="text-sm font-medium">{typeLabels[event.type] ?? event.type}</p>
+            <p class="text-sm font-medium">
+              {typeLabels[event.type] ?? event.type}{event.type === 'badge_earned' && event.detail ? ` — ${event.detail.charAt(0).toUpperCase() + event.detail.slice(1)}` : ''}
+            </p>
             <p class="text-xs text-[var(--color-text-muted)]">
               {formatDate(event.timestamp)}{event.chain ? ` on ${event.chain}` : ''}
             </p>

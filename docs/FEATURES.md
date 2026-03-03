@@ -37,8 +37,9 @@ Measures onchain creation activity with six signals that reward volume, cross-ch
 | Deployment focus ratio | ratio x 800 | 160 |
 | CREATE2 deployments | 50 per CREATE2 deploy | 150 |
 | ERC-4337 operations | 40 per handleOps call | 200 |
+| Deployment longevity | 60 per 6-month period since first deploy | 180 |
 
-ERC-4337 operations detect `handleOps` and `handleAggregatedOps` calls to EntryPoint contracts — operating AA infrastructure (bundler/paymaster activity) is a strong builder signal. Caps sum to 1450 — intentionally over 1000 since no wallet can max all signals simultaneously. Final capped at 1000.
+ERC-4337 operations detect `handleOps` and `handleAggregatedOps` calls to EntryPoint contracts — operating AA infrastructure (bundler/paymaster activity) is a strong builder signal. Deployment longevity rewards wallets with long-standing deployed contracts — 60 points per 6-month period since their first deployment. Caps sum to 1630 — intentionally over 1000 since no wallet can max all signals simultaneously. Final capped at 1000.
 
 ### Governance Score (25%)
 
@@ -52,8 +53,9 @@ Measures DAO participation depth and quality. The indexer classifies governance 
 | Delegation events | 30 per event | 90 |
 | Treasury execution events | 60 per queue/execute | 120 |
 | Cross-chain governance | 50 per governance chain | 150 |
+| Independent voting | 40 per against/abstain vote | 120 |
 
-Proposals are the highest-value signal — creating proposals is rarer and more meaningful than voting. Treasury execution (queue/execute calls) indicates deep DAO operational involvement. Cross-chain governance rewards wallets that participate in DAOs across multiple networks.
+Proposals are the highest-value signal — creating proposals is rarer and more meaningful than voting. Treasury execution (queue/execute calls) indicates deep DAO operational involvement. Cross-chain governance rewards wallets that participate in DAOs across multiple networks. Independent voting parses the `support` parameter from castVote calldata — votes with support=0 (against) or support=2 (abstain) indicate independent thinking rather than rubber-stamping.
 
 ### Temporal Score (20%)
 
@@ -78,8 +80,9 @@ Measures breadth of protocol engagement across protocols, chains, and domains.
 | Unique protocols used | 35 per protocol | 350 |
 | Chains active on | 50 per chain | 250 |
 | Protocol category coverage | 80 per category | 400 |
+| Early protocol adoption | 60 per early-adopted protocol | 300 |
 
-Six protocol categories are tracked: DeFi, Social, Governance, Infrastructure, Gaming, and Builder Tools. Covering more domains shows broader expertise than depth in a single category.
+Six protocol categories are tracked: DeFi, Social, Governance, Infrastructure, Gaming, and Builder Tools. Covering more domains shows broader expertise than depth in a single category. Early protocol adoption awards points for using a protocol within 6 months of its launch — each of the 16 tracked protocols has a `launchTimestamp` and interactions before `launch + 6 months` are counted.
 
 ### Complexity Score (10%)
 
@@ -229,6 +232,13 @@ The REST API runs on [Hono](https://hono.dev/) (Bun runtime) and serves all scor
 | GET | `/v1/proof/:address` | Merkle proof for a wallet's score |
 | GET | `/v1/timeline/:address` | Activity milestone timeline |
 | GET | `/v1/card/:address.png` | SVG score card image |
+| POST | `/v1/frame` | Farcaster Frame action callback |
+| GET | `/v1/admin/bear-periods` | List bear market periods (hardcoded + dynamic) |
+| POST | `/v1/admin/bear-periods` | Add dynamic bear market period (requires X-Admin-Key) |
+| DELETE | `/v1/admin/bear-periods/:label` | Remove dynamic bear market period |
+| POST | `/v1/webhooks` | Register a webhook for score updates |
+| GET | `/v1/webhooks` | List registered webhooks |
+| DELETE | `/v1/webhooks/:id` | Unregister a webhook |
 | WS | `/v1/stream/:address` | Real-time score updates via WebSocket |
 
 ### Rate limiting
@@ -341,7 +351,10 @@ The API generates SVG score cards at `/v1/card/:address.png` for social sharing.
 The score page includes OpenGraph and Farcaster Frame meta tags:
 
 - `og:image` and `twitter:image` point to the card image
-- `fc:frame` tags enable Farcaster Frame embedding with a "View Score" button
+- `fc:frame` tags enable Farcaster Frame embedding with a "View Score" link button
+- `fc:frame:input:text` enables address input for looking up other wallets
+- `fc:frame:button:2` (Look Up) posts to `/v1/frame` which returns a new frame with the looked-up wallet's score card
+- `POST /v1/frame` handles the callback — validates the address, returns a score card frame or an error frame with retry
 - Meta tags render server-side for social crawlers
 
 ---
@@ -362,8 +375,9 @@ The timeline endpoint (`/v1/timeline/:address`) derives milestone events from th
 - **first_deployment** — First contract deployment
 - **first_governance** — First governance interaction
 - **chain_added** — Each new chain the wallet became active on
+- **badge_earned** — When a badge was first earned (builder: 3rd deployment, governor: 5th governance event, og: first tx before 2020, multichain: 4th chain)
 
-Events are returned sorted chronologically. The frontend renders them as a vertical timeline below the score cards.
+Events are returned sorted chronologically. The frontend renders them as a vertical timeline below the score cards, with badge milestone events showing the badge type (e.g., "Badge Earned — Builder").
 
 ---
 
@@ -384,13 +398,38 @@ All selectors are centralized in `packages/common/src/constants/selectors.ts` fo
 
 ---
 
+## Sybil Explanation Detail
+
+The sybil indicator component in the frontend now shows detailed explanations for each detected flag, not just the flag name and penalty percentage. Below the confidence percentage, a brief explanation tells users what the confidence score means. When no flags are detected (confidence > 95%), a "No concerning patterns detected" message is shown.
+
+---
+
+## Dynamic Bear Market Periods
+
+Bear market periods can be managed at runtime via the admin API. Three periods are hardcoded (Nov 2018, May 2021, Nov 2022) and cannot be removed. Dynamic periods can be added and removed by authorized admins.
+
+The `X-Admin-Key` header must match the `ADMIN_API_KEY` environment variable for write operations. Read operations (listing periods) are public.
+
+---
+
+## Webhooks
+
+Basic webhook support for score update notifications. Webhooks are stored in-memory (MVP — no persistence across restarts).
+
+- **Register:** `POST /v1/webhooks` with `{ address, url, secret? }`
+- **Delivery:** When scores are pushed via WebSocket (every 60s for subscribed addresses), registered webhooks also receive the update
+- **Signature:** If a `secret` is provided, the payload is signed with HMAC-SHA-256 and the signature is included in the `X-ChainCred-Signature` header
+- **Payload:** `{ event: "score.updated", address, score, timestamp }`
+
+---
+
 ## Infrastructure
 
 ### Database
 
 PostgreSQL stores indexed wallet activity and Merkle proofs. The schema tracks:
 
-- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set, tx hour set, CREATE2 deployments, bear market periods, execution events, governance chains, permit interactions, flashloan transactions, smart wallet interactions, ERC-4337 operations
+- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set, tx hour set, CREATE2 deployments, bear market periods, execution events, governance chains, permit interactions, flashloan transactions, smart wallet interactions, ERC-4337 operations, early adoptions, independent votes, earliest deployment timestamp
 - `merkle_proofs` — per-wallet Merkle proofs (address, score, proof array, root hash, creation timestamp)
 
 Migrations run automatically via `bun run migrate`.
@@ -407,16 +446,16 @@ Migrations run automatically via `bun run migrate`.
 
 **GitHub Actions** runs three workflows:
 
-- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 80 tests (55 scoring + 25 API), builds and tests Solidity contracts, checks Solidity formatting
+- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 90 tests (58 scoring + 32 API), builds and tests Solidity contracts, checks Solidity formatting
 - **Weekly Merkle** (Monday 06:00 UTC, or manual) — Generates the Merkle tree against a PostgreSQL service and outputs the root for onchain submission
 - **Deploy Contracts** (manual trigger) — Deploys all 3 contracts to Sepolia or mainnet via Foundry with Etherscan verification. Supports dry-run mode.
 
 ### Testing
 
-80 automated tests cover:
+90 automated tests cover:
 
-- **Scoring engine** (55 tests) — Category calculators with multi-signal formulas, badge evaluation (trusted + power-user criteria), sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests, governance signals (execution, cross-chain), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets)
-- **API** (25 tests) — Health check, address validation, CORS, rate limiting, all route responses, timeline endpoint (validation, fields, DB-dependent), card image (SVG content, validation), WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup). Tests work with or without PostgreSQL/Redis running.
+- **Scoring engine** (58 tests) — Category calculators with multi-signal formulas, badge evaluation (trusted + power-user criteria), sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests (deployment longevity), governance signals (execution, cross-chain, independent voting), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets), protocol diversity signals (early adoption)
+- **API** (32 tests) — Health check, address validation, CORS, rate limiting, all route responses, timeline endpoint (validation, fields, badge milestones, DB-dependent), card image (SVG content, validation), Farcaster Frame (valid/invalid address), admin bear-period endpoints (list, auth), webhook CRUD (register, list, delete), WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup). Tests work with or without PostgreSQL/Redis running.
 
 ---
 
@@ -435,3 +474,6 @@ All configuration is via environment variables. See `.env.example`:
 | `CHAINCRED_SCHEMA_UID` | EAS schema UID for scores | — |
 | `CHAINCRED_REGISTRY_ADDRESS` | ChainCredRegistry contract for exclusion checks | — |
 | `RPC_URL` | Ethereum RPC endpoint for onchain reads | — |
+| `ADMIN_API_KEY` | Admin API key for bear market period management | — |
+| `API_BASE_URL` | API base URL for Farcaster Frame callbacks | `http://localhost:3001/v1` |
+| `FRONTEND_URL` | Frontend URL for Frame "View Details" links | `http://localhost:5173` |

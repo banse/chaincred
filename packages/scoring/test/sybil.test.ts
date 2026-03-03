@@ -45,6 +45,9 @@ function activity(overrides: Partial<WalletActivity>): WalletActivity {
     flashloanTransactions: 0,
     smartWalletInteractions: 0,
     erc4337Operations: 0,
+    earlyAdoptions: 0,
+    independentVotes: 0,
+    earliestDeploymentTimestamp: 0,
     ...overrides,
   };
 }

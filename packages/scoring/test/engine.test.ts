@@ -35,6 +35,9 @@ function activity(overrides: Partial<WalletActivity> = {}): WalletActivity {
     flashloanTransactions: 0,
     smartWalletInteractions: 0,
     erc4337Operations: 0,
+    earlyAdoptions: 0,
+    independentVotes: 0,
+    earliestDeploymentTimestamp: 0,
     ...overrides,
   };
 }
@@ -92,6 +95,9 @@ describe('scoring engine', () => {
       flashloanTransactions: 0,
       smartWalletInteractions: 0,
       erc4337Operations: 0,
+      earlyAdoptions: 0,
+      independentVotes: 0,
+      earliestDeploymentTimestamp: 0,
     });
     const result = calculateScore(empty);
     expect(result.totalScore).toBe(0);
@@ -327,5 +333,39 @@ describe('badge evaluation', () => {
     const badges = evaluateBadges(a, score.breakdown);
     const powerUser = badges.badges.find((b) => b.type === 'power-user');
     expect(powerUser?.earned).toBe(false);
+  });
+});
+
+describe('early adoption signal', () => {
+  test('early adoptions boost protocol diversity score', () => {
+    const withEarly = calculateScore(activity({ earlyAdoptions: 5 }));
+    const without = calculateScore(activity({ earlyAdoptions: 0 }));
+    expect(withEarly.breakdown.protocolDiversity.raw).toBeGreaterThan(
+      without.breakdown.protocolDiversity.raw,
+    );
+  });
+});
+
+describe('independent voting signal', () => {
+  test('independent votes boost governance score', () => {
+    const base = { governanceVotes: 5, daosParticipated: ['ens'], proposalsCreated: 0, delegationEvents: 0 };
+    const withIndependent = calculateScore(activity({ ...base, independentVotes: 3 }));
+    const without = calculateScore(activity({ ...base, independentVotes: 0 }));
+    expect(withIndependent.breakdown.governance.raw).toBeGreaterThan(
+      without.breakdown.governance.raw,
+    );
+  });
+});
+
+describe('deployment longevity signal', () => {
+  test('old deployments boost builder score', () => {
+    const now = Math.floor(Date.now() / 1000);
+    const withOld = calculateScore(
+      activity({ earliestDeploymentTimestamp: now - 2 * 365 * 86400 }), // 2 years ago
+    );
+    const withRecent = calculateScore(
+      activity({ earliestDeploymentTimestamp: now - 30 * 86400 }), // 30 days ago
+    );
+    expect(withOld.breakdown.builder.raw).toBeGreaterThan(withRecent.breakdown.builder.raw);
   });
 });

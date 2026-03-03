@@ -13,7 +13,10 @@ export function calculateProtocolDiversityScore(activity: WalletActivity): Categ
   // Categories: defi, social, governance, infrastructure, gaming, builder-tools
   const categoryScore = Math.min(activity.protocolCategories.length * 80, 400);
 
-  const raw = Math.min(protocolScore + chainScore + categoryScore, MAX_CATEGORY_SCORE);
+  // Early adoption: 60 pts per protocol used within 6 months of launch, capped at 300
+  const earlyAdoptionScore = Math.min(activity.earlyAdoptions * 60, 300);
+
+  const raw = Math.min(protocolScore + chainScore + categoryScore + earlyAdoptionScore, MAX_CATEGORY_SCORE);
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.protocolDiversity,

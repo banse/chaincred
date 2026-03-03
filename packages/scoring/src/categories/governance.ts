@@ -21,8 +21,11 @@ export function calculateGovernanceScore(activity: WalletActivity): CategoryScor
   // Cross-chain governance: 50 pts per chain, capped at 150
   const crossChainGovScore = Math.min(activity.governanceChains.length * 50, 150);
 
+  // Independent voting (against/abstain votes): 40 pts each, capped at 120
+  const independentVoteScore = Math.min(activity.independentVotes * 40, 120);
+
   const raw = Math.min(
-    voteScore + daoScore + proposalScore + delegateScore + executionScore + crossChainGovScore,
+    voteScore + daoScore + proposalScore + delegateScore + executionScore + crossChainGovScore + independentVoteScore,
     MAX_CATEGORY_SCORE,
   );
   return {

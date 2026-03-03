@@ -23,8 +23,26 @@ export const BEAR_MARKET_PERIODS: BearMarketPeriod[] = [
   },
 ];
 
+/** Dynamic periods added at runtime via admin API */
+const dynamicPeriods: BearMarketPeriod[] = [];
+
+export function addBearMarketPeriod(period: BearMarketPeriod): void {
+  dynamicPeriods.push(period);
+}
+
+export function removeBearMarketPeriod(label: string): boolean {
+  const idx = dynamicPeriods.findIndex((p) => p.label === label);
+  if (idx === -1) return false;
+  dynamicPeriods.splice(idx, 1);
+  return true;
+}
+
+export function getAllBearMarketPeriods(): BearMarketPeriod[] {
+  return [...BEAR_MARKET_PERIODS, ...dynamicPeriods];
+}
+
 export function isInBearMarket(timestamp: number): boolean {
-  return BEAR_MARKET_PERIODS.some(
+  return getAllBearMarketPeriods().some(
     (p) => timestamp >= p.startTimestamp && timestamp <= p.endTimestamp,
   );
 }

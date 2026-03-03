@@ -11,6 +11,8 @@ export interface ProtocolDefinition {
   name: string;
   category: ProtocolCategory;
   contracts: Record<number, string[]>; // chainId → contract addresses
+  /** PRD 4.5 — Protocol launch date (unix seconds) for early adoption scoring */
+  launchTimestamp: number;
 }
 
 /** Protocol registry — multi-chain contract mappings for scoring */
@@ -18,6 +20,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Uniswap',
     category: 'defi',
+    launchTimestamp: 1541030400, // Nov 2018
     contracts: {
       // V2 Router, V3 SwapRouter02, UniversalRouter
       1: [
@@ -54,6 +57,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Aave',
     category: 'defi',
+    launchTimestamp: 1577836800, // Jan 2020
     contracts: {
       // V3 Pool
       1: ['0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'],
@@ -67,6 +71,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Compound',
     category: 'defi',
+    launchTimestamp: 1535760000, // Sep 2018
     contracts: {
       // V3 Comet USDC
       1: ['0xc3d688B66703497DAA19211EEdff47f25384cdc3'],
@@ -78,6 +83,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Lido',
     category: 'defi',
+    launchTimestamp: 1607904000, // Dec 2020
     contracts: {
       // stETH + wstETH on Ethereum; wstETH bridged on L2s
       1: [
@@ -94,6 +100,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Curve',
     category: 'defi',
+    launchTimestamp: 1596240000, // Aug 2020
     contracts: {
       // Router NG on all chains; 3pool on Ethereum
       1: [
@@ -110,6 +117,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: '1inch',
     category: 'defi',
+    launchTimestamp: 1607904000, // Dec 2020
     contracts: {
       // AggregationRouterV6 — same CREATE2 address on all EVM chains except zkSync
       1: ['0x111111125421cA6dc452d289314280a0f8842A65'],
@@ -123,6 +131,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'SushiSwap',
     category: 'defi',
+    launchTimestamp: 1598918400, // Aug 2020
     contracts: {
       // V2 Router
       1: ['0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F'],
@@ -134,6 +143,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Balancer',
     category: 'defi',
+    launchTimestamp: 1583020800, // Mar 2020
     contracts: {
       // V2 Vault — same address on all supported chains
       1: ['0xBA12222222228d8Ba445958a75a0704d566BF2C8'],
@@ -146,6 +156,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'MakerDAO',
     category: 'defi',
+    launchTimestamp: 1509494400, // Nov 2017
     contracts: {
       // DAI token + Pot (DSR)
       1: [
@@ -157,6 +168,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'GMX',
     category: 'defi',
+    launchTimestamp: 1630454400, // Sep 2021
     contracts: {
       // V1 Router
       42161: ['0xaBBc5F99639c9B6bCb58544dDF04EFA6802F4064'],
@@ -165,6 +177,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'ENS',
     category: 'social',
+    launchTimestamp: 1493596800, // May 2017
     contracts: {
       // Base Registrar + ETH Registrar Controller
       1: [
@@ -176,6 +189,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Lens Protocol',
     category: 'social',
+    launchTimestamp: 1643673600, // Feb 2022
     contracts: {
       // LensHub Proxy
       137: ['0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d'],
@@ -184,6 +198,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Farcaster',
     category: 'social',
+    launchTimestamp: 1640995200, // Jan 2022
     contracts: {
       // IdRegistry
       10: ['0x00000000Fc6c5F01Fc30151999387Bb99A9f489b'],
@@ -192,6 +207,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Safe',
     category: 'governance',
+    launchTimestamp: 1530403200, // Jul 2018
     contracts: {
       // SafeProxyFactory
       1: ['0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2'],
@@ -200,6 +216,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Chainlink',
     category: 'infrastructure',
+    launchTimestamp: 1559347200, // Jun 2019
     contracts: {
       // LINK token per chain + Feed Registry on Ethereum
       1: [
@@ -216,6 +233,7 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'The Graph',
     category: 'infrastructure',
+    launchTimestamp: 1607904000, // Dec 2020
     contracts: {
       // GRT token + L2 Staking on Arbitrum
       1: ['0xc944E90C64B2c07662A292be6244BDf05Cda44a7'],

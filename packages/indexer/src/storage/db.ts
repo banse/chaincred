@@ -45,6 +45,9 @@ export function createStorage(): StorageLayer {
       const isFlashloan = event.isFlashloan ? 1 : 0;
       const isSmartWallet = event.isSmartWallet ? 1 : 0;
       const isErc4337 = event.isErc4337 ? 1 : 0;
+      const isEarlyAdoption = event.isEarlyAdoption ? 1 : 0;
+      const isIndependentVote = event.voteSupport !== undefined && event.voteSupport !== 1 ? 1 : 0;
+      const ts = event.timestamp;
 
       await sql`
         INSERT INTO wallet_activity (
@@ -59,6 +62,7 @@ export function createStorage(): StorageLayer {
           bear_market_periods, execution_events, governance_chains,
           permit_interactions, flashloan_transactions, smart_wallet_interactions,
           erc4337_operations,
+          early_adoptions, independent_votes, earliest_deployment_timestamp,
           updated_at
         )
         VALUES (
@@ -91,6 +95,9 @@ export function createStorage(): StorageLayer {
           ${isFlashloan},
           ${isSmartWallet},
           ${isErc4337},
+          ${isEarlyAdoption},
+          ${isIndependentVote},
+          ${event.type === 'deployment' ? ts : 0},
           ${Date.now()}
         )
         ON CONFLICT (address) DO UPDATE SET
@@ -170,6 +177,16 @@ export function createStorage(): StorageLayer {
           flashloan_transactions = wallet_activity.flashloan_transactions + ${isFlashloan},
           smart_wallet_interactions = wallet_activity.smart_wallet_interactions + ${isSmartWallet},
           erc4337_operations = wallet_activity.erc4337_operations + ${isErc4337},
+          early_adoptions = wallet_activity.early_adoptions + ${isEarlyAdoption},
+          independent_votes = wallet_activity.independent_votes + ${isIndependentVote},
+          earliest_deployment_timestamp = CASE
+            WHEN ${event.type === 'deployment' ? ts : 0} > 0
+            THEN CASE
+              WHEN wallet_activity.earliest_deployment_timestamp = 0 THEN ${ts}
+              ELSE LEAST(wallet_activity.earliest_deployment_timestamp, ${ts})
+            END
+            ELSE wallet_activity.earliest_deployment_timestamp
+          END,
           updated_at = ${Date.now()}
       `;
     },

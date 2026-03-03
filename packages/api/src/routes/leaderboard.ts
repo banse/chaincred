@@ -37,6 +37,9 @@ function mapRow(row: any): WalletActivity {
     flashloanTransactions: Number(row.flashloan_transactions ?? 0),
     smartWalletInteractions: Number(row.smart_wallet_interactions ?? 0),
     erc4337Operations: Number(row.erc4337_operations ?? 0),
+    earlyAdoptions: Number(row.early_adoptions ?? 0),
+    independentVotes: Number(row.independent_votes ?? 0),
+    earliestDeploymentTimestamp: Number(row.earliest_deployment_timestamp ?? 0),
   };
 }
 

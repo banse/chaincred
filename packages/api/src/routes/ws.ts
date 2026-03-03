@@ -3,6 +3,7 @@ import { createBunWebSocket } from 'hono/bun';
 import type { ServerWebSocket } from 'bun';
 import { isValidAddress } from '@chaincred/common';
 import { getScore } from '../services/score.js';
+import { deliverWebhooks } from '../services/webhooks.js';
 
 const { upgradeWebSocket, websocket } = createBunWebSocket<ServerWebSocket>();
 
@@ -32,6 +33,8 @@ function startPushInterval() {
         for (const ws of sockets) {
           ws.send(msg);
         }
+        // Deliver to registered webhooks
+        deliverWebhooks(address, score).catch(() => {});
       } catch {
         // Score unavailable — skip this cycle
       }

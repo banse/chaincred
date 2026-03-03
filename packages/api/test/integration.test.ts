@@ -180,7 +180,7 @@ describe('DB-dependent routes (require PostgreSQL)', () => {
     if (res.status === 200) {
       const body = await res.json();
       for (const event of body.events) {
-        expect(['first_tx', 'first_deployment', 'first_governance', 'chain_added']).toContain(
+        expect(['first_tx', 'first_deployment', 'first_governance', 'chain_added', 'badge_earned']).toContain(
           event.type,
         );
         expect(event.timestamp).toBeGreaterThan(0);
@@ -201,6 +201,95 @@ describe('DB-dependent routes (require PostgreSQL)', () => {
     } else {
       expect(res.status).toBe(500);
     }
+  });
+});
+
+describe('Farcaster Frame', () => {
+  test('POST /v1/frame returns HTML with valid address', async () => {
+    const res = await req('/v1/frame', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        untrustedData: { inputText: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' },
+      }),
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('fc:frame');
+    expect(html).toContain('View Details');
+  });
+
+  test('POST /v1/frame returns error frame with invalid address', async () => {
+    const res = await req('/v1/frame', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ untrustedData: { inputText: 'not-an-address' } }),
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('Try Again');
+  });
+});
+
+describe('admin endpoints', () => {
+  test('GET /v1/admin/bear-periods lists periods', async () => {
+    const res = await req('/v1/admin/bear-periods');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.periods)).toBe(true);
+    expect(body.periods.length).toBeGreaterThanOrEqual(3);
+    expect(body.periods[0].source).toBe('hardcoded');
+  });
+
+  test('POST /v1/admin/bear-periods requires auth', async () => {
+    const res = await req('/v1/admin/bear-periods', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: 'test', startTimestamp: 1, endTimestamp: 2 }),
+    });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('webhook endpoints', () => {
+  test('POST /v1/webhooks registers a webhook', async () => {
+    const res = await req('/v1/webhooks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+        url: 'https://example.com/hook',
+      }),
+    });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.id).toBeDefined();
+    expect(body.url).toBe('https://example.com/hook');
+  });
+
+  test('GET /v1/webhooks lists registered webhooks', async () => {
+    const res = await req('/v1/webhooks');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.webhooks)).toBe(true);
+  });
+
+  test('DELETE /v1/webhooks/:id removes webhook', async () => {
+    // First register one
+    const createRes = await req('/v1/webhooks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+        url: 'https://example.com/to-delete',
+      }),
+    });
+    const { id } = await createRes.json();
+
+    const res = await req(`/v1/webhooks/${id}`, { method: 'DELETE' });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
   });
 });
 

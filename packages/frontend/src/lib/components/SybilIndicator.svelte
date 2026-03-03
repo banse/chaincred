@@ -31,15 +31,25 @@
         {confidence > 0.8 ? 'Likely human' : confidence > 0.5 ? 'Moderate risk' : 'High sybil risk'}
       </p>
     </div>
+    <p class="mt-2 text-xs text-[var(--color-text-muted)]">
+      Confidence that this wallet represents a unique human user, based on 7 behavioral heuristics.
+    </p>
     {#if result.flags.some((f) => f.detected)}
       <div class="mt-4 space-y-2">
         {#each result.flags.filter((f) => f.detected) as flag}
-          <div class="flex items-center justify-between rounded-lg bg-[var(--color-bg)] px-3 py-2 text-sm">
-            <span class="text-[var(--color-text-muted)]">{flag.label}</span>
-            <span class="text-red-400">-{(flag.penalty * 100).toFixed(0)}%</span>
+          <div class="rounded-lg bg-[var(--color-bg)] px-3 py-2 text-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-[var(--color-text-muted)]">{flag.label}</span>
+              <span class="text-red-400">-{(flag.penalty * 100).toFixed(0)}%</span>
+            </div>
+            {#if flag.details}
+              <p class="mt-1 text-xs text-[var(--color-text-muted)] opacity-70">{flag.details}</p>
+            {/if}
           </div>
         {/each}
       </div>
+    {:else if confidence > 0.95}
+      <p class="mt-4 text-sm text-green-400">No concerning patterns detected.</p>
     {/if}
   {:else}
     <p class="mt-4 text-sm text-[var(--color-text-muted)]">No data available.</p>

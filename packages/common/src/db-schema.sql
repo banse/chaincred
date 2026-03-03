@@ -45,6 +45,9 @@ CREATE TABLE IF NOT EXISTS wallet_activity (
   flashloan_transactions INTEGER NOT NULL DEFAULT 0,
   smart_wallet_interactions INTEGER NOT NULL DEFAULT 0,
   erc4337_operations INTEGER NOT NULL DEFAULT 0,
+  early_adoptions INTEGER NOT NULL DEFAULT 0,
+  independent_votes INTEGER NOT NULL DEFAULT 0,
+  earliest_deployment_timestamp BIGINT NOT NULL DEFAULT 0,
   updated_at BIGINT NOT NULL DEFAULT 0
 );
 

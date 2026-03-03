@@ -30,6 +30,8 @@ export interface ProcessedEvent {
   isFlashloan?: boolean;
   isSmartWallet?: boolean;
   isErc4337?: boolean;
+  isEarlyAdoption?: boolean;
+  voteSupport?: number;
   gasPriceGwei: string;
   timestamp: number;
 }
@@ -75,6 +77,11 @@ export async function processEvents(
       if (protocolDef) {
         event.protocol = protocolDef.name;
         event.protocolCategory = protocolDef.category;
+        // PRD 4.5 — Early adoption: used protocol within 6 months of launch
+        const SIX_MONTHS = 15768000;
+        if (event.timestamp > 0 && event.timestamp < protocolDef.launchTimestamp + SIX_MONTHS) {
+          event.isEarlyAdoption = true;
+        }
       }
       // CREATE2 detection: tx.to is a known factory contract
       if (isCreate2Factory(tx.to)) {
@@ -84,6 +91,13 @@ export async function processEvents(
       if (event.type === 'governance') {
         event.dao = DAO_REGISTRY.get(tx.to.toLowerCase());
         event.governanceSubtype = getGovernanceSubtype(tx.input || '');
+        // PRD 4.3 — Parse vote support from castVote calldata (2nd param, uint8)
+        if (event.governanceSubtype === 'vote') {
+          const input = tx.input || '';
+          if (input.length >= 138) {
+            event.voteSupport = parseInt(input.slice(136, 138), 16);
+          }
+        }
       }
     }
 
