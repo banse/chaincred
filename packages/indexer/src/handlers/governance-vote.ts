@@ -1,6 +1,6 @@
 import type { ProcessedEvent } from '../processor.js';
 
-export type GovernanceSubtype = 'vote' | 'propose' | 'delegate' | 'queue-execute';
+export type GovernanceSubtype = 'vote' | 'propose' | 'delegate' | 'queue' | 'execute';
 
 // Known governance contract method signatures (4-byte selectors)
 const VOTE_SELECTORS = [
@@ -21,8 +21,11 @@ const DELEGATE_SELECTORS = [
   '0xc3cda520', // delegateBySig(address,uint256,uint256,uint8,bytes32,bytes32)
 ];
 
-const QUEUE_EXECUTE_SELECTORS = [
+const QUEUE_SELECTORS = [
   '0xddf0b009', // queue(uint256)
+];
+
+const EXECUTE_SELECTORS = [
   '0xfe0d94c1', // execute(uint256)
 ];
 
@@ -30,7 +33,8 @@ const ALL_GOVERNANCE_SELECTORS = [
   ...VOTE_SELECTORS,
   ...PROPOSE_SELECTORS,
   ...DELEGATE_SELECTORS,
-  ...QUEUE_EXECUTE_SELECTORS,
+  ...QUEUE_SELECTORS,
+  ...EXECUTE_SELECTORS,
 ];
 
 export function handleGovernanceVote(chainId: number, tx: any): ProcessedEvent {
@@ -61,6 +65,7 @@ export function getGovernanceSubtype(input: string): GovernanceSubtype | undefin
   if (VOTE_SELECTORS.includes(selector)) return 'vote';
   if (PROPOSE_SELECTORS.includes(selector)) return 'propose';
   if (DELEGATE_SELECTORS.includes(selector)) return 'delegate';
-  if (QUEUE_EXECUTE_SELECTORS.includes(selector)) return 'queue-execute';
+  if (QUEUE_SELECTORS.includes(selector)) return 'queue';
+  if (EXECUTE_SELECTORS.includes(selector)) return 'execute';
   return undefined;
 }

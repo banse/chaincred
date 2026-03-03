@@ -21,7 +21,19 @@ export function calculateComplexityScore(activity: WalletActivity): CategoryScor
     avgCalldataScore = Math.min(Math.round(Math.sqrt(avgBytes) * 20), 400);
   }
 
-  const raw = Math.min(volumeScore + failRatioScore + avgCalldataScore, MAX_CATEGORY_SCORE);
+  // EIP-712 permit/Permit2 interactions: 20 pts each, capped at 200
+  const permitScore = Math.min(activity.permitInteractions * 20, 200);
+
+  // Flashloan transactions: 100 pts each, capped at 300
+  const flashloanScore = Math.min(activity.flashloanTransactions * 100, 300);
+
+  // Smart contract wallet interactions (ERC-4337 EntryPoint): 30 pts each, capped at 150
+  const smartWalletScore = Math.min(activity.smartWalletInteractions * 30, 150);
+
+  const raw = Math.min(
+    volumeScore + failRatioScore + avgCalldataScore + permitScore + flashloanScore + smartWalletScore,
+    MAX_CATEGORY_SCORE,
+  );
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.complexity,

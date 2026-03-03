@@ -4,12 +4,28 @@
   import ScoreRadar from '$lib/components/ScoreRadar.svelte';
   import BadgeDisplay from '$lib/components/BadgeDisplay.svelte';
   import SybilIndicator from '$lib/components/SybilIndicator.svelte';
-  import { fetchScore } from '$lib/api/client.js';
+  import { fetchScore, fetchTimeline, type TimelineEvent } from '$lib/api/client.js';
 
   const address = $derived($page.params.address ?? '');
   let scoreData = $state<any>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let timelineEvents = $state<TimelineEvent[]>([]);
+
+  const typeLabels: Record<string, string> = {
+    first_tx: 'First Transaction',
+    first_deployment: 'First Deployment',
+    first_governance: 'First Governance',
+    chain_added: 'Chain Added',
+  };
+
+  function formatDate(ts: number): string {
+    return new Date(ts * 1000).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
 
   async function loadScore(addr: string) {
     loading = true;
@@ -21,6 +37,14 @@
       error = e instanceof Error ? e.message : 'Failed to load score';
     }
     loading = false;
+    // Load timeline in parallel (non-critical)
+    fetchTimeline(addr)
+      .then((res) => {
+        timelineEvents = res.events;
+      })
+      .catch(() => {
+        timelineEvents = [];
+      });
   }
 
   $effect(() => {
@@ -28,6 +52,26 @@
     loadScore(address);
   });
 </script>
+
+<svelte:head>
+  {#if address}
+    {@const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/v1'}
+    {@const cardUrl = `${apiBase}/card/${address}.png`}
+    {@const pageUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/score/${address}`}
+    <meta property="og:title" content="ChainCred Score — {address.slice(0, 6)}...{address.slice(-4)}" />
+    <meta property="og:image" content={cardUrl} />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={cardUrl} />
+    <meta property="fc:frame" content="vNext" />
+    <meta property="fc:frame:image" content={cardUrl} />
+    <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
+    <meta property="fc:frame:button:1" content="View Score" />
+    <meta property="fc:frame:button:1:action" content="link" />
+    <meta property="fc:frame:button:1:target" content={pageUrl} />
+  {/if}
+</svelte:head>
 
 <div class="space-y-8">
   <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -72,6 +116,25 @@
   {:else}
     <div class="py-20 text-center text-[var(--color-text-muted)]">
       No score data found for this wallet.
+    </div>
+  {/if}
+
+  {#if timelineEvents.length > 0}
+    <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+      <h2 class="mb-4 text-lg font-semibold">Activity Timeline</h2>
+      <div class="relative ml-4 border-l-2 border-[var(--color-border)] pl-6">
+        {#each timelineEvents as event}
+          <div class="relative mb-6 last:mb-0">
+            <div
+              class="absolute -left-[31px] top-1 h-3 w-3 rounded-full border-2 border-[var(--color-primary)] bg-[var(--color-bg)]"
+            ></div>
+            <p class="text-sm font-medium">{typeLabels[event.type] ?? event.type}</p>
+            <p class="text-xs text-[var(--color-text-muted)]">
+              {formatDate(event.timestamp)}{event.chain ? ` on ${event.chain}` : ''}
+            </p>
+          </div>
+        {/each}
+      </div>
     </div>
   {/if}
 </div>

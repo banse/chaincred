@@ -15,7 +15,16 @@ export function calculateGovernanceScore(activity: WalletActivity): CategoryScor
   // Delegation events: 30 pts each, capped at 90
   const delegateScore = Math.min(activity.delegationEvents * 30, 90);
 
-  const raw = Math.min(voteScore + daoScore + proposalScore + delegateScore, MAX_CATEGORY_SCORE);
+  // Treasury execution events (queue/execute): 60 pts each, capped at 120
+  const executionScore = Math.min(activity.executionEvents * 60, 120);
+
+  // Cross-chain governance: 50 pts per chain, capped at 150
+  const crossChainGovScore = Math.min(activity.governanceChains.length * 50, 150);
+
+  const raw = Math.min(
+    voteScore + daoScore + proposalScore + delegateScore + executionScore + crossChainGovScore,
+    MAX_CATEGORY_SCORE,
+  );
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.governance,

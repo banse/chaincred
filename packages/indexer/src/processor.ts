@@ -3,7 +3,14 @@ import { handleContractDeployment } from './handlers/contract-deployment.js';
 import { handleGenericTransaction } from './handlers/generic.js';
 import { getGovernanceSubtype, type GovernanceSubtype } from './handlers/governance-vote.js';
 import { getProtocolName, lookupProtocol } from './registry/protocol-registry.js';
-import { DAO_REGISTRY, isCreate2Factory } from '@chaincred/common';
+import {
+  DAO_REGISTRY,
+  isCreate2Factory,
+  PERMIT_SELECTORS,
+  FLASHLOAN_SELECTORS,
+  ERC4337_SELECTORS,
+  ERC4337_ENTRYPOINTS,
+} from '@chaincred/common';
 
 export interface ProcessedEvent {
   chainId: number;
@@ -19,6 +26,10 @@ export interface ProcessedEvent {
   txStatus: number;
   calldataBytes: number;
   isCreate2?: boolean;
+  isPermit?: boolean;
+  isFlashloan?: boolean;
+  isSmartWallet?: boolean;
+  isErc4337?: boolean;
   gasPriceGwei: string;
   timestamp: number;
 }
@@ -81,6 +92,19 @@ export async function processEvents(
     const input = tx.input || '0x';
     event.calldataBytes = input.length > 2 ? Math.floor((input.length - 2) / 2) : 0;
     event.gasPriceGwei = Math.round(Number((tx as any).gasPrice ?? 0) / 1e9).toString();
+
+    // Detect advanced interaction patterns via function selectors
+    if (input.length >= 10) {
+      const selector = input.slice(0, 10).toLowerCase();
+      if (PERMIT_SELECTORS.has(selector)) event.isPermit = true;
+      if (FLASHLOAN_SELECTORS.has(selector)) event.isFlashloan = true;
+      if (ERC4337_SELECTORS.has(selector)) event.isErc4337 = true;
+    }
+
+    // Detect smart wallet interactions (tx.to is an ERC-4337 EntryPoint)
+    if (tx.to && ERC4337_ENTRYPOINTS.has(tx.to.toLowerCase())) {
+      event.isSmartWallet = true;
+    }
 
     events.push(event);
   }

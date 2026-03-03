@@ -36,6 +36,22 @@ export function fetchLeaderboard(category = 'overall', limit = 50, offset = 0) {
   return apiFetch<LeaderboardResponse>(`/leaderboard?category=${category}&limit=${limit}&offset=${offset}`);
 }
 
+export interface TimelineEvent {
+  type: 'first_tx' | 'first_deployment' | 'first_governance' | 'chain_added';
+  timestamp: number;
+  chain?: string;
+  detail?: string;
+}
+
+export interface TimelineResponse {
+  address: string;
+  events: TimelineEvent[];
+}
+
+export function fetchTimeline(address: string) {
+  return apiFetch<TimelineResponse>(`/timeline/${address}`);
+}
+
 export interface StatsResponse {
   walletsScored: number;
   chainsIndexed: number;

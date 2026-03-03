@@ -36,6 +36,15 @@ function activity(overrides: Partial<WalletActivity>): WalletActivity {
     uniqueRecipients: 5,
     chainProtocolPairs: [],
     distinctGasPrices: 10,
+    distinctTxHours: 12,
+    create2Deployments: 0,
+    bearMarketPeriodsActive: 0,
+    executionEvents: 0,
+    governanceChains: [],
+    permitInteractions: 0,
+    flashloanTransactions: 0,
+    smartWalletInteractions: 0,
+    erc4337Operations: 0,
     ...overrides,
   };
 }

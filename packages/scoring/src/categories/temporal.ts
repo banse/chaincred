@@ -20,7 +20,13 @@ export function calculateTemporalScore(activity: WalletActivity): CategoryScore 
   // Activity entropy: distinct hours-of-day — humans use 8–15+, bots 2–3
   const entropyScore = Math.min((activity.distinctTxHours / 24) * 200, 200);
 
-  const raw = Math.min(Math.round(ageScore + bearScore + consistencyScore + entropyScore), MAX_CATEGORY_SCORE);
+  // Cross-cycle persistence: active in multiple bear/bull cycles = very strong long-term signal
+  const crossCycleScore = Math.min(activity.bearMarketPeriodsActive * 150, 300);
+
+  const raw = Math.min(
+    Math.round(ageScore + bearScore + consistencyScore + entropyScore + crossCycleScore),
+    MAX_CATEGORY_SCORE,
+  );
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.temporal,

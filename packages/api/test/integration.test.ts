@@ -163,4 +163,55 @@ describe('DB-dependent routes (require PostgreSQL)', () => {
     // 404 when no proof exists, 500 when no DB
     expect([404, 500]).toContain(res.status);
   });
+
+  test('GET /v1/timeline/:address returns 200 or 500', async () => {
+    const res = await req('/v1/timeline/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045');
+    if (res.status === 200) {
+      const body = await res.json();
+      expect(body.address).toBeDefined();
+      expect(Array.isArray(body.events)).toBe(true);
+    } else {
+      expect(res.status).toBe(500);
+    }
+  });
+
+  test('GET /v1/timeline/:address has expected event fields', async () => {
+    const res = await req('/v1/timeline/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045');
+    if (res.status === 200) {
+      const body = await res.json();
+      for (const event of body.events) {
+        expect(['first_tx', 'first_deployment', 'first_governance', 'chain_added']).toContain(
+          event.type,
+        );
+        expect(event.timestamp).toBeGreaterThan(0);
+      }
+    } else {
+      expect(res.status).toBe(500);
+    }
+  });
+
+  test('GET /v1/card/:address.png returns SVG or 500', async () => {
+    const res = await req('/v1/card/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045.png');
+    if (res.status === 200) {
+      const contentType = res.headers.get('content-type');
+      expect(contentType).toContain('image/svg+xml');
+      const body = await res.text();
+      expect(body).toContain('<svg');
+      expect(body).toContain('ChainCred');
+    } else {
+      expect(res.status).toBe(500);
+    }
+  });
+});
+
+describe('timeline validation', () => {
+  test('rejects invalid address on /v1/timeline', async () => {
+    const res = await req('/v1/timeline/not-an-address');
+    expect(res.status).toBe(400);
+  });
+
+  test('rejects invalid address on /v1/card', async () => {
+    const res = await req('/v1/card/not-an-address.png');
+    expect(res.status).toBe(400);
+  });
 });

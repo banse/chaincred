@@ -26,7 +26,13 @@ export function calculateBuilderScore(activity: WalletActivity): CategoryScore {
   // Signal 5: CREATE2 deployments — 50 pts each, cap 150
   const create2Score = Math.min(activity.create2Deployments * 50, 150);
 
-  const raw = Math.min(deployScore + chainScore + constructorScore + focusScore + create2Score, MAX_CATEGORY_SCORE);
+  // Signal 6: ERC-4337 operations (handleOps/handleAggregatedOps) — 40 pts each, cap 200
+  const erc4337Score = Math.min(activity.erc4337Operations * 40, 200);
+
+  const raw = Math.min(
+    deployScore + chainScore + constructorScore + focusScore + create2Score + erc4337Score,
+    MAX_CATEGORY_SCORE,
+  );
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.builder,

@@ -38,6 +38,13 @@ CREATE TABLE IF NOT EXISTS wallet_activity (
   gas_price_set TEXT[] NOT NULL DEFAULT '{}',
   tx_hour_set TEXT[] NOT NULL DEFAULT '{}',
   create2_deployments INTEGER NOT NULL DEFAULT 0,
+  bear_market_periods TEXT[] NOT NULL DEFAULT '{}',
+  execution_events INTEGER NOT NULL DEFAULT 0,
+  governance_chains TEXT[] NOT NULL DEFAULT '{}',
+  permit_interactions INTEGER NOT NULL DEFAULT 0,
+  flashloan_transactions INTEGER NOT NULL DEFAULT 0,
+  smart_wallet_interactions INTEGER NOT NULL DEFAULT 0,
+  erc4337_operations INTEGER NOT NULL DEFAULT 0,
   updated_at BIGINT NOT NULL DEFAULT 0
 );
 

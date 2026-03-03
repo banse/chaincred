@@ -30,6 +30,13 @@ function mapRow(row: any): WalletActivity {
     distinctGasPrices: (row.gas_price_set ?? []).length,
     distinctTxHours: (row.tx_hour_set ?? []).length,
     create2Deployments: Number(row.create2_deployments ?? 0),
+    bearMarketPeriodsActive: (row.bear_market_periods ?? []).length,
+    executionEvents: Number(row.execution_events ?? 0),
+    governanceChains: row.governance_chains ?? [],
+    permitInteractions: Number(row.permit_interactions ?? 0),
+    flashloanTransactions: Number(row.flashloan_transactions ?? 0),
+    smartWalletInteractions: Number(row.smart_wallet_interactions ?? 0),
+    erc4337Operations: Number(row.erc4337_operations ?? 0),
   };
 }
 

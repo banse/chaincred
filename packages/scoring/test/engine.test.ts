@@ -28,6 +28,13 @@ function activity(overrides: Partial<WalletActivity> = {}): WalletActivity {
     distinctGasPrices: 10,
     distinctTxHours: 12,
     create2Deployments: 0,
+    bearMarketPeriodsActive: 0,
+    executionEvents: 0,
+    governanceChains: [],
+    permitInteractions: 0,
+    flashloanTransactions: 0,
+    smartWalletInteractions: 0,
+    erc4337Operations: 0,
     ...overrides,
   };
 }
@@ -78,6 +85,13 @@ describe('scoring engine', () => {
       distinctGasPrices: 0,
       distinctTxHours: 0,
       create2Deployments: 0,
+      bearMarketPeriodsActive: 0,
+      executionEvents: 0,
+      governanceChains: [],
+      permitInteractions: 0,
+      flashloanTransactions: 0,
+      smartWalletInteractions: 0,
+      erc4337Operations: 0,
     });
     const result = calculateScore(empty);
     expect(result.totalScore).toBe(0);
@@ -174,6 +188,60 @@ describe('builder signals', () => {
     const withCreate2 = calculateScore(activity({ create2Deployments: 3 }));
     const without = calculateScore(activity({ create2Deployments: 0 }));
     expect(withCreate2.breakdown.builder.raw).toBeGreaterThan(without.breakdown.builder.raw);
+  });
+
+  test('ERC-4337 operations boost builder score', () => {
+    const withOps = calculateScore(activity({ erc4337Operations: 5 }));
+    const without = calculateScore(activity({ erc4337Operations: 0 }));
+    expect(withOps.breakdown.builder.raw).toBeGreaterThan(without.breakdown.builder.raw);
+  });
+});
+
+describe('governance signals', () => {
+  test('execution events boost governance score', () => {
+    const base = { governanceVotes: 3, daosParticipated: ['ens'], proposalsCreated: 0, delegationEvents: 0 };
+    const withExec = calculateScore(activity({ ...base, executionEvents: 2 }));
+    const without = calculateScore(activity({ ...base, executionEvents: 0 }));
+    expect(withExec.breakdown.governance.raw).toBeGreaterThan(without.breakdown.governance.raw);
+  });
+
+  test('cross-chain governance boosts governance score', () => {
+    const base = { governanceVotes: 3, daosParticipated: ['ens'], proposalsCreated: 0, delegationEvents: 0 };
+    const multiChain = calculateScore(
+      activity({ ...base, governanceChains: ['ethereum', 'arbitrum', 'optimism'] }),
+    );
+    const singleChain = calculateScore(activity({ ...base, governanceChains: ['ethereum'] }));
+    expect(multiChain.breakdown.governance.raw).toBeGreaterThan(
+      singleChain.breakdown.governance.raw,
+    );
+  });
+});
+
+describe('temporal signals', () => {
+  test('cross-cycle persistence boosts temporal score', () => {
+    const withCycles = calculateScore(activity({ bearMarketPeriodsActive: 3 }));
+    const without = calculateScore(activity({ bearMarketPeriodsActive: 0 }));
+    expect(withCycles.breakdown.temporal.raw).toBeGreaterThan(without.breakdown.temporal.raw);
+  });
+});
+
+describe('complexity signals', () => {
+  test('permit interactions boost complexity score', () => {
+    const withPermit = calculateScore(activity({ permitInteractions: 10 }));
+    const without = calculateScore(activity({ permitInteractions: 0 }));
+    expect(withPermit.breakdown.complexity.raw).toBeGreaterThan(without.breakdown.complexity.raw);
+  });
+
+  test('flashloan transactions boost complexity score', () => {
+    const withFlash = calculateScore(activity({ flashloanTransactions: 3 }));
+    const without = calculateScore(activity({ flashloanTransactions: 0 }));
+    expect(withFlash.breakdown.complexity.raw).toBeGreaterThan(without.breakdown.complexity.raw);
+  });
+
+  test('smart wallet interactions boost complexity score', () => {
+    const withSW = calculateScore(activity({ smartWalletInteractions: 5 }));
+    const without = calculateScore(activity({ smartWalletInteractions: 0 }));
+    expect(withSW.breakdown.complexity.raw).toBeGreaterThan(without.breakdown.complexity.raw);
   });
 });
 

@@ -1,4 +1,4 @@
-import { getDb, SUPPORTED_CHAINS, isInBearMarket } from '@chaincred/common';
+import { getDb, SUPPORTED_CHAINS, isInBearMarket, BEAR_MARKET_PERIODS } from '@chaincred/common';
 import type { ProcessedEvent } from '../processor.js';
 
 export interface StorageLayer {
@@ -32,6 +32,19 @@ export function createStorage(): StorageLayer {
       const recipientAddr = event.to?.toLowerCase() ?? null;
       const chainProtocolPair = event.protocol ? `${chainSlug}:${event.protocol}` : null;
       const isCreate2 = event.isCreate2 ? 1 : 0;
+      const bearPeriodLabel = BEAR_MARKET_PERIODS.find(
+        (p) => event.timestamp >= p.startTimestamp && event.timestamp <= p.endTimestamp,
+      )?.label ?? null;
+      const isExecution =
+        event.type === 'governance' &&
+        (event.governanceSubtype === 'queue' || event.governanceSubtype === 'execute')
+          ? 1
+          : 0;
+      const governanceChain = event.type === 'governance' ? chainSlug : null;
+      const isPermit = event.isPermit ? 1 : 0;
+      const isFlashloan = event.isFlashloan ? 1 : 0;
+      const isSmartWallet = event.isSmartWallet ? 1 : 0;
+      const isErc4337 = event.isErc4337 ? 1 : 0;
 
       await sql`
         INSERT INTO wallet_activity (
@@ -43,6 +56,9 @@ export function createStorage(): StorageLayer {
           failed_transactions, total_calldata_bytes,
           recipient_addresses, chain_protocol_pairs, gas_price_set,
           tx_hour_set, create2_deployments,
+          bear_market_periods, execution_events, governance_chains,
+          permit_interactions, flashloan_transactions, smart_wallet_interactions,
+          erc4337_operations,
           updated_at
         )
         VALUES (
@@ -68,6 +84,13 @@ export function createStorage(): StorageLayer {
           ${sql.array([event.gasPriceGwei])},
           ${sql.array([txHour])},
           ${isCreate2},
+          ${bearPeriodLabel ? sql.array([bearPeriodLabel]) : sql.array([], 25)},
+          ${isExecution},
+          ${governanceChain ? sql.array([governanceChain]) : sql.array([], 25)},
+          ${isPermit},
+          ${isFlashloan},
+          ${isSmartWallet},
+          ${isErc4337},
           ${Date.now()}
         )
         ON CONFLICT (address) DO UPDATE SET
@@ -132,6 +155,21 @@ export function createStorage(): StorageLayer {
             ELSE wallet_activity.tx_hour_set
           END,
           create2_deployments = wallet_activity.create2_deployments + ${isCreate2},
+          bear_market_periods = CASE
+            WHEN ${bearPeriodLabel ?? null} IS NOT NULL AND NOT (${bearPeriodLabel ?? ''} = ANY(wallet_activity.bear_market_periods))
+            THEN array_append(wallet_activity.bear_market_periods, ${bearPeriodLabel ?? ''})
+            ELSE wallet_activity.bear_market_periods
+          END,
+          execution_events = wallet_activity.execution_events + ${isExecution},
+          governance_chains = CASE
+            WHEN ${governanceChain ?? null} IS NOT NULL AND NOT (${governanceChain ?? ''} = ANY(wallet_activity.governance_chains))
+            THEN array_append(wallet_activity.governance_chains, ${governanceChain ?? ''})
+            ELSE wallet_activity.governance_chains
+          END,
+          permit_interactions = wallet_activity.permit_interactions + ${isPermit},
+          flashloan_transactions = wallet_activity.flashloan_transactions + ${isFlashloan},
+          smart_wallet_interactions = wallet_activity.smart_wallet_interactions + ${isSmartWallet},
+          erc4337_operations = wallet_activity.erc4337_operations + ${isErc4337},
           updated_at = ${Date.now()}
       `;
     },

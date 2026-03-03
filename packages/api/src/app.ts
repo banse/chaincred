@@ -8,6 +8,8 @@ import { verifyRoutes } from './routes/verify.js';
 import { leaderboardRoutes } from './routes/leaderboard.js';
 import { statsRoutes } from './routes/stats.js';
 import { proofRoutes } from './routes/proof.js';
+import { timelineRoutes } from './routes/timeline.js';
+import { cardRoutes } from './routes/card.js';
 import { wsRoutes, websocket } from './routes/ws.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { rateLimit } from './middleware/rate-limit.js';
@@ -32,6 +34,8 @@ v1.route('/verify', verifyRoutes);
 v1.route('/leaderboard', leaderboardRoutes);
 v1.route('/stats', statsRoutes);
 v1.route('/proof', proofRoutes);
+v1.route('/timeline', timelineRoutes);
+v1.route('/card', cardRoutes);
 v1.route('/', wsRoutes);
 app.route('/v1', v1);
 

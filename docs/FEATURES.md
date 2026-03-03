@@ -27,7 +27,7 @@ Every wallet gets a single score from **0 to 1000**, computed from five categori
 
 ### Builder Score (30%)
 
-Measures onchain creation activity with four signals that reward volume, cross-chain fluency, constructor sophistication, and builder-focused behavior.
+Measures onchain creation activity with six signals that reward volume, cross-chain fluency, constructor sophistication, builder-focused behavior, and account abstraction infrastructure.
 
 | Signal | Points | Cap |
 |--------|--------|-----|
@@ -36,12 +36,13 @@ Measures onchain creation activity with four signals that reward volume, cross-c
 | Constructor complexity | sqrt(avg bytes) x 15 | 200 |
 | Deployment focus ratio | ratio x 800 | 160 |
 | CREATE2 deployments | 50 per CREATE2 deploy | 150 |
+| ERC-4337 operations | 40 per handleOps call | 200 |
 
-Caps sum to 1250 — intentionally over 1000 since no wallet can max all signals simultaneously (the focus ratio drops as total transactions increase). Final capped at 1000.
+ERC-4337 operations detect `handleOps` and `handleAggregatedOps` calls to EntryPoint contracts — operating AA infrastructure (bundler/paymaster activity) is a strong builder signal. Caps sum to 1450 — intentionally over 1000 since no wallet can max all signals simultaneously. Final capped at 1000.
 
 ### Governance Score (25%)
 
-Measures DAO participation depth and quality. The indexer classifies governance interactions into four subtypes (vote, propose, delegate, queue/execute) for granular scoring.
+Measures DAO participation depth and quality. The indexer classifies governance interactions into five subtypes (vote, propose, delegate, queue, execute) for granular scoring.
 
 | Signal | Points | Cap |
 |--------|--------|-----|
@@ -49,8 +50,10 @@ Measures DAO participation depth and quality. The indexer classifies governance 
 | DAOs participated in | 120 per DAO | 360 |
 | Governance proposals authored | 150 per proposal | 150 |
 | Delegation events | 30 per event | 90 |
+| Treasury execution events | 60 per queue/execute | 120 |
+| Cross-chain governance | 50 per governance chain | 150 |
 
-Proposals are the highest-value signal — creating proposals is rarer and more meaningful than voting.
+Proposals are the highest-value signal — creating proposals is rarer and more meaningful than voting. Treasury execution (queue/execute calls) indicates deep DAO operational involvement. Cross-chain governance rewards wallets that participate in DAOs across multiple networks.
 
 ### Temporal Score (20%)
 
@@ -62,8 +65,9 @@ Time-weighted consistency. The hardest signal to fake.
 | Bear market activity | 10 per bear-market tx | 300 |
 | Consistency (active months / wallet age) | ratio x 300 | 300 |
 | Activity entropy (distinct tx hours / 24) | (hours/24) x 200 | 200 |
+| Cross-cycle persistence | 150 per bear market period | 300 |
 
-Three bear market windows are tracked: Nov 2018 - Mar 2019, May 2021 - Nov 2021, and Nov 2022 - Jan 2023. Transactions during these periods are counted separately because activity during market downturns is a strong signal of genuine engagement.
+Three bear market windows are tracked: Nov 2018 - Mar 2019, May 2021 - Nov 2021, and Nov 2022 - Jan 2023. Transactions during these periods are counted separately because activity during market downturns is a strong signal of genuine engagement. Cross-cycle persistence rewards wallets active in multiple distinct bear market periods — being present across 2+ cycles is extremely hard to fake.
 
 ### Protocol Diversity Score (15%)
 
@@ -86,8 +90,11 @@ Measures sophistication of individual interactions.
 | Transaction volume | 3 per tx | 300 |
 | Failed transaction ratio | ratio x 2000 | 300 |
 | Average calldata size | sqrt(avg bytes) x 20 | 400 |
+| EIP-712 permit interactions | 20 per permit call | 200 |
+| Flashloan transactions | 100 per flashloan | 300 |
+| Smart wallet interactions | 30 per EntryPoint call | 150 |
 
-Failed transactions contribute positively — the PRD notes "failures = pushing limits." A wallet that has never failed a transaction despite hundreds of interactions is suspicious (handled by sybil detection), while a healthy failure rate shows genuine experimentation.
+Failed transactions contribute positively — the PRD notes "failures = pushing limits." EIP-712 permit detection covers ERC-2612 `permit()` and Permit2 calls — advanced token approval patterns. Flashloan detection identifies Aave V2/V3, Balancer, Uniswap V3, and dYdX flashloan calls — representing DeFi composability expertise. Smart wallet interactions count calls to ERC-4337 EntryPoint v0.6 and v0.7 contracts.
 
 ### How scoring works in practice
 
@@ -132,12 +139,13 @@ When a wallet interacts with any known contract address, it gets credited for th
 
 ## Governance Tracking
 
-The indexer detects **22 governance contracts** across Ethereum, Arbitrum, Optimism, and Polygon. It classifies 11 governance function signatures into four subtypes:
+The indexer detects **22 governance contracts** across Ethereum, Arbitrum, Optimism, and Polygon. It classifies 11 governance function signatures into five subtypes:
 
 - **Voting:** `castVote`, `castVoteWithReason`, `castVoteWithReasonAndParams`, `castVoteBySig`, `castVoteWithReasonAndParamsBySig`
 - **Proposals:** `propose` (Governor and GovernorBravo variants)
 - **Delegation:** `delegate`, `delegateBySig`
-- **Lifecycle:** `queue`, `execute`
+- **Queue:** `queue` (treasury queuing)
+- **Execute:** `execute` (treasury execution)
 
 Each subtype is scored differently — proposals and delegation events are tracked as separate signals from votes.
 
@@ -219,6 +227,8 @@ The REST API runs on [Hono](https://hono.dev/) (Bun runtime) and serves all scor
 | GET | `/v1/leaderboard` | Top wallets by score (with category and pagination filters) |
 | GET | `/v1/stats` | Platform statistics (wallets scored, chains indexed) |
 | GET | `/v1/proof/:address` | Merkle proof for a wallet's score |
+| GET | `/v1/timeline/:address` | Activity milestone timeline |
+| GET | `/v1/card/:address.png` | SVG score card image |
 | WS | `/v1/stream/:address` | Real-time score updates via WebSocket |
 
 ### Rate limiting
@@ -229,7 +239,7 @@ The REST API runs on [Hono](https://hono.dev/) (Bun runtime) and serves all scor
 
 All GET routes are cached in Redis with TTLs appropriate to how often the data changes:
 
-- Score, badges, sybil: 5 minutes
+- Score, badges, sybil, timeline, card: 5 minutes
 - Attestation, proof: 10 minutes
 - Leaderboard, stats: 1 minute
 
@@ -262,7 +272,7 @@ GET /v1/score/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 A SvelteKit frontend at `http://localhost:5173` provides a visual interface:
 
 - **Home page** — Search any wallet by address, see platform stats
-- **Score page** — SVG radar chart showing all 5 category scores as a filled polygon, with per-category color-coded dots, axis labels, and concentric grid rings. Includes badge display and sybil confidence indicator. Shows error states with retry buttons and loading skeletons while data loads.
+- **Score page** — SVG radar chart showing all 5 category scores as a filled polygon, with per-category color-coded dots, axis labels, and concentric grid rings. Includes badge display, sybil confidence indicator, and activity timeline with milestone events. OpenGraph and Farcaster Frame meta tags for social sharing with score card images. Shows error states with retry buttons and loading skeletons while data loads.
 - **Expertise card** — Displays total score with animated progress bar, raw score and sybil percentage. Includes share buttons: copy link, share on X (Twitter), and cast on Warpcast (Farcaster).
 - **Leaderboard** — Top wallets with category filtering (overall, builder, governance, temporal, protocol diversity, complexity). Sorted server-side by category raw score when a specific category is selected. Shows inline score progress bars and a category-specific column with raw scores when filtering. Supports pagination.
 - **Wallet connection** — Connect MetaMask or any EIP-1193 wallet via the nav bar
@@ -324,13 +334,63 @@ A live demo is available at `http://localhost:5173/widget` when the dev server i
 
 ---
 
+## Score Card & Farcaster Frame
+
+The API generates SVG score cards at `/v1/card/:address.png` for social sharing. Each card displays the wallet's total score with color coding (green >= 700, yellow >= 400, red < 400), a truncated address, and a progress bar.
+
+The score page includes OpenGraph and Farcaster Frame meta tags:
+
+- `og:image` and `twitter:image` point to the card image
+- `fc:frame` tags enable Farcaster Frame embedding with a "View Score" button
+- Meta tags render server-side for social crawlers
+
+---
+
+## Exclusion Registry
+
+When the `CHAINCRED_REGISTRY_ADDRESS` environment variable is set, the score service checks the onchain ChainCredRegistry contract before computing scores. If `excludedAddresses(address)` returns true, the API returns a score of 0 with all categories zeroed.
+
+The check is fail-open — if the RPC is unreachable, scoring proceeds normally. This prevents protocol-owned wallets and known bots from receiving inflated scores.
+
+---
+
+## Activity Timeline
+
+The timeline endpoint (`/v1/timeline/:address`) derives milestone events from the existing `events` table without requiring additional storage:
+
+- **first_tx** — First ever transaction with chain
+- **first_deployment** — First contract deployment
+- **first_governance** — First governance interaction
+- **chain_added** — Each new chain the wallet became active on
+
+Events are returned sorted chronologically. The frontend renders them as a vertical timeline below the score cards.
+
+---
+
+## Advanced Interaction Detection
+
+The indexer detects advanced interaction patterns via function selectors:
+
+### EIP-712 Permits
+Detects `permit()` (ERC-2612), Permit2 `permitTransferFrom`, and Permit2 batch calls. These represent sophisticated token approval workflows beyond standard `approve()`.
+
+### Flashloans
+Detects flashloan calls to Aave V2/V3, Balancer, Uniswap V3 `flash()`, and dYdX `operate()`. Flashloan usage indicates advanced DeFi composability expertise.
+
+### ERC-4337 Account Abstraction
+Detects `handleOps` and `handleAggregatedOps` calls to EntryPoint v0.6 and v0.7 contracts. Also detects interactions *to* EntryPoint addresses (smart wallet users).
+
+All selectors are centralized in `packages/common/src/constants/selectors.ts` for consistency across packages.
+
+---
+
 ## Infrastructure
 
 ### Database
 
 PostgreSQL stores indexed wallet activity and Merkle proofs. The schema tracks:
 
-- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set, tx hour set, CREATE2 deployments
+- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set, tx hour set, CREATE2 deployments, bear market periods, execution events, governance chains, permit interactions, flashloan transactions, smart wallet interactions, ERC-4337 operations
 - `merkle_proofs` — per-wallet Merkle proofs (address, score, proof array, root hash, creation timestamp)
 
 Migrations run automatically via `bun run migrate`.
@@ -347,16 +407,16 @@ Migrations run automatically via `bun run migrate`.
 
 **GitHub Actions** runs three workflows:
 
-- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 68 tests (48 scoring + 20 API), builds and tests Solidity contracts, checks Solidity formatting
+- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 80 tests (55 scoring + 25 API), builds and tests Solidity contracts, checks Solidity formatting
 - **Weekly Merkle** (Monday 06:00 UTC, or manual) — Generates the Merkle tree against a PostgreSQL service and outputs the root for onchain submission
 - **Deploy Contracts** (manual trigger) — Deploys all 3 contracts to Sepolia or mainnet via Foundry with Etherscan verification. Supports dry-run mode.
 
 ### Testing
 
-68 automated tests cover:
+80 automated tests cover:
 
-- **Scoring engine** (48 tests) — Category calculators with multi-signal formulas, badge evaluation (trusted + power-user criteria), sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests
-- **API** (20 tests) — Health check, address validation, CORS, rate limiting, all route responses, WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup). Tests work with or without PostgreSQL/Redis running.
+- **Scoring engine** (55 tests) — Category calculators with multi-signal formulas, badge evaluation (trusted + power-user criteria), sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests, governance signals (execution, cross-chain), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets)
+- **API** (25 tests) — Health check, address validation, CORS, rate limiting, all route responses, timeline endpoint (validation, fields, DB-dependent), card image (SVG content, validation), WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup). Tests work with or without PostgreSQL/Redis running.
 
 ---
 
@@ -373,3 +433,5 @@ All configuration is via environment variables. See `.env.example`:
 | `SCORE_MERKLE_ADDRESS` | Deployed ScoreMerkleRoot contract | — |
 | `EAS_GRAPHQL_URL` | EAS GraphQL endpoint | — |
 | `CHAINCRED_SCHEMA_UID` | EAS schema UID for scores | — |
+| `CHAINCRED_REGISTRY_ADDRESS` | ChainCredRegistry contract for exclusion checks | — |
+| `RPC_URL` | Ethereum RPC endpoint for onchain reads | — |
