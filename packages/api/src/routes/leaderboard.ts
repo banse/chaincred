@@ -32,6 +32,13 @@ leaderboardRoutes.get('/', cache(60), async (c) => {
       chainsActive: row.chains_active ?? [],
       governanceVotes: Number(row.governance_votes),
       daosParticipated: row.daos_participated ?? [],
+      proposalsCreated: Number(row.proposals_created ?? 0),
+      delegationEvents: Number(row.delegation_events ?? 0),
+      bearMarketTxs: Number(row.bear_market_txs ?? 0),
+      activeMonths: (row.active_month_set ?? []).length,
+      protocolCategories: row.protocol_categories ?? [],
+      failedTransactions: Number(row.failed_transactions ?? 0),
+      totalCalldataBytes: Number(row.total_calldata_bytes ?? 0),
     };
     const { totalScore, breakdown, sybilMultiplier } = calculateScore(activity);
     return { address: row.address, score: totalScore, breakdown, sybilMultiplier };

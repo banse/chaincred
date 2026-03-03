@@ -1,4 +1,4 @@
-import { getDb, SUPPORTED_CHAINS } from '@chaincred/common';
+import { getDb, SUPPORTED_CHAINS, isInBearMarket } from '@chaincred/common';
 import type { ProcessedEvent } from '../processor.js';
 
 export interface StorageLayer {
@@ -22,8 +22,21 @@ export function createStorage(): StorageLayer {
       const address = event.from.toLowerCase();
       const chainSlug = chainSlugById.get(event.chainId) ?? String(event.chainId);
 
+      // Compute derived signals
+      const isProposal = event.type === 'governance' && event.governanceSubtype === 'propose' ? 1 : 0;
+      const isDelegation = event.type === 'governance' && event.governanceSubtype === 'delegate' ? 1 : 0;
+      const isBearMarketTx = isInBearMarket(event.timestamp) ? 1 : 0;
+      const isFailed = event.txStatus === 0 ? 1 : 0;
+      const monthStr = new Date(event.timestamp * 1000).toISOString().slice(0, 7); // "YYYY-MM"
+
       await sql`
-        INSERT INTO wallet_activity (address, first_tx_timestamp, total_transactions, contracts_deployed, unique_protocols, chains_active, governance_votes, daos_participated, updated_at)
+        INSERT INTO wallet_activity (
+          address, first_tx_timestamp, total_transactions, contracts_deployed,
+          unique_protocols, chains_active, governance_votes, daos_participated,
+          proposals_created, delegation_events, bear_market_txs,
+          active_month_set, protocol_categories,
+          failed_transactions, total_calldata_bytes, updated_at
+        )
         VALUES (
           ${address},
           ${event.timestamp},
@@ -33,6 +46,13 @@ export function createStorage(): StorageLayer {
           ${sql.array([chainSlug])},
           ${event.type === 'governance' ? 1 : 0},
           ${event.dao ? sql.array([event.dao]) : sql.array([], 25)},
+          ${isProposal},
+          ${isDelegation},
+          ${isBearMarketTx},
+          ${sql.array([monthStr])},
+          ${event.protocolCategory ? sql.array([event.protocolCategory]) : sql.array([], 25)},
+          ${isFailed},
+          ${event.calldataBytes},
           ${Date.now()}
         )
         ON CONFLICT (address) DO UPDATE SET
@@ -55,6 +75,21 @@ export function createStorage(): StorageLayer {
             THEN array_append(wallet_activity.daos_participated, ${event.dao ?? ''})
             ELSE wallet_activity.daos_participated
           END,
+          proposals_created = wallet_activity.proposals_created + ${isProposal},
+          delegation_events = wallet_activity.delegation_events + ${isDelegation},
+          bear_market_txs = wallet_activity.bear_market_txs + ${isBearMarketTx},
+          active_month_set = CASE
+            WHEN NOT (${monthStr} = ANY(wallet_activity.active_month_set))
+            THEN array_append(wallet_activity.active_month_set, ${monthStr})
+            ELSE wallet_activity.active_month_set
+          END,
+          protocol_categories = CASE
+            WHEN ${event.protocolCategory ?? null} IS NOT NULL AND NOT (${event.protocolCategory ?? ''} = ANY(wallet_activity.protocol_categories))
+            THEN array_append(wallet_activity.protocol_categories, ${event.protocolCategory ?? ''})
+            ELSE wallet_activity.protocol_categories
+          END,
+          failed_transactions = wallet_activity.failed_transactions + ${isFailed},
+          total_calldata_bytes = wallet_activity.total_calldata_bytes + ${event.calldataBytes},
           updated_at = ${Date.now()}
       `;
     },

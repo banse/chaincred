@@ -9,5 +9,7 @@ export function handleTokenTransfer(chainId: number, tx: any): ProcessedEvent {
     to: tx.to || '',
     type: 'transfer',
     timestamp: tx.timestamp || 0,
+    txStatus: 1,
+    calldataBytes: 0,
   };
 }

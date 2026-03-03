@@ -24,6 +24,13 @@ CREATE TABLE IF NOT EXISTS wallet_activity (
   chains_active TEXT[] NOT NULL DEFAULT '{}',
   governance_votes INTEGER NOT NULL DEFAULT 0,
   daos_participated TEXT[] NOT NULL DEFAULT '{}',
+  proposals_created INTEGER NOT NULL DEFAULT 0,
+  delegation_events INTEGER NOT NULL DEFAULT 0,
+  bear_market_txs INTEGER NOT NULL DEFAULT 0,
+  active_month_set TEXT[] NOT NULL DEFAULT '{}',
+  protocol_categories TEXT[] NOT NULL DEFAULT '{}',
+  failed_transactions INTEGER NOT NULL DEFAULT 0,
+  total_calldata_bytes BIGINT NOT NULL DEFAULT 0,
   updated_at BIGINT NOT NULL DEFAULT 0
 );
 

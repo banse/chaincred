@@ -14,6 +14,8 @@ export function handleGenericTransaction(chainId: number, tx: any): ProcessedEve
       to: tx.to || '',
       type: 'governance',
       timestamp: tx.timestamp || 0,
+      txStatus: 1,
+      calldataBytes: 0,
     };
   }
 
@@ -25,5 +27,7 @@ export function handleGenericTransaction(chainId: number, tx: any): ProcessedEve
     to: tx.to || '',
     type: 'generic',
     timestamp: tx.timestamp || 0,
+    txStatus: 1,
+    calldataBytes: 0,
   };
 }

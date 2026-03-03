@@ -61,19 +61,13 @@ export function checkActionRepetition(activity: WalletActivity): SybilPenalty {
  * A wallet with a very high transaction count and zero failures suggests bot behavior
  * with perfect gas estimation and pre-simulation.
  *
- * Since we don't track failure counts directly, we approximate:
- * - Very high tx count (>200) with no contract deployments and no governance votes
- *   on a single chain suggests automated behavior.
- * - Real power users who transact heavily tend to deploy contracts or participate
- *   in governance.
+ * Heuristic: if totalTransactions > 200 AND failedTransactions === 0, flag it.
  */
 export function checkZeroFailureRate(activity: WalletActivity): SybilPenalty {
   const highVolume = activity.totalTransactions > 200;
-  const noBuilderActivity = activity.contractsDeployed === 0;
-  const noGovernance = activity.governanceVotes === 0;
-  const singleChain = activity.chainsActive.length <= 1;
+  const zeroFailures = activity.failedTransactions === 0;
 
-  const detected = highVolume && noBuilderActivity && noGovernance && singleChain;
+  const detected = highVolume && zeroFailures;
 
   return {
     flag: 'zero-failure-rate',
@@ -81,7 +75,7 @@ export function checkZeroFailureRate(activity: WalletActivity): SybilPenalty {
     penalty: 0.20,
     detected,
     details: detected
-      ? `${activity.totalTransactions} txs with no deployments, no governance, single chain`
+      ? `${activity.totalTransactions} txs with zero failures`
       : 'No zero failure rate anomaly detected',
   };
 }

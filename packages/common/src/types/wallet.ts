@@ -7,6 +7,20 @@ export interface WalletActivity {
   chainsActive: string[];
   governanceVotes: number;
   daosParticipated: string[];
+  /** PRD 4.3 — Governance proposals authored (propose() calls) */
+  proposalsCreated: number;
+  /** PRD 4.3 — Delegation events (delegate/delegateBySig calls) */
+  delegationEvents: number;
+  /** PRD 4.4 — Transactions during bear market windows */
+  bearMarketTxs: number;
+  /** PRD 4.4 — Distinct calendar months with activity */
+  activeMonths: number;
+  /** PRD 4.5 — Distinct protocol categories (defi, social, governance, etc.) */
+  protocolCategories: string[];
+  /** PRD 4.6 — Reverted transactions (tx.status == 0) */
+  failedTransactions: number;
+  /** PRD 4.6 — Total calldata bytes across all transactions */
+  totalCalldataBytes: number;
 }
 
 export interface WalletProfile {

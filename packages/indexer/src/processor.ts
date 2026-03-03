@@ -1,7 +1,8 @@
 import type { HypersyncClient } from './client.js';
 import { handleContractDeployment } from './handlers/contract-deployment.js';
 import { handleGenericTransaction } from './handlers/generic.js';
-import { getProtocolName } from './registry/protocol-registry.js';
+import { getGovernanceSubtype, type GovernanceSubtype } from './handlers/governance-vote.js';
+import { getProtocolName, lookupProtocol } from './registry/protocol-registry.js';
 import { DAO_REGISTRY } from '@chaincred/common';
 
 export interface ProcessedEvent {
@@ -12,7 +13,11 @@ export interface ProcessedEvent {
   to: string | null;
   type: 'deployment' | 'governance' | 'transfer' | 'generic';
   protocol?: string;
+  protocolCategory?: string;
   dao?: string;
+  governanceSubtype?: GovernanceSubtype;
+  txStatus: number;
+  calldataBytes: number;
   timestamp: number;
 }
 
@@ -26,7 +31,7 @@ export async function processEvents(
     maxNumBlocks: 2000,
     transactions: [{}],
     fieldSelection: {
-      transaction: ['Hash', 'From', 'To', 'Input', 'Value', 'BlockNumber'],
+      transaction: ['Hash', 'From', 'To', 'Input', 'Value', 'BlockNumber', 'Status'],
       block: ['Number', 'Timestamp'],
     },
   });
@@ -47,16 +52,29 @@ export async function processEvents(
       timestamp: blockTimestamps.get(tx.blockNumber ?? 0) ?? 0,
     };
 
+    let event: ProcessedEvent;
+
     if (!tx.to) {
-      events.push(handleContractDeployment(client.chainId, enriched));
+      event = handleContractDeployment(client.chainId, enriched);
     } else {
-      const event = handleGenericTransaction(client.chainId, enriched);
-      event.protocol = getProtocolName(tx.to) ?? event.protocol;
+      event = handleGenericTransaction(client.chainId, enriched);
+      const protocolDef = lookupProtocol(tx.to);
+      if (protocolDef) {
+        event.protocol = protocolDef.name;
+        event.protocolCategory = protocolDef.category;
+      }
       if (event.type === 'governance') {
         event.dao = DAO_REGISTRY.get(tx.to.toLowerCase());
+        event.governanceSubtype = getGovernanceSubtype(tx.input || '');
       }
-      events.push(event);
     }
+
+    // Enrich all events with status and calldata
+    event.txStatus = (tx as any).status ?? 1;
+    const input = tx.input || '0x';
+    event.calldataBytes = input.length > 2 ? Math.floor((input.length - 2) / 2) : 0;
+
+    events.push(event);
   }
 
   return { events, nextBlock: result.nextBlock };

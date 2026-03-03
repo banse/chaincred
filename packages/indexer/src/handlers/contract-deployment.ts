@@ -9,5 +9,7 @@ export function handleContractDeployment(chainId: number, tx: any): ProcessedEve
     to: null,
     type: 'deployment',
     timestamp: tx.timestamp || 0,
+    txStatus: 1,
+    calldataBytes: 0,
   };
 }
