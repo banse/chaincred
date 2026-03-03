@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChainCred — One Pager</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  @page { size: A4; margin: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1a1a2e;
+    background: #fff;
+    width: 210mm;
+    height: 297mm;
+    overflow: hidden;
+    margin: 0 auto;
+    padding: 20px 26px 16px;
+    font-size: 9.5px;
+    line-height: 1.4;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2.5px solid #6c5ce7;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 18px;
+    box-shadow: 0 2px 6px rgba(108,92,231,0.3);
+  }
+  .title-block h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #6c5ce7, #0984e3);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .title-block p { font-size: 9.5px; color: #636e72; font-weight: 500; margin-top: 1px; }
+  .header-right { text-align: right; font-size: 8px; color: #b2bec3; }
+
+  /* ── Tagline ── */
+  .tagline {
+    background: linear-gradient(135deg, #dfe6e9 0%, #ffeaa7 100%);
+    border-radius: 6px;
+    padding: 6px 14px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #2d3436;
+    text-align: center;
+  }
+
+  /* ── Stats row ── */
+  .stats-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-size: 15px; font-weight: 800;
+    background: linear-gradient(135deg, #6c5ce7, #0984e3);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stat-label { font-size: 7px; color: #636e72; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+
+  /* ── Two-column layout ── */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+
+  /* ── Sections ── */
+  .section { margin-bottom: 7px; }
+  .section-title {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.7px; color: #6c5ce7; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .section-title::before {
+    content: ''; width: 3px; height: 12px;
+    background: #6c5ce7; border-radius: 2px; display: inline-block;
+  }
+
+  /* ── Problem ── */
+  .problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .problem-card {
+    background: #fff5f5; border: 1px solid #fab1a0;
+    border-radius: 4px; padding: 3px 6px; font-size: 8.5px;
+  }
+  .problem-card strong { color: #d63031; font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+  /* ── Scoring ── */
+  .score-container { display: flex; flex-direction: column; gap: 3px; }
+  .score-bar { display: flex; align-items: center; gap: 6px; }
+  .score-label { width: 95px; font-size: 8.5px; font-weight: 600; color: #2d3436; }
+  .score-weight { width: 28px; font-size: 8px; font-weight: 700; color: #6c5ce7; text-align: right; }
+  .bar-track { flex: 1; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .score-signals { font-size: 7.5px; color: #636e72; width: 155px; text-align: right; line-height: 1.15; }
+  .formula {
+    background: #f8f9fa; border: 1px solid #dfe6e9; border-radius: 4px;
+    padding: 4px 8px; font-size: 8px; font-family: 'SF Mono', 'Fira Code', monospace;
+    color: #2d3436; margin-top: 4px; text-align: center;
+  }
+
+  /* ── Sybil ── */
+  .sybil-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+  .sybil-item {
+    background: #ffeaa7; border-radius: 4px; padding: 2px 4px;
+    font-size: 7.5px; text-align: center; line-height: 1.25;
+  }
+  .sybil-item .penalty { font-weight: 700; color: #d63031; font-size: 9px; }
+  .sybil-item .name { color: #636e72; font-size: 6.5px; display: block; }
+
+  /* ── Badges ── */
+  .badge-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .badge {
+    display: flex; align-items: center; gap: 3px;
+    background: #f0f0ff; border: 1px solid #c8c4f9;
+    border-radius: 12px; padding: 2px 7px 2px 5px;
+    font-size: 7.5px; font-weight: 600; color: #6c5ce7;
+  }
+  .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: #6c5ce7; }
+
+  /* ── Why section ── */
+  .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .why-card {
+    border-left: 2.5px solid #6c5ce7; padding: 3px 6px;
+    background: #f8f7ff; border-radius: 0 4px 4px 0;
+  }
+  .why-card h4 { font-size: 8.5px; font-weight: 700; color: #6c5ce7; margin-bottom: 1px; }
+  .why-card p { font-size: 7.5px; color: #636e72; line-height: 1.3; }
+
+  /* ── Features ── */
+  .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .feature {
+    background: #f8f9fa; border: 1px solid #dfe6e9;
+    border-radius: 4px; padding: 4px 6px;
+  }
+  .feature-name { font-weight: 700; font-size: 8.5px; color: #2d3436; margin-bottom: 1px; }
+  .feature-desc { font-size: 7.5px; color: #636e72; line-height: 1.3; }
+
+  /* ── Architecture ── */
+  .arch-flow { display: flex; align-items: center; justify-content: center; gap: 3px; margin: 4px 0; }
+  .arch-box {
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    color: #fff; font-weight: 700; font-size: 7.5px;
+    padding: 3px 7px; border-radius: 4px; text-align: center; line-height: 1.25;
+  }
+  .arch-box.alt { background: linear-gradient(135deg, #0984e3, #74b9ff); }
+  .arch-box.green { background: linear-gradient(135deg, #00b894, #55efc4); color: #1a1a2e; }
+  .arch-arrow { font-size: 11px; color: #b2bec3; }
+
+  /* ── Tech ── */
+  .tech-row { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 3px; }
+  .tech-tag {
+    background: #2d3436; color: #dfe6e9; font-size: 7px;
+    font-weight: 600; padding: 1px 6px; border-radius: 2px;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 6px; padding-top: 5px; border-top: 1px solid #dfe6e9;
+    display: flex; justify-content: space-between;
+    font-size: 7px; color: #b2bec3;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">C</div>
+    <div class="title-block">
+      <h1>ChainCred</h1>
+      <p>Onchain Expertise Reputation Layer for Ethereum</p>
+    </div>
+  </div>
+  <div class="header-right">github.com/chaincred<br>March 2026</div>
+</div>
+
+<!-- Tagline -->
+<div class="tagline">
+  GitHub contribution graph meets Ethereum &mdash; your wallet's expertise, provable onchain.
+</div>
+
+<!-- Key Numbers -->
+<div class="stats-row">
+  <div class="stat"><div class="stat-num">6</div><div class="stat-label">Chains Indexed</div></div>
+  <div class="stat"><div class="stat-num">5</div><div class="stat-label">Score Categories</div></div>
+  <div class="stat"><div class="stat-num">40+</div><div class="stat-label">Scoring Signals</div></div>
+  <div class="stat"><div class="stat-num">8</div><div class="stat-label">Sybil Heuristics</div></div>
+  <div class="stat"><div class="stat-num">7</div><div class="stat-label">Expertise Badges</div></div>
+  <div class="stat"><div class="stat-num">20</div><div class="stat-label">Tracked Protocols</div></div>
+  <div class="stat"><div class="stat-num">103</div><div class="stat-label">Automated Tests</div></div>
+</div>
+
+<!-- Problem + Solution -->
+<div class="cols">
+  <div>
+    <div class="section-title">The Problem</div>
+    <p style="font-size: 8.5px; color: #636e72; margin-bottom: 4px;">
+      Ethereum has no credible way to distinguish experienced builders from airdrop farmers,
+      genuine DAO contributors from governance attackers, or real users from sybil accounts.
+    </p>
+    <div class="problem-grid">
+      <div class="problem-card"><strong>Token governance</strong><br>Wealth &ne; expertise</div>
+      <div class="problem-card"><strong>Gitcoin Passport</strong><br>Proves humanity, not skill</div>
+      <div class="problem-card"><strong>Portfolio value</strong><br>Holding &ne; doing</div>
+      <div class="problem-card"><strong>POAPs / social rep</strong><br>Farmable, off-chain</div>
+    </div>
+  </div>
+  <div>
+    <div class="section-title">ChainCred's Approach</div>
+    <p style="font-size: 8.5px; color: #636e72; margin-bottom: 4px;">
+      Index <em>what wallets do</em>, not what they hold. Score actions across 6 EVM chains, apply
+      multiplicative sybil penalties, and publish results as verifiable EAS attestations.
+    </p>
+    <div style="font-size: 8.5px; line-height: 1.5;">
+      <strong style="color: #6c5ce7;">1.</strong> <strong>Expertise Score</strong> (0&ndash;1000) &mdash; weighted composite of 5 onchain signal categories<br>
+      <strong style="color: #6c5ce7;">2.</strong> <strong>7 Badges</strong> &mdash; specialist attestations (Builder, Governor, OG, Explorer, etc.)<br>
+      <strong style="color: #6c5ce7;">3.</strong> <strong>Sybil Resistance</strong> &mdash; 8 heuristics that discount bots, not ban them<br>
+      <strong style="color: #6c5ce7;">4.</strong> <strong>Onchain Proof</strong> &mdash; weekly Merkle root + EAS attestations for trustless verification
+    </div>
+  </div>
+</div>
+
+<!-- Scoring Engine -->
+<div class="section">
+  <div class="section-title">Scoring Engine &mdash; 5 Categories, 40+ Signals</div>
+  <div class="score-container">
+    <div class="score-bar">
+      <div class="score-label">Builder</div>
+      <div class="score-weight">30%</div>
+      <div class="bar-track"><div class="bar-fill" style="width:100%; background: linear-gradient(90deg, #6c5ce7, #a29bfe);"></div></div>
+      <div class="score-signals">deploys, chains, CREATE2, ERC-4337, verified source, longevity</div>
+    </div>
+    <div class="score-bar">
+      <div class="score-label">Governance</div>
+      <div class="score-weight">25%</div>
+      <div class="bar-track"><div class="bar-fill" style="width:83%; background: linear-gradient(90deg, #0984e3, #74b9ff);"></div></div>
+      <div class="score-signals">votes, DAOs, proposals, delegation, Safe multi-sig, reasoned votes</div>
+    </div>
+    <div class="score-bar">
+      <div class="score-label">Temporal</div>
+      <div class="score-weight">20%</div>
+      <div class="bar-track"><div class="bar-fill" style="width:67%; background: linear-gradient(90deg, #00b894, #55efc4);"></div></div>
+      <div class="score-signals">wallet age, bear market activity, consistency, entropy</div>
+    </div>
+    <div class="score-bar">
+      <div class="score-label">Protocol Diversity</div>
+      <div class="score-weight">15%</div>
+      <div class="bar-track"><div class="bar-fill" style="width:50%; background: linear-gradient(90deg, #fdcb6e, #ffeaa7);"></div></div>
+      <div class="score-signals">unique protocols, chains, domain coverage, early adoption</div>
+    </div>
+    <div class="score-bar">
+      <div class="score-label">Complexity</div>
+      <div class="score-weight">10%</div>
+      <div class="bar-track"><div class="bar-fill" style="width:33%; background: linear-gradient(90deg, #e17055, #fab1a0);"></div></div>
+      <div class="score-signals">calldata, failures, flashloans, permits, smart wallets</div>
+    </div>
+  </div>
+  <div class="formula">
+    Final Score = (Builder &times; 0.30 + Governance &times; 0.25 + Temporal &times; 0.20 + Diversity &times; 0.15 + Complexity &times; 0.10) &times; Sybil Confidence
+  </div>
+</div>
+
+<!-- Sybil + Badges -->
+<div class="cols" style="margin-bottom: 6px;">
+  <div>
+    <div class="section-title">Sybil Resistance &mdash; Discount, Never Ban</div>
+    <p style="font-size: 7.5px; color: #636e72; margin-bottom: 3px;">
+      8 multiplicative heuristics produce a confidence multiplier (0.0&ndash;1.0). Transparent and appealable.
+    </p>
+    <div class="sybil-grid">
+      <div class="sybil-item"><div class="penalty">-60%</div><span class="name">Cross-chain mirroring</span></div>
+      <div class="sybil-item"><div class="penalty">-50%</div><span class="name">Funding clusters</span></div>
+      <div class="sybil-item"><div class="penalty">-40%</div><span class="name">Temporal clustering</span></div>
+      <div class="sybil-item"><div class="penalty">-30%</div><span class="name">Action repetition</span></div>
+      <div class="sybil-item"><div class="penalty">-30%</div><span class="name">CEX freshness</span></div>
+      <div class="sybil-item"><div class="penalty">-20%</div><span class="name">Zero failures</span></div>
+      <div class="sybil-item"><div class="penalty">-15%</div><span class="name">Gas patterns</span></div>
+      <div class="sybil-item"><div class="penalty">-15%</div><span class="name">MEV bot activity</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="section-title">7 Expertise Badges</div>
+    <p style="font-size: 7.5px; color: #636e72; margin-bottom: 3px;">
+      Each badge maps to concrete onchain achievement &mdash; evaluated dynamically from indexed activity.
+    </p>
+    <div class="badge-row">
+      <div class="badge"><div class="badge-dot"></div>Builder <span style="color:#b2bec3;font-weight:400">&mdash; 3+ deploys</span></div>
+      <div class="badge"><div class="badge-dot"></div>Governor <span style="color:#b2bec3;font-weight:400">&mdash; 5+ DAOs</span></div>
+      <div class="badge"><div class="badge-dot"></div>OG <span style="color:#b2bec3;font-weight:400">&mdash; pre-2020</span></div>
+      <div class="badge"><div class="badge-dot"></div>Explorer <span style="color:#b2bec3;font-weight:400">&mdash; 20+ protocols</span></div>
+      <div class="badge"><div class="badge-dot" style="background:#0984e3"></div>Multichain <span style="color:#b2bec3;font-weight:400">&mdash; 4+ chains</span></div>
+      <div class="badge"><div class="badge-dot" style="background:#00b894"></div>Trusted <span style="color:#b2bec3;font-weight:400">&mdash; Safe signer</span></div>
+      <div class="badge"><div class="badge-dot" style="background:#e17055"></div>Power User <span style="color:#b2bec3;font-weight:400">&mdash; depth + breadth</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Why It's Built This Way -->
+<div class="section">
+  <div class="section-title">Why It's Built This Way</div>
+  <div class="why-grid">
+    <div class="why-card">
+      <h4>Actions Over Holdings</h4>
+      <p>Token balances reward wealth. ChainCred only indexes <em>transactions</em> &mdash; deployments, votes, protocol interactions. You can't buy a score.</p>
+    </div>
+    <div class="why-card">
+      <h4>Multi-Signal Categories</h4>
+      <p>Each category uses 4&ndash;9 capped signals. Over-capping prevents any single signal from dominating &mdash; no wallet can max all signals.</p>
+    </div>
+    <div class="why-card">
+      <h4>Multiplicative Sybil Penalties</h4>
+      <p>Penalties compound: 3 flags = 0.6 &times; 0.7 &times; 0.4 = 0.168 confidence. Each extra flag bites exponentially.</p>
+    </div>
+    <div class="why-card">
+      <h4>Bear Market = High Signal</h4>
+      <p>Activity during downturns is the hardest signal to fake retroactively. Cross-cycle persistence is near-unforgeable proof of genuine participation.</p>
+    </div>
+    <div class="why-card">
+      <h4>Trustless Verification</h4>
+      <p>Weekly Merkle roots onchain let anyone verify a score without trusting ChainCred. Combined with EAS attestations &mdash; composable by any protocol.</p>
+    </div>
+    <div class="why-card">
+      <h4>Fail-Open Everything</h4>
+      <p>If Etherscan, RPC, or Redis is down, scoring still works. Enrichments degrade gracefully &mdash; no external dependency blocks the core pipeline.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Features + Architecture -->
+<div class="cols" style="margin-bottom: 4px;">
+  <div>
+    <div class="section-title">Key Features</div>
+    <div class="features-grid">
+      <div class="feature">
+        <div class="feature-name">REST + WebSocket API</div>
+        <div class="feature-desc">21 endpoints: scores, badges, sybil, leaderboard, timeline, proofs, webhooks, appeals</div>
+      </div>
+      <div class="feature">
+        <div class="feature-name">SVG Score Cards</div>
+        <div class="feature-desc">Shareable cards with category bars, badges, ENS names. OG + Farcaster meta tags.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-name">Verification Widget</div>
+        <div class="feature-desc">Web Component (Shadow DOM). Gate anything by score + badges.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-name">Appeals + Webhooks</div>
+        <div class="feature-desc">Sybil appeals with score floor. HMAC-signed webhook delivery.</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="section-title">Architecture</div>
+    <div class="arch-flow">
+      <div class="arch-box green">HyperSync<br><span style="font-weight:400;font-size:6.5px">6-chain indexer</span></div>
+      <div class="arch-arrow">&rarr;</div>
+      <div class="arch-box alt">PostgreSQL<br><span style="font-weight:400;font-size:6.5px">wallet activity</span></div>
+      <div class="arch-arrow">&rarr;</div>
+      <div class="arch-box">Scoring Engine<br><span style="font-weight:400;font-size:6.5px">5 categories + sybil</span></div>
+      <div class="arch-arrow">&rarr;</div>
+      <div class="arch-box alt">Hono API<br><span style="font-weight:400;font-size:6.5px">REST + WS + Redis</span></div>
+    </div>
+    <div class="arch-flow">
+      <div class="arch-box">Merkle Tree<br><span style="font-weight:400;font-size:6.5px">weekly generation</span></div>
+      <div class="arch-arrow">&rarr;</div>
+      <div class="arch-box green">Solidity Contracts<br><span style="font-weight:400;font-size:6.5px">Registry + Merkle + Resolver</span></div>
+      <div class="arch-arrow">&rarr;</div>
+      <div class="arch-box alt">EAS Attestations<br><span style="font-weight:400;font-size:6.5px">composable onchain</span></div>
+    </div>
+    <div class="tech-row">
+      <div class="tech-tag">Bun</div>
+      <div class="tech-tag">TypeScript</div>
+      <div class="tech-tag">Hono</div>
+      <div class="tech-tag">PostgreSQL</div>
+      <div class="tech-tag">Redis</div>
+      <div class="tech-tag">Solidity 0.8.24</div>
+      <div class="tech-tag">Foundry</div>
+      <div class="tech-tag">SvelteKit</div>
+      <div class="tech-tag">HyperSync</div>
+      <div class="tech-tag">EAS</div>
+      <div class="tech-tag">viem</div>
+      <div class="tech-tag">Docker</div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <span>ChainCred &mdash; Onchain Expertise Reputation Layer</span>
+  <span>Bun monorepo &bull; 6 packages &bull; ~3,600 LOC &bull; 103 tests &bull; MIT License</span>
+</div>
+
+</body>
+</html>
