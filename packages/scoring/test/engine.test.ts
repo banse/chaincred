@@ -26,6 +26,8 @@ function activity(overrides: Partial<WalletActivity> = {}): WalletActivity {
     uniqueRecipients: 5,
     chainProtocolPairs: [],
     distinctGasPrices: 10,
+    distinctTxHours: 12,
+    create2Deployments: 0,
     ...overrides,
   };
 }
@@ -74,6 +76,8 @@ describe('scoring engine', () => {
       uniqueRecipients: 0,
       chainProtocolPairs: [],
       distinctGasPrices: 0,
+      distinctTxHours: 0,
+      create2Deployments: 0,
     });
     const result = calculateScore(empty);
     expect(result.totalScore).toBe(0);
@@ -122,6 +126,12 @@ describe('enriched signals', () => {
     const simple = calculateScore(activity({ totalCalldataBytes: 0 }));
     expect(complex.breakdown.complexity.raw).toBeGreaterThan(simple.breakdown.complexity.raw);
   });
+
+  test('distinct tx hours boost temporal score via entropy', () => {
+    const diverse = calculateScore(activity({ distinctTxHours: 18 }));
+    const narrow = calculateScore(activity({ distinctTxHours: 2 }));
+    expect(diverse.breakdown.temporal.raw).toBeGreaterThan(narrow.breakdown.temporal.raw);
+  });
 });
 
 describe('builder signals', () => {
@@ -158,6 +168,12 @@ describe('builder signals', () => {
       }),
     );
     expect(result.breakdown.builder.raw).toBe(0);
+  });
+
+  test('CREATE2 deployments boost builder score', () => {
+    const withCreate2 = calculateScore(activity({ create2Deployments: 3 }));
+    const without = calculateScore(activity({ create2Deployments: 0 }));
+    expect(withCreate2.breakdown.builder.raw).toBeGreaterThan(without.breakdown.builder.raw);
   });
 });
 

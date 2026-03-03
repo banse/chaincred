@@ -3,7 +3,7 @@ import { handleContractDeployment } from './handlers/contract-deployment.js';
 import { handleGenericTransaction } from './handlers/generic.js';
 import { getGovernanceSubtype, type GovernanceSubtype } from './handlers/governance-vote.js';
 import { getProtocolName, lookupProtocol } from './registry/protocol-registry.js';
-import { DAO_REGISTRY } from '@chaincred/common';
+import { DAO_REGISTRY, isCreate2Factory } from '@chaincred/common';
 
 export interface ProcessedEvent {
   chainId: number;
@@ -18,6 +18,7 @@ export interface ProcessedEvent {
   governanceSubtype?: GovernanceSubtype;
   txStatus: number;
   calldataBytes: number;
+  isCreate2?: boolean;
   gasPriceGwei: string;
   timestamp: number;
 }
@@ -63,6 +64,11 @@ export async function processEvents(
       if (protocolDef) {
         event.protocol = protocolDef.name;
         event.protocolCategory = protocolDef.category;
+      }
+      // CREATE2 detection: tx.to is a known factory contract
+      if (isCreate2Factory(tx.to)) {
+        event.type = 'deployment';
+        event.isCreate2 = true;
       }
       if (event.type === 'governance') {
         event.dao = DAO_REGISTRY.get(tx.to.toLowerCase());

@@ -4,3 +4,4 @@ export * from './badges.js';
 export * from './bear-markets.js';
 export * from './protocols.js';
 export * from './daos.js';
+export * from './create2-factories.js';

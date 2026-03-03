@@ -28,8 +28,10 @@ export function createStorage(): StorageLayer {
       const isBearMarketTx = isInBearMarket(event.timestamp) ? 1 : 0;
       const isFailed = event.txStatus === 0 ? 1 : 0;
       const monthStr = new Date(event.timestamp * 1000).toISOString().slice(0, 7); // "YYYY-MM"
+      const txHour = new Date(event.timestamp * 1000).getUTCHours().toString();
       const recipientAddr = event.to?.toLowerCase() ?? null;
       const chainProtocolPair = event.protocol ? `${chainSlug}:${event.protocol}` : null;
+      const isCreate2 = event.isCreate2 ? 1 : 0;
 
       await sql`
         INSERT INTO wallet_activity (
@@ -40,6 +42,7 @@ export function createStorage(): StorageLayer {
           active_month_set, protocol_categories,
           failed_transactions, total_calldata_bytes,
           recipient_addresses, chain_protocol_pairs, gas_price_set,
+          tx_hour_set, create2_deployments,
           updated_at
         )
         VALUES (
@@ -63,6 +66,8 @@ export function createStorage(): StorageLayer {
           ${recipientAddr ? sql.array([recipientAddr]) : sql.array([], 25)},
           ${chainProtocolPair ? sql.array([chainProtocolPair]) : sql.array([], 25)},
           ${sql.array([event.gasPriceGwei])},
+          ${sql.array([txHour])},
+          ${isCreate2},
           ${Date.now()}
         )
         ON CONFLICT (address) DO UPDATE SET
@@ -121,6 +126,12 @@ export function createStorage(): StorageLayer {
             THEN array_append(wallet_activity.gas_price_set, ${event.gasPriceGwei})
             ELSE wallet_activity.gas_price_set
           END,
+          tx_hour_set = CASE
+            WHEN NOT (${txHour} = ANY(wallet_activity.tx_hour_set))
+            THEN array_append(wallet_activity.tx_hour_set, ${txHour})
+            ELSE wallet_activity.tx_hour_set
+          END,
+          create2_deployments = wallet_activity.create2_deployments + ${isCreate2},
           updated_at = ${Date.now()}
       `;
     },

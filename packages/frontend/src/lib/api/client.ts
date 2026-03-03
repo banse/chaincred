@@ -44,3 +44,30 @@ export interface StatsResponse {
 export function fetchStats() {
   return apiFetch<StatsResponse>('/stats');
 }
+
+/** Subscribe to real-time score updates via WebSocket. Returns cleanup function. */
+export function subscribeToScore(
+  address: string,
+  onMessage: (data: any) => void,
+  onError?: (error: Event) => void,
+): () => void {
+  const wsUrl = API_BASE.replace(/^http/, 'ws');
+  const ws = new WebSocket(`${wsUrl}/stream/${address}`);
+
+  ws.onmessage = (event) => {
+    try {
+      const parsed = JSON.parse(event.data);
+      onMessage(parsed);
+    } catch {
+      onMessage(event.data);
+    }
+  };
+
+  ws.onerror = (event) => {
+    onError?.(event);
+  };
+
+  return () => {
+    ws.close();
+  };
+}

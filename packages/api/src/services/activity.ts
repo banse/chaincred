@@ -30,5 +30,7 @@ export async function getWalletActivity(address: string): Promise<WalletActivity
     uniqueRecipients: (row.recipient_addresses ?? []).length,
     chainProtocolPairs: row.chain_protocol_pairs ?? [],
     distinctGasPrices: (row.gas_price_set ?? []).length,
+    distinctTxHours: (row.tx_hour_set ?? []).length,
+    create2Deployments: Number(row.create2_deployments ?? 0),
   };
 }

@@ -31,6 +31,10 @@ export interface WalletActivity {
   chainProtocolPairs: string[];
   /** PRD 5.2 — Distinct gas prices used (rounded to gwei) */
   distinctGasPrices: number;
+  /** PRD 4.4 — Distinct UTC hours (0–23) the wallet transacted in */
+  distinctTxHours: number;
+  /** PRD 4.2 — Contract deployments via CREATE2 factory contracts */
+  create2Deployments: number;
 }
 
 export interface WalletProfile {

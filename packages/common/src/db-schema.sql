@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS wallet_activity (
   recipient_addresses TEXT[] NOT NULL DEFAULT '{}',
   chain_protocol_pairs TEXT[] NOT NULL DEFAULT '{}',
   gas_price_set TEXT[] NOT NULL DEFAULT '{}',
+  tx_hour_set TEXT[] NOT NULL DEFAULT '{}',
+  create2_deployments INTEGER NOT NULL DEFAULT 0,
   updated_at BIGINT NOT NULL DEFAULT 0
 );
 

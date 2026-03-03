@@ -23,7 +23,10 @@ export function calculateBuilderScore(activity: WalletActivity): CategoryScore {
     focusScore = Math.min(Math.round(ratio * 800), 160);
   }
 
-  const raw = Math.min(deployScore + chainScore + constructorScore + focusScore, MAX_CATEGORY_SCORE);
+  // Signal 5: CREATE2 deployments — 50 pts each, cap 150
+  const create2Score = Math.min(activity.create2Deployments * 50, 150);
+
+  const raw = Math.min(deployScore + chainScore + constructorScore + focusScore + create2Score, MAX_CATEGORY_SCORE);
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.builder,

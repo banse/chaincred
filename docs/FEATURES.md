@@ -35,8 +35,9 @@ Measures onchain creation activity with four signals that reward volume, cross-c
 | Multi-chain deployments | 80 per chain | 320 |
 | Constructor complexity | sqrt(avg bytes) x 15 | 200 |
 | Deployment focus ratio | ratio x 800 | 160 |
+| CREATE2 deployments | 50 per CREATE2 deploy | 150 |
 
-Caps sum to 1100 — intentionally over 1000 since no wallet can max all signals simultaneously (the focus ratio drops as total transactions increase). Final capped at 1000.
+Caps sum to 1250 — intentionally over 1000 since no wallet can max all signals simultaneously (the focus ratio drops as total transactions increase). Final capped at 1000.
 
 ### Governance Score (25%)
 
@@ -60,6 +61,7 @@ Time-weighted consistency. The hardest signal to fake.
 | Wallet age | 100 per year | 400 |
 | Bear market activity | 10 per bear-market tx | 300 |
 | Consistency (active months / wallet age) | ratio x 300 | 300 |
+| Activity entropy (distinct tx hours / 24) | (hours/24) x 200 | 200 |
 
 Three bear market windows are tracked: Nov 2018 - Mar 2019, May 2021 - Nov 2021, and Nov 2022 - Jan 2023. Transactions during these periods are counted separately because activity during market downturns is a strong signal of genuine engagement.
 
@@ -217,6 +219,7 @@ The REST API runs on [Hono](https://hono.dev/) (Bun runtime) and serves all scor
 | GET | `/v1/leaderboard` | Top wallets by score (with category and pagination filters) |
 | GET | `/v1/stats` | Platform statistics (wallets scored, chains indexed) |
 | GET | `/v1/proof/:address` | Merkle proof for a wallet's score |
+| WS | `/v1/stream/:address` | Real-time score updates via WebSocket |
 
 ### Rate limiting
 
@@ -292,13 +295,42 @@ ChainCred queries the Ethereum Attestation Service (EAS) GraphQL API to look up 
 
 ---
 
+## Verification Widget
+
+A standalone Web Component for embedding ChainCred verification into any page. Uses Shadow DOM — no framework dependencies.
+
+```html
+<script src="https://your-cdn.com/chaincred-verify.js"></script>
+<chaincred-verify
+  wallet="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+  min-score="500"
+  required-badges="builder,governor"
+  api-url="https://api.chaincred.xyz/v1"
+/>
+```
+
+### Attributes
+
+| Attribute | Description | Default |
+|-----------|-------------|---------|
+| `wallet` | Ethereum address to verify | (required) |
+| `min-score` | Minimum score threshold for PASS | `0` |
+| `required-badges` | Comma-separated badge types that must be earned | (none) |
+| `api-url` | ChainCred API base URL | `http://localhost:3001/v1` |
+
+The widget fetches score and badge data from the API, then renders a pass/fail card with the score, sybil confidence level, and earned badge chips. Build standalone with `bun run --filter @chaincred/frontend build:widget`.
+
+A live demo is available at `http://localhost:5173/widget` when the dev server is running.
+
+---
+
 ## Infrastructure
 
 ### Database
 
 PostgreSQL stores indexed wallet activity and Merkle proofs. The schema tracks:
 
-- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set
+- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set, tx hour set, CREATE2 deployments
 - `merkle_proofs` — per-wallet Merkle proofs (address, score, proof array, root hash, creation timestamp)
 
 Migrations run automatically via `bun run migrate`.
@@ -315,16 +347,16 @@ Migrations run automatically via `bun run migrate`.
 
 **GitHub Actions** runs three workflows:
 
-- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 62 tests (46 scoring + 16 API), builds and tests Solidity contracts, checks Solidity formatting
+- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 68 tests (48 scoring + 20 API), builds and tests Solidity contracts, checks Solidity formatting
 - **Weekly Merkle** (Monday 06:00 UTC, or manual) — Generates the Merkle tree against a PostgreSQL service and outputs the root for onchain submission
 - **Deploy Contracts** (manual trigger) — Deploys all 3 contracts to Sepolia or mainnet via Foundry with Etherscan verification. Supports dry-run mode.
 
 ### Testing
 
-62 automated tests cover:
+68 automated tests cover:
 
-- **Scoring engine** (46 tests) — Category calculators with multi-signal formulas, badge evaluation (trusted + power-user criteria), sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests, builder multi-signal tests
-- **API** (16 tests) — Health check, address validation, CORS, rate limiting, all route responses. Tests work with or without PostgreSQL/Redis running.
+- **Scoring engine** (48 tests) — Category calculators with multi-signal formulas, badge evaluation (trusted + power-user criteria), sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests
+- **API** (20 tests) — Health check, address validation, CORS, rate limiting, all route responses, WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup). Tests work with or without PostgreSQL/Redis running.
 
 ---
 
