@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS wallet_activity (
   protocol_categories TEXT[] NOT NULL DEFAULT '{}',
   failed_transactions INTEGER NOT NULL DEFAULT 0,
   total_calldata_bytes BIGINT NOT NULL DEFAULT 0,
+  recipient_addresses TEXT[] NOT NULL DEFAULT '{}',
+  chain_protocol_pairs TEXT[] NOT NULL DEFAULT '{}',
+  gas_price_set TEXT[] NOT NULL DEFAULT '{}',
   updated_at BIGINT NOT NULL DEFAULT 0
 );
 

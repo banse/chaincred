@@ -45,6 +45,7 @@ export function handleGovernanceVote(chainId: number, tx: any): ProcessedEvent {
     governanceSubtype: getGovernanceSubtype(tx.input || ''),
     txStatus: 1,
     calldataBytes: 0,
+    gasPriceGwei: '0',
   };
 }
 

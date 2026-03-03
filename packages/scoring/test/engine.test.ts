@@ -20,6 +20,9 @@ function activity(overrides: Partial<WalletActivity> = {}): WalletActivity {
     protocolCategories: ['defi', 'governance', 'social'],
     failedTransactions: 25,
     totalCalldataBytes: 125000,
+    uniqueRecipients: 5,
+    chainProtocolPairs: [],
+    distinctGasPrices: 10,
     ...overrides,
   };
 }
@@ -63,6 +66,9 @@ describe('scoring engine', () => {
       protocolCategories: [],
       failedTransactions: 0,
       totalCalldataBytes: 0,
+      uniqueRecipients: 0,
+      chainProtocolPairs: [],
+      distinctGasPrices: 0,
     });
     const result = calculateScore(empty);
     expect(result.totalScore).toBe(0);

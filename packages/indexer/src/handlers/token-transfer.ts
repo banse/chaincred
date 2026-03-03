@@ -11,5 +11,6 @@ export function handleTokenTransfer(chainId: number, tx: any): ProcessedEvent {
     timestamp: tx.timestamp || 0,
     txStatus: 1,
     calldataBytes: 0,
+    gasPriceGwei: '0',
   };
 }

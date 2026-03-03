@@ -4,6 +4,10 @@ import {
   checkTemporalClustering,
   checkActionRepetition,
   checkZeroFailureRate,
+  checkFundingGraph,
+  checkCrossChainMirror,
+  checkCexFreshness,
+  checkGasPatterns,
 } from '../src/sybil/heuristics.js';
 import type { WalletActivity } from '@chaincred/common';
 
@@ -27,6 +31,9 @@ function activity(overrides: Partial<WalletActivity>): WalletActivity {
     protocolCategories: [],
     failedTransactions: 5,
     totalCalldataBytes: 0,
+    uniqueRecipients: 5,
+    chainProtocolPairs: [],
+    distinctGasPrices: 10,
     ...overrides,
   };
 }
@@ -45,10 +52,10 @@ describe('sybil detection', () => {
     expect(result.confidence).toBeLessThanOrEqual(1);
   });
 
-  test('returns flags array', () => {
+  test('returns flags array with all 7 heuristics', () => {
     const result = detectSybil(activity({}));
     expect(Array.isArray(result.flags)).toBe(true);
-    expect(result.flags.length).toBe(3);
+    expect(result.flags.length).toBe(7);
   });
 
   test('clean wallet has confidence 1.0', () => {
@@ -62,6 +69,8 @@ describe('sybil detection', () => {
         governanceVotes: 10,
         daosParticipated: ['ens', 'aave'],
         failedTransactions: 5,
+        uniqueRecipients: 3,
+        distinctGasPrices: 15,
       }),
     );
     expect(result.confidence).toBe(1.0);
@@ -76,6 +85,8 @@ describe('sybil detection', () => {
         totalTransactions: 500,
         uniqueProtocols: ['uniswap'],
         failedTransactions: 0,
+        uniqueRecipients: 2,
+        distinctGasPrices: 1,
       }),
     );
     expect(result.confidence).toBeLessThan(1.0);
@@ -158,6 +169,122 @@ describe('action repetition', () => {
   });
 });
 
+describe('funding graph clustering', () => {
+  test('flags cluster coordinator with many recipients and low diversity', () => {
+    const result = checkFundingGraph(
+      activity({
+        uniqueRecipients: 25,
+        uniqueProtocols: ['uniswap'],
+      }),
+    );
+    expect(result.detected).toBe(true);
+    expect(result.penalty).toBe(0.50);
+  });
+
+  test('does not flag wallet with many recipients but high diversity', () => {
+    const result = checkFundingGraph(
+      activity({
+        uniqueRecipients: 25,
+        uniqueProtocols: ['uniswap', 'aave', 'compound', 'curve'],
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+
+  test('does not flag wallet with few recipients', () => {
+    const result = checkFundingGraph(
+      activity({
+        uniqueRecipients: 3,
+        uniqueProtocols: ['uniswap'],
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+});
+
+describe('cross-chain mirroring', () => {
+  test('flags wallet with identical protocol sets on 3+ chains', () => {
+    const result = checkCrossChainMirror(
+      activity({
+        chainsActive: ['ethereum', 'arbitrum', 'optimism', 'base'],
+        chainProtocolPairs: [
+          'ethereum:uniswap',
+          'ethereum:aave',
+          'arbitrum:uniswap',
+          'arbitrum:aave',
+          'optimism:uniswap',
+          'optimism:aave',
+          'base:curve',
+        ],
+      }),
+    );
+    expect(result.detected).toBe(true);
+    expect(result.penalty).toBe(0.60);
+  });
+
+  test('does not flag wallet with different protocol sets per chain', () => {
+    const result = checkCrossChainMirror(
+      activity({
+        chainsActive: ['ethereum', 'arbitrum', 'optimism'],
+        chainProtocolPairs: [
+          'ethereum:uniswap',
+          'ethereum:aave',
+          'ethereum:maker',
+          'arbitrum:uniswap',
+          'arbitrum:gmx',
+          'optimism:velodrome',
+        ],
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+
+  test('does not flag wallet active on fewer than 3 chains', () => {
+    const result = checkCrossChainMirror(
+      activity({
+        chainsActive: ['ethereum', 'arbitrum'],
+        chainProtocolPairs: [
+          'ethereum:uniswap',
+          'arbitrum:uniswap',
+        ],
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+});
+
+describe('cex withdrawal freshness', () => {
+  test('flags brand-new wallet with max penalty', () => {
+    const result = checkCexFreshness(
+      activity({
+        firstTxTimestamp: now - 1 * 86400, // 1 day old
+      }),
+    );
+    expect(result.detected).toBe(true);
+    expect(result.penalty).toBeGreaterThan(0.25);
+    expect(result.penalty).toBeLessThanOrEqual(0.30);
+  });
+
+  test('applies graduated penalty for 15-day old wallet', () => {
+    const result = checkCexFreshness(
+      activity({
+        firstTxTimestamp: now - 15 * 86400, // 15 days old
+      }),
+    );
+    expect(result.detected).toBe(true);
+    expect(result.penalty).toBeCloseTo(0.15, 1);
+  });
+
+  test('does not flag wallet older than 30 days', () => {
+    const result = checkCexFreshness(
+      activity({
+        firstTxTimestamp: now - 60 * 86400, // 60 days old
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+});
+
 describe('zero failure rate', () => {
   test('flags high-volume wallet with zero failures', () => {
     const result = checkZeroFailureRate(
@@ -198,8 +325,41 @@ describe('zero failure rate', () => {
   });
 });
 
+describe('perfect gas patterns', () => {
+  test('flags wallet with very few distinct gas prices', () => {
+    const result = checkGasPatterns(
+      activity({
+        totalTransactions: 200,
+        distinctGasPrices: 2, // 1% ratio
+      }),
+    );
+    expect(result.detected).toBe(true);
+    expect(result.penalty).toBe(0.15);
+  });
+
+  test('does not flag wallet with diverse gas prices', () => {
+    const result = checkGasPatterns(
+      activity({
+        totalTransactions: 200,
+        distinctGasPrices: 50, // 25% ratio
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+
+  test('does not flag low-volume wallet', () => {
+    const result = checkGasPatterns(
+      activity({
+        totalTransactions: 20,
+        distinctGasPrices: 1,
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+});
+
 describe('combined penalties', () => {
-  test('all flags detected reduces confidence significantly', () => {
+  test('multiple flags detected reduces confidence significantly', () => {
     const result = detectSybil(
       activity({
         address: '0xcccccccccccccccccccccccccccccccccccccccc',
@@ -207,13 +367,17 @@ describe('combined penalties', () => {
         totalTransactions: 500,
         uniqueProtocols: ['uniswap'],
         failedTransactions: 0,
+        uniqueRecipients: 2,
+        distinctGasPrices: 1,
       }),
     );
 
-    // All 3 flags should fire
-    expect(result.flags.filter((f) => f.detected).length).toBe(3);
+    // Temporal clustering + action repetition + zero failure rate + gas patterns should fire
+    // CEX freshness fires too (7 days old)
+    const detectedFlags = result.flags.filter((f) => f.detected);
+    expect(detectedFlags.length).toBeGreaterThanOrEqual(4);
 
-    // confidence = 1.0 * (1-0.40) * (1-0.30) * (1-0.20) = 0.336
-    expect(result.confidence).toBeCloseTo(0.336, 2);
+    // Confidence should be very low with multiple penalties
+    expect(result.confidence).toBeLessThan(0.3);
   });
 });

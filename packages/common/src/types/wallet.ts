@@ -21,6 +21,12 @@ export interface WalletActivity {
   failedTransactions: number;
   /** PRD 4.6 — Total calldata bytes across all transactions */
   totalCalldataBytes: number;
+  /** PRD 5.2 — Distinct addresses this wallet sent value to */
+  uniqueRecipients: number;
+  /** PRD 5.2 — Chain:protocol pairs for cross-chain mirroring detection */
+  chainProtocolPairs: string[];
+  /** PRD 5.2 — Distinct gas prices used (rounded to gwei) */
+  distinctGasPrices: number;
 }
 
 export interface WalletProfile {

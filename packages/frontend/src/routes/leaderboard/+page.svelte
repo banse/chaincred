@@ -15,6 +15,17 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
 
+  const isCategory = $derived(category !== 'overall');
+
+  function categoryLabel(cat: string): string {
+    return cat.replace(/([A-Z])/g, ' $1').trim();
+  }
+
+  function categoryRaw(entry: any): number {
+    if (!isCategory || !entry.breakdown?.[category]) return 0;
+    return Math.round(entry.breakdown[category].raw);
+  }
+
   async function load(cat: string) {
     loading = true;
     error = null;
@@ -42,7 +53,7 @@
     {/if}
   </div>
 
-  <div class="flex gap-2 overflow-x-auto pb-2">
+  <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
     {#each categories as cat}
       <button
         class="shrink-0 rounded-lg px-3 py-1.5 text-sm capitalize {category === cat
@@ -50,7 +61,7 @@
           : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'}"
         onclick={() => (category = cat)}
       >
-        {cat.replace(/([A-Z])/g, ' $1').trim()}
+        {categoryLabel(cat)}
       </button>
     {/each}
   </div>
@@ -77,6 +88,9 @@
             <th class="px-4 py-3">Rank</th>
             <th class="px-4 py-3">Address</th>
             <th class="px-4 py-3">Score</th>
+            {#if isCategory}
+              <th class="px-4 py-3 capitalize">{categoryLabel(category)}</th>
+            {/if}
             <th class="px-4 py-3">Sybil</th>
           </tr>
         </thead>
@@ -87,12 +101,15 @@
                 <td class="px-4 py-3"><div class="h-4 w-6 animate-pulse rounded bg-[var(--color-bg)]"></div></td>
                 <td class="px-4 py-3"><div class="h-4 w-32 animate-pulse rounded bg-[var(--color-bg)]"></div></td>
                 <td class="px-4 py-3"><div class="h-4 w-10 animate-pulse rounded bg-[var(--color-bg)]"></div></td>
+                {#if isCategory}
+                  <td class="px-4 py-3"><div class="h-4 w-10 animate-pulse rounded bg-[var(--color-bg)]"></div></td>
+                {/if}
                 <td class="px-4 py-3"><div class="h-4 w-10 animate-pulse rounded bg-[var(--color-bg)]"></div></td>
               </tr>
             {/each}
           {:else if !data || data.entries.length === 0}
             <tr>
-              <td colspan="4" class="px-4 py-8 text-center text-[var(--color-text-muted)]">
+              <td colspan={isCategory ? 5 : 4} class="px-4 py-8 text-center text-[var(--color-text-muted)]">
                 No leaderboard data yet.
               </td>
             </tr>
@@ -110,7 +127,20 @@
                     {entry.address.slice(0, 6)}...{entry.address.slice(-4)}
                   </a>
                 </td>
-                <td class="px-4 py-3 font-semibold">{Math.round(entry.score)}</td>
+                <td class="px-4 py-3">
+                  <span class="font-semibold">{Math.round(entry.score)}</span>
+                  <div class="mt-1 h-[3px] w-full max-w-[80px] rounded-full bg-[var(--color-bg)]">
+                    <div
+                      class="h-full rounded-full bg-[var(--color-primary)]"
+                      style="width: {(entry.score / 1000) * 100}%"
+                    ></div>
+                  </div>
+                </td>
+                {#if isCategory}
+                  <td class="px-4 py-3 text-sm text-[var(--color-accent)]">
+                    {categoryRaw(entry)} / 1000
+                  </td>
+                {/if}
                 <td class="px-4 py-3 text-sm text-[var(--color-text-muted)]">
                   {(entry.sybilMultiplier * 100).toFixed(0)}%
                 </td>

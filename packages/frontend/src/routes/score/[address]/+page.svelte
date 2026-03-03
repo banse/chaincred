@@ -62,7 +62,7 @@
     </div>
   {:else if scoreData}
     <div class="grid gap-8 lg:grid-cols-2">
-      <ExpertiseCard score={scoreData} />
+      <ExpertiseCard score={scoreData} {address} />
       <ScoreRadar breakdown={scoreData.breakdown} />
     </div>
     <div class="grid gap-8 lg:grid-cols-2">

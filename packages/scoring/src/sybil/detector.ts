@@ -2,14 +2,22 @@ import type { WalletActivity, SybilResult, SybilPenalty } from '@chaincred/commo
 import {
   checkTemporalClustering,
   checkActionRepetition,
+  checkFundingGraph,
+  checkCrossChainMirror,
+  checkCexFreshness,
   checkZeroFailureRate,
+  checkGasPatterns,
 } from './heuristics.js';
 
 export function detectSybil(activity: WalletActivity): SybilResult {
   const penalties: SybilPenalty[] = [
     checkTemporalClustering(activity),
     checkActionRepetition(activity),
+    checkFundingGraph(activity),
+    checkCrossChainMirror(activity),
+    checkCexFreshness(activity),
     checkZeroFailureRate(activity),
+    checkGasPatterns(activity),
   ];
 
   let confidence = 1.0;

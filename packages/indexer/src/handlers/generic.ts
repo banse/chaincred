@@ -16,6 +16,7 @@ export function handleGenericTransaction(chainId: number, tx: any): ProcessedEve
       timestamp: tx.timestamp || 0,
       txStatus: 1,
       calldataBytes: 0,
+      gasPriceGwei: '0',
     };
   }
 
@@ -29,5 +30,6 @@ export function handleGenericTransaction(chainId: number, tx: any): ProcessedEve
     timestamp: tx.timestamp || 0,
     txStatus: 1,
     calldataBytes: 0,
+    gasPriceGwei: '0',
   };
 }

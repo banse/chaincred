@@ -18,6 +18,7 @@ export interface ProcessedEvent {
   governanceSubtype?: GovernanceSubtype;
   txStatus: number;
   calldataBytes: number;
+  gasPriceGwei: string;
   timestamp: number;
 }
 
@@ -31,7 +32,7 @@ export async function processEvents(
     maxNumBlocks: 2000,
     transactions: [{}],
     fieldSelection: {
-      transaction: ['Hash', 'From', 'To', 'Input', 'Value', 'BlockNumber', 'Status'],
+      transaction: ['Hash', 'From', 'To', 'Input', 'Value', 'BlockNumber', 'Status', 'GasPrice'],
       block: ['Number', 'Timestamp'],
     },
   });
@@ -69,10 +70,11 @@ export async function processEvents(
       }
     }
 
-    // Enrich all events with status and calldata
+    // Enrich all events with status, calldata, and gas price
     event.txStatus = (tx as any).status ?? 1;
     const input = tx.input || '0x';
     event.calldataBytes = input.length > 2 ? Math.floor((input.length - 2) / 2) : 0;
+    event.gasPriceGwei = Math.round(Number((tx as any).gasPrice ?? 0) / 1e9).toString();
 
     events.push(event);
   }

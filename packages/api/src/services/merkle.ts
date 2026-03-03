@@ -104,6 +104,9 @@ export async function buildMerkleTree(): Promise<MerkleTree> {
       protocolCategories: row.protocol_categories ?? [],
       failedTransactions: Number(row.failed_transactions ?? 0),
       totalCalldataBytes: Number(row.total_calldata_bytes ?? 0),
+      uniqueRecipients: (row.recipient_addresses ?? []).length,
+      chainProtocolPairs: row.chain_protocol_pairs ?? [],
+      distinctGasPrices: (row.gas_price_set ?? []).length,
     };
 
     const { totalScore } = calculateScore(activity);

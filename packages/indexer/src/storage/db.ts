@@ -28,6 +28,8 @@ export function createStorage(): StorageLayer {
       const isBearMarketTx = isInBearMarket(event.timestamp) ? 1 : 0;
       const isFailed = event.txStatus === 0 ? 1 : 0;
       const monthStr = new Date(event.timestamp * 1000).toISOString().slice(0, 7); // "YYYY-MM"
+      const recipientAddr = event.to?.toLowerCase() ?? null;
+      const chainProtocolPair = event.protocol ? `${chainSlug}:${event.protocol}` : null;
 
       await sql`
         INSERT INTO wallet_activity (
@@ -35,7 +37,9 @@ export function createStorage(): StorageLayer {
           unique_protocols, chains_active, governance_votes, daos_participated,
           proposals_created, delegation_events, bear_market_txs,
           active_month_set, protocol_categories,
-          failed_transactions, total_calldata_bytes, updated_at
+          failed_transactions, total_calldata_bytes,
+          recipient_addresses, chain_protocol_pairs, gas_price_set,
+          updated_at
         )
         VALUES (
           ${address},
@@ -53,6 +57,9 @@ export function createStorage(): StorageLayer {
           ${event.protocolCategory ? sql.array([event.protocolCategory]) : sql.array([], 25)},
           ${isFailed},
           ${event.calldataBytes},
+          ${recipientAddr ? sql.array([recipientAddr]) : sql.array([], 25)},
+          ${chainProtocolPair ? sql.array([chainProtocolPair]) : sql.array([], 25)},
+          ${sql.array([event.gasPriceGwei])},
           ${Date.now()}
         )
         ON CONFLICT (address) DO UPDATE SET
@@ -90,6 +97,21 @@ export function createStorage(): StorageLayer {
           END,
           failed_transactions = wallet_activity.failed_transactions + ${isFailed},
           total_calldata_bytes = wallet_activity.total_calldata_bytes + ${event.calldataBytes},
+          recipient_addresses = CASE
+            WHEN ${recipientAddr ?? null} IS NOT NULL AND NOT (${recipientAddr ?? ''} = ANY(wallet_activity.recipient_addresses))
+            THEN array_append(wallet_activity.recipient_addresses, ${recipientAddr ?? ''})
+            ELSE wallet_activity.recipient_addresses
+          END,
+          chain_protocol_pairs = CASE
+            WHEN ${chainProtocolPair ?? null} IS NOT NULL AND NOT (${chainProtocolPair ?? ''} = ANY(wallet_activity.chain_protocol_pairs))
+            THEN array_append(wallet_activity.chain_protocol_pairs, ${chainProtocolPair ?? ''})
+            ELSE wallet_activity.chain_protocol_pairs
+          END,
+          gas_price_set = CASE
+            WHEN NOT (${event.gasPriceGwei} = ANY(wallet_activity.gas_price_set))
+            THEN array_append(wallet_activity.gas_price_set, ${event.gasPriceGwei})
+            ELSE wallet_activity.gas_price_set
+          END,
           updated_at = ${Date.now()}
       `;
     },
