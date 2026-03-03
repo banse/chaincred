@@ -85,7 +85,7 @@ Measures breadth of protocol engagement across protocols, chains, and domains.
 | Protocol category coverage | 80 per category | 400 |
 | Early protocol adoption | 60 per early-adopted protocol | 300 |
 
-Six protocol categories are tracked: DeFi, Social, Governance, Infrastructure, Gaming, and Builder Tools. Covering more domains shows broader expertise than depth in a single category. Early protocol adoption awards points for using a protocol within 6 months of its launch — each of the 16 tracked protocols has a `launchTimestamp` and interactions before `launch + 6 months` are counted.
+Six protocol categories are tracked: DeFi, Social, Governance, Infrastructure, Gaming, and Builder Tools. Covering more domains shows broader expertise than depth in a single category. Early protocol adoption awards points for using a protocol within 6 months of its launch — each of the 20 tracked protocols has a `launchTimestamp` and interactions before `launch + 6 months` are counted.
 
 ### Complexity Score (10%)
 
@@ -456,6 +456,8 @@ Migrations run automatically via `bun run migrate`.
 
 **Production:** `docker compose --profile prod up` builds optimized images using a multi-stage Dockerfile (`oven/bun:1-alpine` base). No bind mounts — source is copied into the image.
 
+**E2E testing:** `docker compose --profile e2e up -d anvil` starts an Anvil mainnet fork (block 19000000) for contract deployment and on-chain verification tests. See the E2E Testing section below.
+
 **Merkle generation:** `docker compose run --profile tools merkle-gen` runs the weekly tree generation.
 
 ### CI/CD
@@ -467,6 +469,8 @@ Migrations run automatically via `bun run migrate`.
 - **Deploy Contracts** (manual trigger) — Deploys all 3 contracts to Sepolia or mainnet via Foundry with Etherscan verification. Supports dry-run mode.
 
 ### Testing
+
+#### Unit & Integration Tests
 
 103 automated tests cover:
 
@@ -494,6 +498,7 @@ All configuration is via environment variables. See `.env.example`:
 | `API_BASE_URL` | API base URL for Farcaster Frame callbacks | `http://localhost:3001/v1` |
 | `FRONTEND_URL` | Frontend URL for Frame "View Details" links | `http://localhost:5173` |
 | `ETHERSCAN_API_KEY` | Etherscan V2 API key for verified source + internal tx enrichment | — |
+| `FORK_RPC_URL` | RPC URL for Anvil mainnet fork (E2E testing) | `https://eth.llamarpc.com` |
 
 ---
 
@@ -581,3 +586,82 @@ When triggered, applies a 0.15 (15%) penalty to the sybil confidence multiplier.
 When `ETHERSCAN_API_KEY` is set, the score service fetches internal transaction counts from Etherscan's `txlistinternal` API. Internal transactions represent contract-to-contract calls — a direct measure of interaction sophistication.
 
 Scored as `sqrt(count) × 15`, capped at 200 (complexity category). The square root scaling rewards depth of interaction while preventing runaway scores from extremely active wallets.
+
+---
+
+## E2E Testing
+
+A self-contained end-to-end testing harness seeds realistic wallet data, deploys contracts to a local Anvil mainnet fork, and verifies every API endpoint works against real-shaped data — including on-chain Merkle verification.
+
+### Running
+
+```bash
+bun run e2e
+```
+
+Requires Docker (for PostgreSQL + Redis) and Foundry (anvil, cast, forge). The script auto-detects whether Anvil is installed locally or falls back to the Docker `e2e` profile.
+
+### Seed Data
+
+The seed script (`bun run seed`) inserts 15 wallet profiles into the database covering the full range of wallet archetypes:
+
+| Profile | Key signals |
+|---------|------------|
+| OG builder | 12 deploys, 6 chains, 48 active months, 6 DAOs, verified, reasoned votes, Safe |
+| DeFi builder | 8 deploys, 4 chains, CREATE2, high calldata |
+| Governor | 25 votes, 5 DAOs, 3 proposals, 5 delegations, reasoned, Safe |
+| Governance whale | 50 votes, 8 DAOs, 5 proposals, 8 delegations, treasury execution |
+| OG contributor | 2015 first tx, 3 bear periods, 36 months, 10 DAOs |
+| Builder+governor | 6 deploys, 4 verified, 15 votes, 4 DAOs |
+| Early adopter | 6 early adoptions, 20+ protocols, 6 categories |
+| Verified deployer | 15 deploys, 5 verified, 6 CREATE2 |
+| DeFi power user | 8 flashloans, 12 permits, 5 smart wallet, 3 ERC-4337 |
+| L2-native | 0 deploys, 5 L2 chains, 15 protocols |
+| Safe operator | 5 Safe exec, 3 DAOs, 4 delegations |
+| Sybil-like | 500 txs in 20 days, 1 protocol, 0 failures, 200 MEV |
+| MEV-adjacent | 300 txs, 100 MEV interactions (33%) |
+| Average user | Moderate everything, no badges |
+| Excluded (burn addr) | Minimal data, set as excluded in registry |
+
+The seed script is idempotent via `ON CONFLICT ... DO UPDATE` and also generates timeline events for each wallet.
+
+### Test Phases
+
+The E2E script runs 10 phases in order:
+
+1. Start PostgreSQL + Redis via Docker Compose
+2. Start Anvil (local binary or Docker fallback)
+3. Run DB migration
+4. Seed 15 wallet profiles
+5. Deploy contracts to Anvil (`deploy-anvil.sh`)
+6. Generate Merkle tree
+7. Publish Merkle root on-chain
+8. Start API server
+9. Run ~35 endpoint assertions (curl + jq)
+10. Cleanup (kill processes, stop containers)
+
+### Assertions (~35)
+
+| Category | Count | Key checks |
+|----------|-------|------------|
+| Score | 6 | totalScore range, 5 category raws > 0, sybilMultiplier, rawScore |
+| Excluded | 2 | totalScore == 0, sybilMultiplier == 0 |
+| Badges | 3 | 7 types returned, builder earned, og earned |
+| Sybil | 3 | sybil confidence < 0.5, 3+ flags, clean wallet > 0.8 |
+| Leaderboard | 3 | entries > 0, sorted desc, category filter |
+| Timeline | 2 | events non-empty, have type field |
+| Card | 2 | returns SVG, ChainCred branding |
+| Merkle Proof | 3 | proof exists, array non-empty, root present |
+| On-chain Verify | 2 | verified: true, epoch > 0 |
+| Attestation | 1 | returns 200 |
+| Appeals | 3 | POST pending, GET pending, sybilMultiplier floor |
+| Webhooks | 2 | POST returns id, GET list non-empty |
+| Admin | 1 | bear periods >= 3 |
+| Frame | 1 | fc:frame meta |
+| Stats | 2 | walletsScored >= 10, chainsIndexed == 6 |
+
+Output is colorized with PASS/FAIL per assertion and a summary count at the end. Exit code 0 if all pass, 1 if any fail.
+
+### Anvil Configuration
+
+The Anvil fork uses block 19000000 (~Jan 2024) for deterministic state with stable ENS + EAS contracts. Contracts are deployed with Anvil's default account 0 key. The `deploy-anvil.sh` script also sets the burn address (`0x...dEaD`) as excluded in the ChainCredRegistry.

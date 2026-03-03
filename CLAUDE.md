@@ -25,10 +25,20 @@ bun test packages/scoring/test/engine.test.ts
 bun run dev:api          # API with hot reload (Hono on Bun)
 bun run dev:frontend     # SvelteKit dev server
 
+# Database
+bun run migrate          # Run schema migration
+bun run seed             # Seed 15 test wallet profiles
+
+# E2E testing (requires Docker + Foundry)
+bun run e2e              # Full E2E suite: infra, seed, deploy, assertions
+
 # Contracts (Foundry)
 cd packages/contracts && forge build
 cd packages/contracts && forge test
 cd packages/contracts && forge fmt
+
+# Anvil deployment (local fork)
+bash packages/contracts/script/deploy-anvil.sh
 ```
 
 ## Architecture
@@ -59,7 +69,7 @@ Sybil detection (`packages/scoring/src/sybil/`) produces a confidence multiplier
 
 ### API Routes
 
-All routes prefixed `/v1/` in `packages/api/src/routes/`: score, badges, sybil, attestation, verify, leaderboard. Rate limited at 100 req/60s per IP.
+All routes prefixed `/v1/` in `packages/api/src/routes/`: score, badges, sybil, attestation, verify, leaderboard, stats, proof, timeline, card, frame, admin, webhooks, appeals, ws. Rate limited at 100 req/60s per IP.
 
 ### Contracts
 
