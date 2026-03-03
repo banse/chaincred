@@ -14,6 +14,8 @@ export async function getWalletActivity(address: string): Promise<WalletActivity
     firstTxTimestamp: Number(row.first_tx_timestamp),
     totalTransactions: Number(row.total_transactions),
     contractsDeployed: Number(row.contracts_deployed),
+    deploymentChains: row.deployment_chains ?? [],
+    deploymentCalldataBytes: Number(row.deployment_calldata_bytes ?? 0),
     uniqueProtocols: row.unique_protocols ?? [],
     chainsActive: row.chains_active ?? [],
     governanceVotes: Number(row.governance_votes),

@@ -3,6 +3,10 @@ export interface WalletActivity {
   firstTxTimestamp: number;
   totalTransactions: number;
   contractsDeployed: number;
+  /** PRD 4.2 — Chains on which this wallet deployed contracts */
+  deploymentChains: string[];
+  /** PRD 4.2 — Total calldata bytes of deployment transactions (constructor size) */
+  deploymentCalldataBytes: number;
   uniqueProtocols: string[];
   chainsActive: string[];
   governanceVotes: number;

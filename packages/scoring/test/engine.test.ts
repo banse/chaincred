@@ -9,6 +9,8 @@ function activity(overrides: Partial<WalletActivity> = {}): WalletActivity {
     firstTxTimestamp: 1577836800, // 2020-01-01
     totalTransactions: 500,
     contractsDeployed: 5,
+    deploymentChains: ['ethereum', 'arbitrum'],
+    deploymentCalldataBytes: 15000,
     uniqueProtocols: ['uniswap', 'aave', 'compound', 'maker', 'curve'],
     chainsActive: ['ethereum', 'arbitrum', 'optimism'],
     governanceVotes: 20,
@@ -55,6 +57,8 @@ describe('scoring engine', () => {
       firstTxTimestamp: Math.floor(Date.now() / 1000),
       totalTransactions: 0,
       contractsDeployed: 0,
+      deploymentChains: [],
+      deploymentCalldataBytes: 0,
       uniqueProtocols: [],
       chainsActive: [],
       governanceVotes: 0,
@@ -116,5 +120,42 @@ describe('enriched signals', () => {
     const complex = calculateScore(activity({ totalCalldataBytes: 500000 }));
     const simple = calculateScore(activity({ totalCalldataBytes: 0 }));
     expect(complex.breakdown.complexity.raw).toBeGreaterThan(simple.breakdown.complexity.raw);
+  });
+});
+
+describe('builder signals', () => {
+  test('multi-chain deployments boost builder score', () => {
+    const multiChain = calculateScore(
+      activity({ deploymentChains: ['ethereum', 'arbitrum', 'optimism'] }),
+    );
+    const singleChain = calculateScore(activity({ deploymentChains: ['ethereum'] }));
+    expect(multiChain.breakdown.builder.raw).toBeGreaterThan(singleChain.breakdown.builder.raw);
+  });
+
+  test('constructor complexity boosts builder score', () => {
+    const complex = calculateScore(activity({ deploymentCalldataBytes: 50000 }));
+    const simple = calculateScore(activity({ deploymentCalldataBytes: 100 }));
+    expect(complex.breakdown.builder.raw).toBeGreaterThan(simple.breakdown.builder.raw);
+  });
+
+  test('deployment focus ratio boosts builder score', () => {
+    const focused = calculateScore(
+      activity({ contractsDeployed: 10, totalTransactions: 20 }),
+    );
+    const unfocused = calculateScore(
+      activity({ contractsDeployed: 10, totalTransactions: 5000 }),
+    );
+    expect(focused.breakdown.builder.raw).toBeGreaterThan(unfocused.breakdown.builder.raw);
+  });
+
+  test('zero deployments produces zero builder score', () => {
+    const result = calculateScore(
+      activity({
+        contractsDeployed: 0,
+        deploymentChains: [],
+        deploymentCalldataBytes: 0,
+      }),
+    );
+    expect(result.breakdown.builder.raw).toBe(0);
   });
 });

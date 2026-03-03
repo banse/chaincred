@@ -27,11 +27,16 @@ Every wallet gets a single score from **0 to 1000**, computed from five categori
 
 ### Builder Score (30%)
 
-Measures onchain creation activity.
+Measures onchain creation activity with four signals that reward volume, cross-chain fluency, constructor sophistication, and builder-focused behavior.
 
 | Signal | Points | Cap |
 |--------|--------|-----|
-| Contract deployments | 100 per contract | 1000 |
+| Contract deployments | 60 per contract | 420 |
+| Multi-chain deployments | 80 per chain | 320 |
+| Constructor complexity | sqrt(avg bytes) x 15 | 200 |
+| Deployment focus ratio | ratio x 800 | 160 |
+
+Caps sum to 1100 — intentionally over 1000 since no wallet can max all signals simultaneously (the focus ratio drops as total transactions increase). Final capped at 1000.
 
 ### Governance Score (25%)
 
@@ -84,15 +89,15 @@ Failed transactions contribute positively — the PRD notes "failures = pushing 
 
 ### How scoring works in practice
 
-A wallet that has deployed 5 contracts, cast 10 votes across 3 DAOs, authored 1 proposal, delegated 4 times, has been active for 5 years with 30 bear-market txs and 48 active months, used 10 protocols across 4 chains covering 3 categories, and has 100 transactions with 10% failure rate and 250-byte average calldata would score roughly:
+A wallet that has deployed 5 contracts across 2 chains with 15,000 total constructor bytes and 500 total transactions, cast 10 votes across 3 DAOs, authored 1 proposal, delegated 4 times, has been active for 5 years with 30 bear-market txs and 48 active months, used 10 protocols across 4 chains covering 3 categories, and has 10% failure rate and 250-byte average calldata would score roughly:
 
-- Builder: min(500, 1000) = 500 x 0.30 = **150**
+- Builder: min(300 + 160 + 200 + 8, 1000) = 668 x 0.30 = **200**
 - Governance: min(400 + 360 + 150 + 90, 1000) = 1000 x 0.25 = **250**
 - Temporal: min(400 + 300 + 240, 1000) = 940 x 0.20 = **188**
 - Protocol Diversity: min(350 + 200 + 240, 1000) = 790 x 0.15 = **119**
 - Complexity: min(300 + 200 + 316, 1000) = 816 x 0.10 = **82**
 
-**Total: 789** (before sybil multiplier)
+**Total: 839** (before sybil multiplier)
 
 ---
 
@@ -293,7 +298,7 @@ ChainCred queries the Ethereum Attestation Service (EAS) GraphQL API to look up 
 
 PostgreSQL stores indexed wallet activity and Merkle proofs. The schema tracks:
 
-- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set
+- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set
 - `merkle_proofs` — per-wallet Merkle proofs (address, score, proof array, root hash, creation timestamp)
 
 Migrations run automatically via `bun run migrate`.
@@ -310,15 +315,15 @@ Migrations run automatically via `bun run migrate`.
 
 **GitHub Actions** runs three workflows:
 
-- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 52 tests (36 scoring + 16 API), builds and tests Solidity contracts, checks Solidity formatting
+- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 56 tests (40 scoring + 16 API), builds and tests Solidity contracts, checks Solidity formatting
 - **Weekly Merkle** (Monday 06:00 UTC, or manual) — Generates the Merkle tree against a PostgreSQL service and outputs the root for onchain submission
 - **Deploy Contracts** (manual trigger) — Deploys all 3 contracts to Sepolia or mainnet via Foundry with Etherscan verification. Supports dry-run mode.
 
 ### Testing
 
-52 automated tests cover:
+56 automated tests cover:
 
-- **Scoring engine** (36 tests) — Category calculators with multi-signal formulas, badge evaluation, sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests
+- **Scoring engine** (40 tests) — Category calculators with multi-signal formulas, badge evaluation, sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests, builder multi-signal tests
 - **API** (16 tests) — Health check, address validation, CORS, rate limiting, all route responses. Tests work with or without PostgreSQL/Redis running.
 
 ---

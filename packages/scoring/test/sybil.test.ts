@@ -20,6 +20,8 @@ function activity(overrides: Partial<WalletActivity>): WalletActivity {
     firstTxTimestamp: 1577836800, // 2020-01-01
     totalTransactions: 100,
     contractsDeployed: 0,
+    deploymentChains: [],
+    deploymentCalldataBytes: 0,
     uniqueProtocols: [],
     chainsActive: ['ethereum'],
     governanceVotes: 0,

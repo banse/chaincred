@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS wallet_activity (
   first_tx_timestamp BIGINT NOT NULL DEFAULT 0,
   total_transactions INTEGER NOT NULL DEFAULT 0,
   contracts_deployed INTEGER NOT NULL DEFAULT 0,
+  deployment_chains TEXT[] NOT NULL DEFAULT '{}',
+  deployment_calldata_bytes BIGINT NOT NULL DEFAULT 0,
   unique_protocols TEXT[] NOT NULL DEFAULT '{}',
   chains_active TEXT[] NOT NULL DEFAULT '{}',
   governance_votes INTEGER NOT NULL DEFAULT 0,

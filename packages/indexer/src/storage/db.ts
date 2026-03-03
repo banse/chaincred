@@ -34,6 +34,7 @@ export function createStorage(): StorageLayer {
       await sql`
         INSERT INTO wallet_activity (
           address, first_tx_timestamp, total_transactions, contracts_deployed,
+          deployment_chains, deployment_calldata_bytes,
           unique_protocols, chains_active, governance_votes, daos_participated,
           proposals_created, delegation_events, bear_market_txs,
           active_month_set, protocol_categories,
@@ -46,6 +47,8 @@ export function createStorage(): StorageLayer {
           ${event.timestamp},
           1,
           ${event.type === 'deployment' ? 1 : 0},
+          ${event.type === 'deployment' ? sql.array([chainSlug]) : sql.array([], 25)},
+          ${event.type === 'deployment' ? event.calldataBytes : 0},
           ${event.protocol ? sql.array([event.protocol]) : sql.array([], 25)},
           ${sql.array([chainSlug])},
           ${event.type === 'governance' ? 1 : 0},
@@ -66,6 +69,12 @@ export function createStorage(): StorageLayer {
           first_tx_timestamp = LEAST(wallet_activity.first_tx_timestamp, EXCLUDED.first_tx_timestamp),
           total_transactions = wallet_activity.total_transactions + 1,
           contracts_deployed = wallet_activity.contracts_deployed + ${event.type === 'deployment' ? 1 : 0},
+          deployment_chains = CASE
+            WHEN ${event.type === 'deployment' ? chainSlug : null} IS NOT NULL AND NOT (${event.type === 'deployment' ? chainSlug : ''} = ANY(wallet_activity.deployment_chains))
+            THEN array_append(wallet_activity.deployment_chains, ${event.type === 'deployment' ? chainSlug : ''})
+            ELSE wallet_activity.deployment_chains
+          END,
+          deployment_calldata_bytes = wallet_activity.deployment_calldata_bytes + ${event.type === 'deployment' ? event.calldataBytes : 0},
           unique_protocols = CASE
             WHEN ${event.protocol ?? null} IS NOT NULL AND NOT (${event.protocol ?? ''} = ANY(wallet_activity.unique_protocols))
             THEN array_append(wallet_activity.unique_protocols, ${event.protocol ?? ''})
