@@ -7,6 +7,7 @@ import {
   checkCexFreshness,
   checkZeroFailureRate,
   checkGasPatterns,
+  checkMevActivity,
 } from './heuristics.js';
 
 export function detectSybil(activity: WalletActivity): SybilResult {
@@ -18,6 +19,7 @@ export function detectSybil(activity: WalletActivity): SybilResult {
     checkCexFreshness(activity),
     checkZeroFailureRate(activity),
     checkGasPatterns(activity),
+    checkMevActivity(activity),
   ];
 
   let confidence = 1.0;

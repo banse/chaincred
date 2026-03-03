@@ -48,6 +48,8 @@ export function createStorage(): StorageLayer {
       const isEarlyAdoption = event.isEarlyAdoption ? 1 : 0;
       const isIndependentVote = event.voteSupport !== undefined && event.voteSupport !== 1 ? 1 : 0;
       const isSafeExec = event.isSafeExec ? 1 : 0;
+      const isReasonedVote = event.isReasonedVote ? 1 : 0;
+      const isMevInteraction = event.isMevInteraction ? 1 : 0;
       const ts = event.timestamp;
 
       await sql`
@@ -64,7 +66,7 @@ export function createStorage(): StorageLayer {
           permit_interactions, flashloan_transactions, smart_wallet_interactions,
           erc4337_operations,
           early_adoptions, independent_votes, earliest_deployment_timestamp,
-          safe_executions, updated_at
+          safe_executions, reasoned_votes, mev_interactions, updated_at
         )
         VALUES (
           ${address},
@@ -100,6 +102,8 @@ export function createStorage(): StorageLayer {
           ${isIndependentVote},
           ${event.type === 'deployment' ? ts : 0},
           ${isSafeExec},
+          ${isReasonedVote},
+          ${isMevInteraction},
           ${Date.now()}
         )
         ON CONFLICT (address) DO UPDATE SET
@@ -182,6 +186,8 @@ export function createStorage(): StorageLayer {
           early_adoptions = wallet_activity.early_adoptions + ${isEarlyAdoption},
           independent_votes = wallet_activity.independent_votes + ${isIndependentVote},
           safe_executions = wallet_activity.safe_executions + ${isSafeExec},
+          reasoned_votes = wallet_activity.reasoned_votes + ${isReasonedVote},
+          mev_interactions = wallet_activity.mev_interactions + ${isMevInteraction},
           earliest_deployment_timestamp = CASE
             WHEN ${event.type === 'deployment' ? ts : 0} > 0
             THEN CASE

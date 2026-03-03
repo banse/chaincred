@@ -57,6 +57,14 @@ export interface WalletActivity {
   earliestDeploymentTimestamp: number;
   /** PRD 4.3 — Safe multi-sig execTransaction calls */
   safeExecutions: number;
+  /** PRD 4.2 — Deployed contracts with verified source on Etherscan */
+  verifiedDeployments: number;
+  /** PRD 4.3 — Governance votes cast with reason (castVoteWithReason variants) */
+  reasonedVotes: number;
+  /** PRD 5.2 — Interactions with known MEV bot/searcher contracts */
+  mevInteractions: number;
+  /** PRD 4.6 — Internal transactions (contract-to-contract calls) via Etherscan */
+  internalTransactions: number;
 }
 
 export interface WalletProfile {

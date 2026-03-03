@@ -27,7 +27,7 @@ Every wallet gets a single score from **0 to 1000**, computed from five categori
 
 ### Builder Score (30%)
 
-Measures onchain creation activity with six signals that reward volume, cross-chain fluency, constructor sophistication, builder-focused behavior, and account abstraction infrastructure.
+Measures onchain creation activity with eight signals that reward volume, cross-chain fluency, constructor sophistication, builder-focused behavior, account abstraction infrastructure, and verified source code.
 
 | Signal | Points | Cap |
 |--------|--------|-----|
@@ -38,8 +38,9 @@ Measures onchain creation activity with six signals that reward volume, cross-ch
 | CREATE2 deployments | 50 per CREATE2 deploy | 150 |
 | ERC-4337 operations | 40 per handleOps call | 200 |
 | Deployment longevity | 60 per 6-month period since first deploy | 180 |
+| Verified source deployments | 80 per verified contract | 240 |
 
-ERC-4337 operations detect `handleOps` and `handleAggregatedOps` calls to EntryPoint contracts — operating AA infrastructure (bundler/paymaster activity) is a strong builder signal. Deployment longevity rewards wallets with long-standing deployed contracts — 60 points per 6-month period since their first deployment. Caps sum to 1630 — intentionally over 1000 since no wallet can max all signals simultaneously. Final capped at 1000.
+ERC-4337 operations detect `handleOps` and `handleAggregatedOps` calls to EntryPoint contracts — operating AA infrastructure (bundler/paymaster activity) is a strong builder signal. Deployment longevity rewards wallets with long-standing deployed contracts — 60 points per 6-month period since their first deployment. Verified source detection uses the Etherscan V2 API to check if deployed contracts have verified source code — publishing source is a strong quality signal. Caps sum to 1870 — intentionally over 1000 since no wallet can max all signals simultaneously. Final capped at 1000.
 
 ### Governance Score (25%)
 
@@ -55,8 +56,9 @@ Measures DAO participation depth and quality. The indexer classifies governance 
 | Cross-chain governance | 50 per governance chain | 150 |
 | Independent voting | 40 per against/abstain vote | 120 |
 | Safe multi-sig executions | 50 per execTransaction | 200 |
+| Reasoned votes | 50 per castVoteWithReason | 150 |
 
-Proposals are the highest-value signal — creating proposals is rarer and more meaningful than voting. Treasury execution (queue/execute calls) indicates deep DAO operational involvement. Cross-chain governance rewards wallets that participate in DAOs across multiple networks. Independent voting parses the `support` parameter from castVote calldata — votes with support=0 (against) or support=2 (abstain) indicate independent thinking rather than rubber-stamping. Safe multi-sig detection identifies `execTransaction` (selector `0x6a761202`) calls — wallets that co-sign and execute Safe multi-sig transactions demonstrate collaborative governance.
+Proposals are the highest-value signal — creating proposals is rarer and more meaningful than voting. Treasury execution (queue/execute calls) indicates deep DAO operational involvement. Cross-chain governance rewards wallets that participate in DAOs across multiple networks. Independent voting parses the `support` parameter from castVote calldata — votes with support=0 (against) or support=2 (abstain) indicate independent thinking rather than rubber-stamping. Safe multi-sig detection identifies `execTransaction` (selector `0x6a761202`) calls — wallets that co-sign and execute Safe multi-sig transactions demonstrate collaborative governance. Reasoned votes track `castVoteWithReason`, `castVoteWithReasonAndParams`, and `castVoteWithReasonAndParamsBySig` calls — providing reasoning alongside votes demonstrates deliberative governance participation.
 
 ### Temporal Score (20%)
 
@@ -97,8 +99,9 @@ Measures sophistication of individual interactions.
 | EIP-712 permit interactions | 20 per permit call | 200 |
 | Flashloan transactions | 100 per flashloan | 300 |
 | Smart wallet interactions | 30 per EntryPoint call | 150 |
+| Internal transaction count | sqrt(count) x 15 | 200 |
 
-Failed transactions contribute positively — the PRD notes "failures = pushing limits." EIP-712 permit detection covers ERC-2612 `permit()` and Permit2 calls — advanced token approval patterns. Flashloan detection identifies Aave V2/V3, Balancer, Uniswap V3, and dYdX flashloan calls — representing DeFi composability expertise. Smart wallet interactions count calls to ERC-4337 EntryPoint v0.6 and v0.7 contracts.
+Failed transactions contribute positively — the PRD notes "failures = pushing limits." EIP-712 permit detection covers ERC-2612 `permit()` and Permit2 calls — advanced token approval patterns. Flashloan detection identifies Aave V2/V3, Balancer, Uniswap V3, and dYdX flashloan calls — representing DeFi composability expertise. Smart wallet interactions count calls to ERC-4337 EntryPoint v0.6 and v0.7 contracts. Internal transaction count uses Etherscan's `txlistinternal` API to measure contract-to-contract call depth — a direct proxy for interaction sophistication.
 
 ### How scoring works in practice
 
@@ -163,7 +166,7 @@ Tracked DAOs include ENS, Uniswap, Aave, Compound, MakerDAO, Arbitrum DAO, Optim
 
 ## Sybil Detection
 
-Every wallet is analyzed for bot-like behavior using seven heuristics. Each heuristic that fires reduces the wallet's confidence multiplier:
+Every wallet is analyzed for bot-like behavior using eight heuristics. Each heuristic that fires reduces the wallet's confidence multiplier:
 
 ### Temporal Clustering (penalty: -40%)
 Detects wallets with compressed activity windows. If a wallet averages more than 20 transactions per day and is less than 90 days old, it gets flagged. A real user with 500 transactions over 3 years is normal; 500 transactions in 2 weeks is suspicious.
@@ -185,6 +188,9 @@ Flags newly created wallets funded from centralized exchanges. The penalty gradu
 
 ### Perfect Gas Patterns (penalty: -15%)
 Detects uniform gas pricing that suggests automation. If a wallet has 50+ transactions and fewer than 5% distinct gas prices relative to total transactions, it gets flagged. Real users encounter varying network conditions resulting in diverse gas prices, while bots typically hardcode or use a narrow range of gas settings.
+
+### MEV Bot Activity (penalty: -15%)
+Detects wallets primarily interacting with known MEV bot/searcher contracts. If a wallet has more than 20 MEV interactions AND those interactions comprise more than 30% of total transactions, it gets flagged. Both conditions are required (conservative) — MEV bot behavior inflates transaction counts artificially through automated arbitrage, sandwich attacks, and liquidations. Six known MEV contract addresses are tracked.
 
 ### How penalties combine
 
@@ -436,7 +442,7 @@ Webhook support for score update notifications. Webhooks are persisted in Postgr
 
 PostgreSQL stores indexed wallet activity and Merkle proofs. The schema tracks:
 
-- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set, tx hour set, CREATE2 deployments, bear market periods, execution events, governance chains, permit interactions, flashloan transactions, smart wallet interactions, ERC-4337 operations, early adoptions, independent votes, earliest deployment timestamp, safe executions
+- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set, tx hour set, CREATE2 deployments, bear market periods, execution events, governance chains, permit interactions, flashloan transactions, smart wallet interactions, ERC-4337 operations, early adoptions, independent votes, earliest deployment timestamp, safe executions, verified deployments, reasoned votes, MEV interactions, internal transactions
 - `merkle_proofs` — per-wallet Merkle proofs (address, score, proof array, root hash, creation timestamp)
 - `webhooks` — persistent webhook subscriptions (id, address, url, secret, created_at)
 - `appeals` — sybil appeal queue (id, address, reason, status, created_at)
@@ -456,15 +462,15 @@ Migrations run automatically via `bun run migrate`.
 
 **GitHub Actions** runs three workflows:
 
-- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 97 tests (61 scoring + 36 API), builds and tests Solidity contracts, checks Solidity formatting
+- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 103 tests (67 scoring + 36 API), builds and tests Solidity contracts, checks Solidity formatting
 - **Weekly Merkle** (Monday 06:00 UTC, or manual) — Generates the Merkle tree against a PostgreSQL service and outputs the root for onchain submission
 - **Deploy Contracts** (manual trigger) — Deploys all 3 contracts to Sepolia or mainnet via Foundry with Etherscan verification. Supports dry-run mode.
 
 ### Testing
 
-97 automated tests cover:
+103 automated tests cover:
 
-- **Scoring engine** (61 tests) — Category calculators with multi-signal formulas, badge evaluation (governor proposal requirement, trusted Safe multi-sig + governance depth, power-user criteria), sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests (deployment longevity), governance signals (execution, cross-chain, independent voting, Safe executions), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets), protocol diversity signals (early adoption)
+- **Scoring engine** (67 tests) — Category calculators with multi-signal formulas, badge evaluation (governor proposal requirement, trusted Safe multi-sig + governance depth, power-user criteria), sybil detection with all 8 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns, MEV bot activity), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests (deployment longevity, verified source), governance signals (execution, cross-chain, independent voting, Safe executions, reasoned votes), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets, internal transactions), protocol diversity signals (early adoption)
 - **API** (36 tests) — Health check, address validation, CORS, rate limiting, all route responses, timeline endpoint (validation, fields, badge milestones, DB-dependent), card image (SVG content, validation), Farcaster Frame (valid/invalid address), admin bear-period endpoints (list, auth), webhook CRUD (register, list, validation), appeal validation (invalid address, missing fields), WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup). Tests work with or without PostgreSQL/Redis running.
 
 ---
@@ -487,6 +493,7 @@ All configuration is via environment variables. See `.env.example`:
 | `ADMIN_API_KEY` | Admin API key for bear market period management | — |
 | `API_BASE_URL` | API base URL for Farcaster Frame callbacks | `http://localhost:3001/v1` |
 | `FRONTEND_URL` | Frontend URL for Frame "View Details" links | `http://localhost:5173` |
+| `ETHERSCAN_API_KEY` | Etherscan V2 API key for verified source + internal tx enrichment | — |
 
 ---
 
@@ -532,3 +539,45 @@ The indexer detects Safe `execTransaction` calls (selector `0x6a761202`) as a go
 
 - **Scoring:** 50 points per Safe execution, capped at 200 (governance category)
 - **Badge:** The Trusted badge now requires `safeExecutions >= 2` along with participation in 3+ DAOs and 3+ delegation events — replacing the previous proposal-based proxy with real multi-sig signer tracking
+
+---
+
+## Verified Source Detection
+
+When `ETHERSCAN_API_KEY` is set, the score service enriches wallet data with verified contract source code detection via the Etherscan V2 API. Wallets that have deployed contracts with verified source code on Etherscan receive additional builder score points (80 per verified contract, capped at 240).
+
+The Etherscan client includes a 240ms throttle to respect rate limits and a 24-hour in-memory cache. Supported chains: Ethereum (1), Arbitrum (42161), Optimism (10), Base (8453), Polygon (137). zkSync (324) is not supported by Etherscan V2.
+
+Enrichment is fail-open — if the API key is not set or any error occurs, scoring proceeds without the enrichment.
+
+---
+
+## Reasoned Votes Detection
+
+The indexer detects governance votes cast with reasoning via three function selectors:
+
+- `castVoteWithReason(uint256,uint8,string)` — `0x7b3c71d3`
+- `castVoteWithReasonAndParams(uint256,uint8,string,bytes)` — `0x5f398a14`
+- `castVoteWithReasonAndParamsBySig(...)` — `0x15373e3d`
+
+Providing reasoning alongside governance votes is a strong signal of deliberative participation — it requires more effort than simple voting and demonstrates thought leadership. Scored at 50 points per reasoned vote, capped at 150 (governance category).
+
+---
+
+## MEV Detection
+
+The sybil detection system identifies wallets that primarily interact with known MEV bot/searcher contracts. Six known MEV addresses are tracked (high-frequency bots, Flashbots MEV-Share router, sandwich bots, liquidation bots, and searcher contracts).
+
+The heuristic requires both conditions to fire (conservative):
+1. More than 20 MEV interactions
+2. MEV interactions comprise more than 30% of total transactions
+
+When triggered, applies a 0.15 (15%) penalty to the sybil confidence multiplier.
+
+---
+
+## Internal Transaction Depth
+
+When `ETHERSCAN_API_KEY` is set, the score service fetches internal transaction counts from Etherscan's `txlistinternal` API. Internal transactions represent contract-to-contract calls — a direct measure of interaction sophistication.
+
+Scored as `sqrt(count) × 15`, capped at 200 (complexity category). The square root scaling rewards depth of interaction while preventing runaway scores from extremely active wallets.

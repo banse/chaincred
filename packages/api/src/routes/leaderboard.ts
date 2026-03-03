@@ -41,6 +41,10 @@ function mapRow(row: any): WalletActivity {
     independentVotes: Number(row.independent_votes ?? 0),
     earliestDeploymentTimestamp: Number(row.earliest_deployment_timestamp ?? 0),
     safeExecutions: Number(row.safe_executions ?? 0),
+    verifiedDeployments: Number(row.verified_deployments ?? 0),
+    reasonedVotes: Number(row.reasoned_votes ?? 0),
+    mevInteractions: Number(row.mev_interactions ?? 0),
+    internalTransactions: Number(row.internal_transactions ?? 0),
   };
 }
 

@@ -27,8 +27,11 @@ export function calculateGovernanceScore(activity: WalletActivity): CategoryScor
   // Safe multi-sig execTransaction calls: 50 pts each, capped at 200
   const safeScore = Math.min(activity.safeExecutions * 50, 200);
 
+  // Reasoned votes (castVoteWithReason): 50 pts each, capped at 150
+  const reasonedScore = Math.min(activity.reasonedVotes * 50, 150);
+
   const raw = Math.min(
-    voteScore + daoScore + proposalScore + delegateScore + executionScore + crossChainGovScore + independentVoteScore + safeScore,
+    voteScore + daoScore + proposalScore + delegateScore + executionScore + crossChainGovScore + independentVoteScore + safeScore + reasonedScore,
     MAX_CATEGORY_SCORE,
   );
   return {

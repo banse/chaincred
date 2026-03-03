@@ -38,8 +38,11 @@ export function calculateBuilderScore(activity: WalletActivity): CategoryScore {
   const longevityScore =
     deploymentAgeMonths >= 6 ? Math.min(Math.floor(deploymentAgeMonths / 6) * 60, 180) : 0;
 
+  // Signal 8: Verified source deployments — 80 pts each, cap 240
+  const verifiedScore = Math.min(activity.verifiedDeployments * 80, 240);
+
   const raw = Math.min(
-    deployScore + chainScore + constructorScore + focusScore + create2Score + erc4337Score + longevityScore,
+    deployScore + chainScore + constructorScore + focusScore + create2Score + erc4337Score + longevityScore + verifiedScore,
     MAX_CATEGORY_SCORE,
   );
   return {

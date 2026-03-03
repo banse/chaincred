@@ -5,6 +5,7 @@ import { createPublicClient, http, type Address } from 'viem';
 import { mainnet } from 'viem/chains';
 import { getWalletActivity } from './activity.js';
 import { resolveEns } from './ens.js';
+import { EtherscanClient } from './etherscan.js';
 
 const REGISTRY_ABI = [
   {
@@ -59,6 +60,25 @@ export async function getScore(address: string): Promise<WalletScore> {
 
   const activity = await getWalletActivity(address);
   if (!activity) throw new Error('Address not found');
+
+  // Etherscan enrichment: verified source + internal tx count (fail-open)
+  const etherscanKey = process.env.ETHERSCAN_API_KEY;
+  if (etherscanKey) {
+    try {
+      const client = new EtherscanClient(etherscanKey);
+      // Verified deployments: check Ethereum mainnet for deployed contracts
+      if (activity.contractsDeployed > 0) {
+        const verified = await client.isVerifiedContract(address, 1);
+        if (verified) activity.verifiedDeployments = (activity.verifiedDeployments || 0) + 1;
+      }
+      // Internal transaction count from Ethereum mainnet
+      const internalCount = await client.getInternalTxCount(address, 1);
+      if (internalCount > 0) activity.internalTransactions = internalCount;
+    } catch {
+      // Fail-open: skip enrichment on any error
+    }
+  }
+
   const result = calculateScore(activity);
 
   // PRD 13.6 — If appeal is pending, floor sybilMultiplier at 0.5 (frozen, not zeroed)

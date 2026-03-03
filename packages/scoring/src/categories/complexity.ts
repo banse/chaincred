@@ -30,8 +30,11 @@ export function calculateComplexityScore(activity: WalletActivity): CategoryScor
   // Smart contract wallet interactions (ERC-4337 EntryPoint): 30 pts each, capped at 150
   const smartWalletScore = Math.min(activity.smartWalletInteractions * 30, 150);
 
+  // Internal transaction count: sqrt(count) * 15, capped at 200
+  const internalTxScore = Math.min(Math.round(Math.sqrt(activity.internalTransactions) * 15), 200);
+
   const raw = Math.min(
-    volumeScore + failRatioScore + avgCalldataScore + permitScore + flashloanScore + smartWalletScore,
+    volumeScore + failRatioScore + avgCalldataScore + permitScore + flashloanScore + smartWalletScore + internalTxScore,
     MAX_CATEGORY_SCORE,
   );
   return {

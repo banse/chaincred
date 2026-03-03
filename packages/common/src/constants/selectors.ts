@@ -23,6 +23,13 @@ export const ERC4337_SELECTORS = new Set([
 /** PRD 4.3 — Safe multi-sig execTransaction selector */
 export const SAFE_EXEC_SELECTOR = '0x6a761202';
 
+/** PRD 4.3 — Reasoned vote function selectors (castVoteWithReason variants) */
+export const REASONED_VOTE_SELECTORS = new Set([
+  '0x7b3c71d3', // castVoteWithReason(uint256,uint8,string)
+  '0x5f398a14', // castVoteWithReasonAndParams(uint256,uint8,string,bytes)
+  '0x15373e3d', // castVoteWithReasonAndParamsBySig(...)
+]);
+
 /** PRD 4.6 — ERC-4337 EntryPoint contract addresses */
 export const ERC4337_ENTRYPOINTS = new Set([
   '0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789', // EntryPoint v0.6

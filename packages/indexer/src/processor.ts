@@ -11,6 +11,8 @@ import {
   ERC4337_SELECTORS,
   ERC4337_ENTRYPOINTS,
   SAFE_EXEC_SELECTOR,
+  REASONED_VOTE_SELECTORS,
+  MEV_CONTRACT_ADDRESSES,
 } from '@chaincred/common';
 
 export interface ProcessedEvent {
@@ -32,6 +34,8 @@ export interface ProcessedEvent {
   isSmartWallet?: boolean;
   isErc4337?: boolean;
   isSafeExec?: boolean;
+  isReasonedVote?: boolean;
+  isMevInteraction?: boolean;
   isEarlyAdoption?: boolean;
   voteSupport?: number;
   gasPriceGwei: string;
@@ -116,11 +120,17 @@ export async function processEvents(
       if (FLASHLOAN_SELECTORS.has(selector)) event.isFlashloan = true;
       if (ERC4337_SELECTORS.has(selector)) event.isErc4337 = true;
       if (selector === SAFE_EXEC_SELECTOR) event.isSafeExec = true;
+      if (REASONED_VOTE_SELECTORS.has(selector)) event.isReasonedVote = true;
     }
 
     // Detect smart wallet interactions (tx.to is an ERC-4337 EntryPoint)
     if (tx.to && ERC4337_ENTRYPOINTS.has(tx.to.toLowerCase())) {
       event.isSmartWallet = true;
+    }
+
+    // Detect MEV bot interactions (tx.to is a known MEV contract)
+    if (tx.to && MEV_CONTRACT_ADDRESSES.has(tx.to.toLowerCase())) {
+      event.isMevInteraction = true;
     }
 
     events.push(event);

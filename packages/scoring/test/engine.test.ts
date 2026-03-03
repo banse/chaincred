@@ -39,6 +39,10 @@ function activity(overrides: Partial<WalletActivity> = {}): WalletActivity {
     independentVotes: 0,
     earliestDeploymentTimestamp: 0,
     safeExecutions: 0,
+    verifiedDeployments: 0,
+    reasonedVotes: 0,
+    mevInteractions: 0,
+    internalTransactions: 0,
     ...overrides,
   };
 }
@@ -100,6 +104,10 @@ describe('scoring engine', () => {
       independentVotes: 0,
       earliestDeploymentTimestamp: 0,
       safeExecutions: 0,
+      verifiedDeployments: 0,
+      reasonedVotes: 0,
+      mevInteractions: 0,
+      internalTransactions: 0,
     });
     const result = calculateScore(empty);
     expect(result.totalScore).toBe(0);
@@ -405,5 +413,34 @@ describe('deployment longevity signal', () => {
       activity({ earliestDeploymentTimestamp: now - 30 * 86400 }), // 30 days ago
     );
     expect(withOld.breakdown.builder.raw).toBeGreaterThan(withRecent.breakdown.builder.raw);
+  });
+});
+
+describe('verified source signal', () => {
+  test('verified deployments boost builder score', () => {
+    const withVerified = calculateScore(activity({ verifiedDeployments: 3 }));
+    const without = calculateScore(activity({ verifiedDeployments: 0 }));
+    expect(withVerified.breakdown.builder.raw).toBeGreaterThan(without.breakdown.builder.raw);
+  });
+});
+
+describe('reasoned votes signal', () => {
+  test('reasoned votes boost governance score', () => {
+    const base = { governanceVotes: 5, daosParticipated: ['ens'], proposalsCreated: 0, delegationEvents: 0 };
+    const withReasoned = calculateScore(activity({ ...base, reasonedVotes: 3 }));
+    const without = calculateScore(activity({ ...base, reasonedVotes: 0 }));
+    expect(withReasoned.breakdown.governance.raw).toBeGreaterThan(
+      without.breakdown.governance.raw,
+    );
+  });
+});
+
+describe('internal transactions signal', () => {
+  test('internal transactions boost complexity score', () => {
+    const withInternal = calculateScore(activity({ internalTransactions: 100 }));
+    const without = calculateScore(activity({ internalTransactions: 0 }));
+    expect(withInternal.breakdown.complexity.raw).toBeGreaterThan(
+      without.breakdown.complexity.raw,
+    );
   });
 });

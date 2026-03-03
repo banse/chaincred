@@ -5,7 +5,8 @@ export type SybilFlag =
   | 'cross-chain-mirroring'
   | 'cex-withdrawal-freshness'
   | 'zero-failure-rate'
-  | 'perfect-gas-patterns';
+  | 'perfect-gas-patterns'
+  | 'mev-bot-activity';
 
 export interface SybilPenalty {
   flag: SybilFlag;

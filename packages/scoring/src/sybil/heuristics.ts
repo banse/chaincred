@@ -209,6 +209,36 @@ export function checkZeroFailureRate(activity: WalletActivity): SybilPenalty {
  *
  * Heuristic: if totalTransactions > 50 AND distinctGasPrices / totalTransactions < 0.05, flag it.
  */
+/**
+ * PRD 5.2 — MEV bot activity detection (penalty 0.15)
+ *
+ * Wallets primarily interacting with known MEV bot/searcher contracts have
+ * artificially inflated transaction counts from automated arbitrage, sandwich
+ * attacks, and liquidations. Both conditions are required to avoid false
+ * positives on users who occasionally interact with MEV infrastructure.
+ *
+ * Heuristic: if mevInteractions > 20 AND mevInteractions / totalTransactions > 0.30, flag it.
+ */
+export function checkMevActivity(activity: WalletActivity): SybilPenalty {
+  const highCount = activity.mevInteractions > 20;
+  const highRatio =
+    activity.totalTransactions > 0
+      ? activity.mevInteractions / activity.totalTransactions > 0.30
+      : false;
+
+  const detected = highCount && highRatio;
+
+  return {
+    flag: 'mev-bot-activity',
+    label: 'MEV Bot Activity',
+    penalty: 0.15,
+    detected,
+    details: detected
+      ? `${activity.mevInteractions} MEV interactions (${((activity.mevInteractions / activity.totalTransactions) * 100).toFixed(1)}% of txs)`
+      : 'No MEV bot activity detected',
+  };
+}
+
 export function checkGasPatterns(activity: WalletActivity): SybilPenalty {
   if (activity.totalTransactions < 50 || activity.distinctGasPrices === 0) {
     return {

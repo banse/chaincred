@@ -8,6 +8,7 @@ import {
   checkCrossChainMirror,
   checkCexFreshness,
   checkGasPatterns,
+  checkMevActivity,
 } from '../src/sybil/heuristics.js';
 import type { WalletActivity } from '@chaincred/common';
 
@@ -49,6 +50,10 @@ function activity(overrides: Partial<WalletActivity>): WalletActivity {
     independentVotes: 0,
     earliestDeploymentTimestamp: 0,
     safeExecutions: 0,
+    verifiedDeployments: 0,
+    reasonedVotes: 0,
+    mevInteractions: 0,
+    internalTransactions: 0,
     ...overrides,
   };
 }
@@ -67,10 +72,10 @@ describe('sybil detection', () => {
     expect(result.confidence).toBeLessThanOrEqual(1);
   });
 
-  test('returns flags array with all 7 heuristics', () => {
+  test('returns flags array with all 8 heuristics', () => {
     const result = detectSybil(activity({}));
     expect(Array.isArray(result.flags)).toBe(true);
-    expect(result.flags.length).toBe(7);
+    expect(result.flags.length).toBe(8);
   });
 
   test('clean wallet has confidence 1.0', () => {
@@ -367,6 +372,39 @@ describe('perfect gas patterns', () => {
       activity({
         totalTransactions: 20,
         distinctGasPrices: 1,
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+});
+
+describe('MEV bot activity', () => {
+  test('flags wallet with high MEV interaction count and ratio', () => {
+    const result = checkMevActivity(
+      activity({
+        totalTransactions: 60,
+        mevInteractions: 25, // 41.7% ratio, >20 count
+      }),
+    );
+    expect(result.detected).toBe(true);
+    expect(result.penalty).toBe(0.15);
+  });
+
+  test('does not flag wallet with low MEV count', () => {
+    const result = checkMevActivity(
+      activity({
+        totalTransactions: 30,
+        mevInteractions: 5, // count <= 20
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+
+  test('does not flag wallet with low MEV ratio', () => {
+    const result = checkMevActivity(
+      activity({
+        totalTransactions: 500,
+        mevInteractions: 25, // 5% ratio, below 30% threshold
       }),
     );
     expect(result.detected).toBe(false);
