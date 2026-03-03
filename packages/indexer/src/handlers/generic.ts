@@ -8,7 +8,7 @@ export function handleGenericTransaction(chainId: number, tx: any): ProcessedEve
   if (isGovernanceVote(input)) {
     return {
       chainId,
-      blockNumber: tx.block_number || 0,
+      blockNumber: tx.blockNumber || 0,
       txHash: tx.hash || '',
       from: tx.from || '',
       to: tx.to || '',
@@ -19,7 +19,7 @@ export function handleGenericTransaction(chainId: number, tx: any): ProcessedEve
 
   return {
     chainId,
-    blockNumber: tx.block_number || 0,
+    blockNumber: tx.blockNumber || 0,
     txHash: tx.hash || '',
     from: tx.from || '',
     to: tx.to || '',

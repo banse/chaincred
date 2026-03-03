@@ -1,19 +1,10 @@
-import type { WalletBadges, WalletActivity } from '@chaincred/common';
+import type { WalletBadges } from '@chaincred/common';
 import { calculateScore, evaluateBadges } from '@chaincred/scoring';
+import { getWalletActivity } from './activity.js';
 
 export async function getBadges(address: string): Promise<WalletBadges> {
-  // TODO: Fetch real activity data
-  const mockActivity: WalletActivity = {
-    address,
-    firstTxTimestamp: 1609459200,
-    totalTransactions: 150,
-    contractsDeployed: 2,
-    uniqueProtocols: ['uniswap', 'aave', 'compound'],
-    chainsActive: ['ethereum', 'arbitrum'],
-    governanceVotes: 10,
-    daosParticipated: ['ens', 'aave'],
-  };
-
-  const score = calculateScore(mockActivity);
-  return evaluateBadges(mockActivity, score.breakdown);
+  const activity = await getWalletActivity(address);
+  if (!activity) throw new Error('Address not found');
+  const score = calculateScore(activity);
+  return evaluateBadges(activity, score.breakdown);
 }

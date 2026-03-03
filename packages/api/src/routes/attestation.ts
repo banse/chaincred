@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { validateAddress } from '../middleware/validate-address.js';
+import { cache } from '../middleware/cache.js';
 import { getAttestation } from '../services/attestation.js';
 
 export const attestationRoutes = new Hono();
 
-attestationRoutes.get('/:address', validateAddress, async (c) => {
+attestationRoutes.get('/:address', validateAddress, cache(600), async (c) => {
   const address = c.req.param('address');
   const attestation = await getAttestation(address);
   return c.json(attestation);

@@ -9,27 +9,57 @@
   const address = $derived($page.params.address ?? '');
   let scoreData = $state<any>(null);
   let loading = $state(true);
+  let error = $state<string | null>(null);
+
+  async function loadScore(addr: string) {
+    loading = true;
+    error = null;
+    try {
+      scoreData = await fetchScore(addr);
+    } catch (e) {
+      scoreData = null;
+      error = e instanceof Error ? e.message : 'Failed to load score';
+    }
+    loading = false;
+  }
 
   $effect(() => {
     if (!address) return;
-    loading = true;
-    fetchScore(address).then((data) => {
-      scoreData = data;
-      loading = false;
-    });
+    loadScore(address);
   });
 </script>
 
 <div class="space-y-8">
-  <div class="flex items-center gap-3">
+  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
     <h1 class="text-2xl font-bold">Wallet Score</h1>
-    <code class="rounded bg-[var(--color-surface)] px-3 py-1 text-sm text-[var(--color-text-muted)]">
+    <code
+      class="truncate rounded bg-[var(--color-surface)] px-3 py-1 text-sm text-[var(--color-text-muted)]"
+    >
       {address}
     </code>
   </div>
 
   {#if loading}
-    <div class="py-20 text-center text-[var(--color-text-muted)]">Loading score data...</div>
+    <div class="grid gap-8 lg:grid-cols-2">
+      {#each [0, 1] as _}
+        <div class="h-48 animate-pulse rounded-xl bg-[var(--color-surface)]"></div>
+      {/each}
+    </div>
+    <div class="grid gap-8 lg:grid-cols-2">
+      {#each [0, 1] as _}
+        <div class="h-48 animate-pulse rounded-xl bg-[var(--color-surface)]"></div>
+      {/each}
+    </div>
+  {:else if error}
+    <div class="rounded-xl border border-red-500/30 bg-red-500/10 px-6 py-12 text-center">
+      <p class="text-red-400">{error}</p>
+      <button
+        class="mt-4 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm text-white hover:opacity-90"
+        onclick={() => loadScore(address)}
+      >
+        Retry
+      </button>
+    </div>
   {:else if scoreData}
     <div class="grid gap-8 lg:grid-cols-2">
       <ExpertiseCard score={scoreData} />
@@ -40,6 +70,8 @@
       <SybilIndicator {address} />
     </div>
   {:else}
-    <div class="py-20 text-center text-[var(--color-text-muted)]">No score data found.</div>
+    <div class="py-20 text-center text-[var(--color-text-muted)]">
+      No score data found for this wallet.
+    </div>
   {/if}
 </div>

@@ -1,15 +1,41 @@
 import { Hono } from 'hono';
+import { getDb } from '@chaincred/common';
+import type { WalletActivity } from '@chaincred/common';
+import { calculateScore } from '@chaincred/scoring';
+import { cache } from '../middleware/cache.js';
 
 export const leaderboardRoutes = new Hono();
 
-leaderboardRoutes.get('/', async (c) => {
+leaderboardRoutes.get('/', cache(60), async (c) => {
   const category = c.req.query('category') || 'overall';
-  const limit = parseInt(c.req.query('limit') || '50');
-  // TODO: Query from database
-  return c.json({
-    category,
-    entries: [],
-    total: 0,
-    limit,
+  const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
+  const offset = parseInt(c.req.query('offset') || '0');
+
+  const sql = getDb();
+
+  const [{ count }] = await sql`SELECT COUNT(*)::int as count FROM wallet_activity`;
+  const total = Number(count);
+
+  const rows = await sql`
+    SELECT * FROM wallet_activity
+    ORDER BY total_transactions DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+
+  const entries = rows.map((row: any) => {
+    const activity: WalletActivity = {
+      address: row.address,
+      firstTxTimestamp: Number(row.first_tx_timestamp),
+      totalTransactions: Number(row.total_transactions),
+      contractsDeployed: Number(row.contracts_deployed),
+      uniqueProtocols: row.unique_protocols ?? [],
+      chainsActive: row.chains_active ?? [],
+      governanceVotes: Number(row.governance_votes),
+      daosParticipated: row.daos_participated ?? [],
+    };
+    const { totalScore, breakdown, sybilMultiplier } = calculateScore(activity);
+    return { address: row.address, score: totalScore, breakdown, sybilMultiplier };
   });
+
+  return c.json({ category, entries, total, limit, offset });
 });

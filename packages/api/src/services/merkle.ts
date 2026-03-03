@@ -1,0 +1,150 @@
+import { getDb } from '@chaincred/common';
+import type { WalletActivity } from '@chaincred/common';
+import { calculateScore } from '@chaincred/scoring';
+import {
+  keccak256,
+  encodeAbiParameters,
+  parseAbiParameters,
+  type Address,
+  type Hex,
+} from 'viem';
+
+export interface MerkleLeaf {
+  address: Address;
+  score: number;
+  hash: Hex;
+}
+
+export interface MerkleTree {
+  root: Hex;
+  leaves: MerkleLeaf[];
+  proofs: Map<string, Hex[]>;
+}
+
+/** Match OpenZeppelin's double-hash leaf encoding used in ScoreMerkleRoot.sol:
+ *  leaf = keccak256(bytes.concat(keccak256(abi.encode(account, score))))
+ */
+function hashLeaf(address: Address, score: bigint): Hex {
+  const inner = keccak256(
+    encodeAbiParameters(parseAbiParameters('address, uint256'), [address, score]),
+  );
+  return keccak256(`0x${inner.slice(2)}` as Hex);
+}
+
+function hashPair(a: Hex, b: Hex): Hex {
+  // Sort pair for deterministic tree (same as OZ MerkleProof)
+  const [left, right] = a < b ? [a, b] : [b, a];
+  return keccak256(`0x${left.slice(2)}${right.slice(2)}` as Hex);
+}
+
+function buildTree(hashes: Hex[]): { layers: Hex[][]; root: Hex } {
+  if (hashes.length === 0) {
+    return { layers: [[]], root: '0x0000000000000000000000000000000000000000000000000000000000000000' };
+  }
+
+  // Sort leaves for deterministic ordering
+  const sorted = [...hashes].sort();
+  const layers: Hex[][] = [sorted];
+
+  let current = sorted;
+  while (current.length > 1) {
+    const next: Hex[] = [];
+    for (let i = 0; i < current.length; i += 2) {
+      if (i + 1 < current.length) {
+        next.push(hashPair(current[i], current[i + 1]));
+      } else {
+        // Odd node — promote it
+        next.push(current[i]);
+      }
+    }
+    layers.push(next);
+    current = next;
+  }
+
+  return { layers, root: current[0] };
+}
+
+function generateProof(layers: Hex[][], leafIndex: number): Hex[] {
+  const proof: Hex[] = [];
+  let idx = leafIndex;
+
+  for (let i = 0; i < layers.length - 1; i++) {
+    const layer = layers[i];
+    const siblingIdx = idx % 2 === 0 ? idx + 1 : idx - 1;
+    if (siblingIdx < layer.length) {
+      proof.push(layer[siblingIdx]);
+    }
+    idx = Math.floor(idx / 2);
+  }
+
+  return proof;
+}
+
+/** Build a Merkle tree from all scored wallets in the database. */
+export async function buildMerkleTree(): Promise<MerkleTree> {
+  const sql = getDb();
+  const rows = await sql`SELECT * FROM wallet_activity`;
+
+  const leaves: MerkleLeaf[] = [];
+
+  for (const row of rows) {
+    const activity: WalletActivity = {
+      address: row.address,
+      firstTxTimestamp: Number(row.first_tx_timestamp),
+      totalTransactions: Number(row.total_transactions),
+      contractsDeployed: Number(row.contracts_deployed),
+      uniqueProtocols: row.unique_protocols ?? [],
+      chainsActive: row.chains_active ?? [],
+      governanceVotes: Number(row.governance_votes),
+      daosParticipated: row.daos_participated ?? [],
+    };
+
+    const { totalScore } = calculateScore(activity);
+    const address = row.address as Address;
+    const hash = hashLeaf(address, BigInt(totalScore));
+    leaves.push({ address, score: totalScore, hash });
+  }
+
+  const hashes = leaves.map((l) => l.hash);
+  const { layers, root } = buildTree(hashes);
+
+  // Build index from hash → sorted position for proof generation
+  const sorted = [...hashes].sort();
+  const hashToIndex = new Map(sorted.map((h, i) => [h, i]));
+
+  const proofs = new Map<string, Hex[]>();
+  for (const leaf of leaves) {
+    const idx = hashToIndex.get(leaf.hash)!;
+    proofs.set(leaf.address.toLowerCase(), generateProof(layers, idx));
+  }
+
+  return { root, leaves, proofs };
+}
+
+/** Store Merkle proofs in the database for API access. */
+export async function storeMerkleProofs(tree: MerkleTree): Promise<void> {
+  const sql = getDb();
+
+  // Create proofs table if not exists
+  await sql`
+    CREATE TABLE IF NOT EXISTS merkle_proofs (
+      address TEXT PRIMARY KEY,
+      score INTEGER NOT NULL,
+      proof TEXT[] NOT NULL,
+      root TEXT NOT NULL,
+      created_at BIGINT NOT NULL
+    )
+  `;
+
+  // Truncate and re-insert
+  await sql`TRUNCATE merkle_proofs`;
+
+  const now = Date.now();
+  for (const leaf of tree.leaves) {
+    const proof = tree.proofs.get(leaf.address.toLowerCase()) ?? [];
+    await sql`
+      INSERT INTO merkle_proofs (address, score, proof, root, created_at)
+      VALUES (${leaf.address.toLowerCase()}, ${leaf.score}, ${sql.array(proof)}, ${tree.root}, ${now})
+    `;
+  }
+}

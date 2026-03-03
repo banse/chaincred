@@ -1,0 +1,70 @@
+name: Weekly Merkle Tree
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  generate-merkle:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: chaincred
+          POSTGRES_PASSWORD: chaincred
+          POSTGRES_DB: chaincred
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chaincred"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run migrations
+        run: bun run migrate
+        env:
+          DATABASE_URL: postgresql://chaincred:chaincred@localhost:5432/chaincred
+
+      - name: Generate Merkle tree
+        id: merkle
+        run: |
+          OUTPUT=$(bun run packages/api/src/scripts/generate-merkle.ts 2>&1)
+          echo "$OUTPUT"
+          ROOT=$(echo "$OUTPUT" | grep "Root:" | awk '{print $2}')
+          LEAVES=$(echo "$OUTPUT" | grep "Leaves:" | awk '{print $2}')
+          echo "root=$ROOT" >> "$GITHUB_OUTPUT"
+          echo "leaves=$LEAVES" >> "$GITHUB_OUTPUT"
+        env:
+          DATABASE_URL: postgresql://chaincred:chaincred@localhost:5432/chaincred
+
+      - name: Create summary
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Merkle Tree Generated
+
+          | Field | Value |
+          |-------|-------|
+          | Root | \`${{ steps.merkle.outputs.root }}\` |
+          | Leaves | ${{ steps.merkle.outputs.leaves }} |
+          | Epoch | $(date -u +%Y-%W) |
+
+          ### Next step
+          Submit the root on-chain:
+          \`\`\`
+          cast send <SCORE_MERKLE_ADDRESS> "updateMerkleRoot(bytes32)" ${{ steps.merkle.outputs.root }} --rpc-url <RPC_URL> --private-key <KEY>
+          \`\`\`
+          EOF

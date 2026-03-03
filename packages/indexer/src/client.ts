@@ -1,11 +1,12 @@
+import { HypersyncClient as RealHypersyncClient } from '@envio-dev/hypersync-client';
+import type { Query, QueryResponse } from '@envio-dev/hypersync-client';
 import { SUPPORTED_CHAINS } from '@chaincred/common';
-import type { ChainConfig } from '@chaincred/common';
 
 export interface HypersyncClient {
   chainId: number;
   chainName: string;
-  // Placeholder for @envio-dev/hypersync-client instance
-  query: (params: any) => Promise<any>;
+  query: (params: Query) => Promise<QueryResponse>;
+  getHeight: () => Promise<number>;
 }
 
 const HYPERSYNC_URLS: Record<number, string> = {
@@ -24,15 +25,13 @@ export async function createClients(): Promise<Record<number, HypersyncClient>> 
     const url = HYPERSYNC_URLS[chain.id];
     if (!url) continue;
 
+    const hypersync = new RealHypersyncClient({ url, apiToken: '' });
+
     clients[chain.id] = {
       chainId: chain.id,
       chainName: chain.name,
-      query: async (_params: any) => {
-        // TODO: Initialize real HyperSync client
-        // const { HypersyncClient } = await import('@envio-dev/hypersync-client');
-        // return HypersyncClient.new({ url });
-        return { data: [], nextBlock: 0 };
-      },
+      query: (params) => hypersync.get(params),
+      getHeight: () => hypersync.getHeight(),
     };
   }
 

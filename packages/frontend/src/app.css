@@ -15,3 +15,17 @@ body {
   color: var(--color-text);
   font-family: system-ui, -apple-system, sans-serif;
 }
+
+/* Smooth progress bar transitions */
+.progress-fill {
+  transition: width 0.6s ease-out;
+}
+
+/* Hide scrollbar on category buttons */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

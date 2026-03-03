@@ -4,23 +4,17 @@ dist/
 .env
 .env.local
 *.log
-
-# Foundry
-packages/contracts/out/
-packages/contracts/cache/
-packages/contracts/broadcast/
-packages/contracts/deployments/
-
-# SvelteKit
-packages/frontend/.svelte-kit/
-packages/frontend/build/
-
-# Bun
-bun.lockb
-
-# IDE
+.git/
+.github/
 .vscode/
 .idea/
-*.swp
-*.swo
 .DS_Store
+
+# Foundry artifacts
+packages/contracts/out/
+packages/contracts/cache/
+packages/contracts/lib/
+
+# SvelteKit build
+packages/frontend/.svelte-kit/
+packages/frontend/build/

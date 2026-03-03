@@ -1,18 +1,9 @@
-import type { SybilResult, WalletActivity } from '@chaincred/common';
+import type { SybilResult } from '@chaincred/common';
 import { detectSybil } from '@chaincred/scoring';
+import { getWalletActivity } from './activity.js';
 
 export async function getSybilAnalysis(address: string): Promise<SybilResult> {
-  // TODO: Fetch real activity data
-  const mockActivity: WalletActivity = {
-    address,
-    firstTxTimestamp: 1609459200,
-    totalTransactions: 150,
-    contractsDeployed: 2,
-    uniqueProtocols: ['uniswap'],
-    chainsActive: ['ethereum'],
-    governanceVotes: 5,
-    daosParticipated: ['ens'],
-  };
-
-  return detectSybil(mockActivity);
+  const activity = await getWalletActivity(address);
+  if (!activity) throw new Error('Address not found');
+  return detectSybil(activity);
 }
