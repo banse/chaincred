@@ -140,7 +140,7 @@ Tracked DAOs include ENS, Uniswap, Aave, Compound, MakerDAO, Arbitrum DAO, Optim
 
 ## Sybil Detection
 
-Every wallet is analyzed for bot-like behavior using three heuristics. Each heuristic that fires reduces the wallet's confidence multiplier:
+Every wallet is analyzed for bot-like behavior using seven heuristics. Each heuristic that fires reduces the wallet's confidence multiplier:
 
 ### Temporal Clustering (penalty: -40%)
 Detects wallets with compressed activity windows. If a wallet averages more than 20 transactions per day and is less than 90 days old, it gets flagged. A real user with 500 transactions over 3 years is normal; 500 transactions in 2 weeks is suspicious.
@@ -151,15 +151,27 @@ Detects single-protocol farming. If a wallet has over 100 transactions but uses 
 ### Zero Failure Rate (penalty: -20%)
 Detects bot-like perfection. If a wallet has over 200 transactions and has never had a single failed transaction, it gets flagged. Real users inevitably encounter reverts, out-of-gas errors, and other failures. A perfect success rate at high volume suggests automated pre-simulation.
 
+### Funding Graph Clustering (penalty: -50%)
+Detects sybil cluster coordinators — wallets that distribute funds to many recipients. If a wallet has sent to more than 10 unique addresses but uses fewer than 3 protocols, it gets flagged. Sybil farms are typically funded by a single source wallet that distributes to 10+ wallets with similar low-diversity behavior.
+
+### Cross-Chain Mirroring (penalty: -60%)
+Detects programmatic behavior replication across chains. The heuristic groups a wallet's protocol interactions by chain and checks if 3 or more chains share an identical protocol set. Automated sybil farms often execute the same sequence of protocol interactions across multiple chains simultaneously — real users develop different habits per chain.
+
+### CEX Withdrawal Freshness (graduated penalty: up to -30%)
+Flags newly created wallets funded from centralized exchanges. The penalty graduates linearly from 30% (brand new) to 0% (30+ days old). A wallet that is 15 days old gets a 15% penalty. Wallets older than 30 days are not affected. This catches fresh sybil accounts while giving legitimate new users time to establish history.
+
+### Perfect Gas Patterns (penalty: -15%)
+Detects uniform gas pricing that suggests automation. If a wallet has 50+ transactions and fewer than 5% distinct gas prices relative to total transactions, it gets flagged. Real users encounter varying network conditions resulting in diverse gas prices, while bots typically hardcode or use a narrow range of gas settings.
+
 ### How penalties combine
 
-Penalties are multiplicative. A wallet that triggers all three heuristics gets:
+Penalties are multiplicative. A wallet that triggers temporal clustering, action repetition, and cross-chain mirroring gets:
 
 ```
-confidence = 1.0 x (1 - 0.40) x (1 - 0.30) x (1 - 0.20) = 0.336
+confidence = 1.0 x (1 - 0.40) x (1 - 0.30) x (1 - 0.60) = 0.168
 ```
 
-A final expertise score of 700 would become 700 x 0.336 = **235** after sybil discounting.
+A final expertise score of 700 would become 700 x 0.168 = **118** after sybil discounting.
 
 Wallets are never banned — just discounted. The confidence score and detected flags are always visible so users can understand their rating.
 
@@ -242,8 +254,9 @@ GET /v1/score/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 A SvelteKit frontend at `http://localhost:5173` provides a visual interface:
 
 - **Home page** — Search any wallet by address, see platform stats
-- **Score page** — Detailed score breakdown with category bars, badge display, and sybil confidence indicator. Shows error states with retry buttons and loading skeletons while data loads.
-- **Leaderboard** — Top 50 wallets with category filtering (overall, builder, governance, temporal, protocol diversity, complexity)
+- **Score page** — SVG radar chart showing all 5 category scores as a filled polygon, with per-category color-coded dots, axis labels, and concentric grid rings. Includes badge display and sybil confidence indicator. Shows error states with retry buttons and loading skeletons while data loads.
+- **Expertise card** — Displays total score with animated progress bar, raw score and sybil percentage. Includes share buttons: copy link, share on X (Twitter), and cast on Warpcast (Farcaster).
+- **Leaderboard** — Top wallets with category filtering (overall, builder, governance, temporal, protocol diversity, complexity). Sorted server-side by category raw score when a specific category is selected. Shows inline score progress bars and a category-specific column with raw scores when filtering. Supports pagination.
 - **Wallet connection** — Connect MetaMask or any EIP-1193 wallet via the nav bar
 
 The frontend is mobile-responsive with horizontal scrolling on the leaderboard table and stacked layouts on smaller screens.
@@ -280,7 +293,7 @@ ChainCred queries the Ethereum Attestation Service (EAS) GraphQL API to look up 
 
 PostgreSQL stores indexed wallet activity and Merkle proofs. The schema tracks:
 
-- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes
+- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set
 - `merkle_proofs` — per-wallet Merkle proofs (address, score, proof array, root hash, creation timestamp)
 
 Migrations run automatically via `bun run migrate`.
@@ -297,15 +310,15 @@ Migrations run automatically via `bun run migrate`.
 
 **GitHub Actions** runs three workflows:
 
-- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 40 tests (24 scoring + 16 API), builds and tests Solidity contracts, checks Solidity formatting
+- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 52 tests (36 scoring + 16 API), builds and tests Solidity contracts, checks Solidity formatting
 - **Weekly Merkle** (Monday 06:00 UTC, or manual) — Generates the Merkle tree against a PostgreSQL service and outputs the root for onchain submission
 - **Deploy Contracts** (manual trigger) — Deploys all 3 contracts to Sepolia or mainnet via Foundry with Etherscan verification. Supports dry-run mode.
 
 ### Testing
 
-40 automated tests cover:
+52 automated tests cover:
 
-- **Scoring engine** (24 tests) — Category calculators with multi-signal formulas, badge evaluation, sybil detection with all 3 heuristics, combined penalty math, enriched signal contribution tests (proposals, bear market, consistency, domain coverage, failures, calldata)
+- **Scoring engine** (36 tests) — Category calculators with multi-signal formulas, badge evaluation, sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests
 - **API** (16 tests) — Health check, address validation, CORS, rate limiting, all route responses. Tests work with or without PostgreSQL/Redis running.
 
 ---
