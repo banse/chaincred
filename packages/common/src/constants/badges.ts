@@ -48,14 +48,14 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
   {
     type: 'trusted',
     label: 'Trusted',
-    description: 'Multi-sig signer for 2+ orgs, high delegation',
+    description: 'Governance in 3+ DAOs with delegation and proposals',
     color: '#94A3B8',
     emoji: '🔐',
   },
   {
     type: 'power-user',
     label: 'Power User',
-    description: 'Top 5% protocol diversity + complexity',
+    description: 'Protocol diversity 700+ and complexity 500+',
     color: '#EF4444',
     emoji: '⚡',
   },

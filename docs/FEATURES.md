@@ -193,10 +193,10 @@ Seven expertise badges recognize specific achievements. Each maps to a concrete 
 | Explorer | Used 20+ unique protocols | Active |
 | OG | First transaction before 2020 | Active |
 | Multichain | Active on 4+ chains | Active |
-| Trusted | Multi-sig signer for 2+ orgs | Planned |
-| Power User | Top 5% protocol diversity + complexity | Planned |
+| Trusted | Governance in 3+ DAOs, 3+ delegations, 1+ proposal | Active |
+| Power User | Protocol diversity raw >= 700 and complexity raw >= 500 | Active |
 
-Badges are evaluated dynamically based on the wallet's indexed activity. The "Trusted" and "Power User" badges require additional data sources that aren't yet integrated.
+Badges are evaluated dynamically based on the wallet's indexed activity and score breakdown.
 
 ---
 
@@ -315,15 +315,15 @@ Migrations run automatically via `bun run migrate`.
 
 **GitHub Actions** runs three workflows:
 
-- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 56 tests (40 scoring + 16 API), builds and tests Solidity contracts, checks Solidity formatting
+- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 62 tests (46 scoring + 16 API), builds and tests Solidity contracts, checks Solidity formatting
 - **Weekly Merkle** (Monday 06:00 UTC, or manual) — Generates the Merkle tree against a PostgreSQL service and outputs the root for onchain submission
 - **Deploy Contracts** (manual trigger) — Deploys all 3 contracts to Sepolia or mainnet via Foundry with Etherscan verification. Supports dry-run mode.
 
 ### Testing
 
-56 automated tests cover:
+62 automated tests cover:
 
-- **Scoring engine** (40 tests) — Category calculators with multi-signal formulas, badge evaluation, sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests, builder multi-signal tests
+- **Scoring engine** (46 tests) — Category calculators with multi-signal formulas, badge evaluation (trusted + power-user criteria), sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests, builder multi-signal tests
 - **API** (16 tests) — Health check, address validation, CORS, rate limiting, all route responses. Tests work with or without PostgreSQL/Redis running.
 
 ---

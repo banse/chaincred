@@ -13,8 +13,12 @@ export function evaluateBadges(activity: WalletActivity, score: ScoreBreakdown):
     explorer: activity.uniqueProtocols.length >= 20,
     og: activity.firstTxTimestamp < TIMESTAMP_2020,
     multichain: activity.chainsActive.length >= 4,
-    trusted: false, // Placeholder
-    'power-user': false, // Placeholder
+    // TODO: Full Safe multi-sig signer tracking deferred — using governance depth as proxy
+    trusted:
+      activity.daosParticipated.length >= 3 &&
+      activity.delegationEvents >= 3 &&
+      activity.proposalsCreated >= 1,
+    'power-user': score.protocolDiversity.raw >= 700 && score.complexity.raw >= 500,
   };
 
   const badges: Badge[] = BADGE_DEFINITIONS.map((def) => {

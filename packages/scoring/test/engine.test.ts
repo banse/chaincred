@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { calculateScore } from '../src/engine.js';
+import { evaluateBadges } from '../src/badges/evaluator.js';
 import type { WalletActivity } from '@chaincred/common';
 
 /** Helper to build a WalletActivity with defaults for all fields */
@@ -157,5 +158,90 @@ describe('builder signals', () => {
       }),
     );
     expect(result.breakdown.builder.raw).toBe(0);
+  });
+});
+
+describe('badge evaluation', () => {
+  test('trusted badge earned with sufficient governance depth', () => {
+    const a = activity({
+      daosParticipated: ['ens', 'aave', 'compound'],
+      delegationEvents: 5,
+      proposalsCreated: 2,
+    });
+    const score = calculateScore(a);
+    const badges = evaluateBadges(a, score.breakdown);
+    const trusted = badges.badges.find((b) => b.type === 'trusted');
+    expect(trusted?.earned).toBe(true);
+  });
+
+  test('trusted badge not earned with insufficient delegation', () => {
+    const a = activity({
+      daosParticipated: ['ens', 'aave', 'compound'],
+      delegationEvents: 1,
+      proposalsCreated: 2,
+    });
+    const score = calculateScore(a);
+    const badges = evaluateBadges(a, score.breakdown);
+    const trusted = badges.badges.find((b) => b.type === 'trusted');
+    expect(trusted?.earned).toBe(false);
+  });
+
+  test('trusted badge not earned with insufficient DAOs', () => {
+    const a = activity({
+      daosParticipated: ['ens'],
+      delegationEvents: 5,
+      proposalsCreated: 2,
+    });
+    const score = calculateScore(a);
+    const badges = evaluateBadges(a, score.breakdown);
+    const trusted = badges.badges.find((b) => b.type === 'trusted');
+    expect(trusted?.earned).toBe(false);
+  });
+
+  test('power-user badge earned with high diversity and complexity', () => {
+    const a = activity({
+      uniqueProtocols: Array.from({ length: 15 }, (_, i) => `proto${i}`),
+      chainsActive: ['ethereum', 'arbitrum', 'optimism', 'base', 'polygon'],
+      protocolCategories: ['defi', 'social', 'governance', 'infrastructure', 'gaming'],
+      totalTransactions: 1000,
+      failedTransactions: 100,
+      totalCalldataBytes: 1000000,
+    });
+    const score = calculateScore(a);
+    expect(score.breakdown.protocolDiversity.raw).toBeGreaterThanOrEqual(700);
+    expect(score.breakdown.complexity.raw).toBeGreaterThanOrEqual(500);
+    const badges = evaluateBadges(a, score.breakdown);
+    const powerUser = badges.badges.find((b) => b.type === 'power-user');
+    expect(powerUser?.earned).toBe(true);
+  });
+
+  test('power-user badge not earned with low complexity', () => {
+    const a = activity({
+      uniqueProtocols: Array.from({ length: 15 }, (_, i) => `proto${i}`),
+      chainsActive: ['ethereum', 'arbitrum', 'optimism', 'base', 'polygon'],
+      protocolCategories: ['defi', 'social', 'governance', 'infrastructure', 'gaming'],
+      totalTransactions: 10,
+      failedTransactions: 0,
+      totalCalldataBytes: 100,
+    });
+    const score = calculateScore(a);
+    const badges = evaluateBadges(a, score.breakdown);
+    const powerUser = badges.badges.find((b) => b.type === 'power-user');
+    expect(powerUser?.earned).toBe(false);
+  });
+
+  test('power-user badge not earned with low diversity', () => {
+    const a = activity({
+      uniqueProtocols: ['uniswap'],
+      chainsActive: ['ethereum'],
+      protocolCategories: ['defi'],
+      totalTransactions: 1000,
+      failedTransactions: 100,
+      totalCalldataBytes: 1000000,
+    });
+    const score = calculateScore(a);
+    const badges = evaluateBadges(a, score.breakdown);
+    const powerUser = badges.badges.find((b) => b.type === 'power-user');
+    expect(powerUser?.earned).toBe(false);
   });
 });
