@@ -55,6 +55,8 @@ export interface WalletActivity {
   independentVotes: number;
   /** PRD 4.2 — Timestamp of earliest contract deployment */
   earliestDeploymentTimestamp: number;
+  /** PRD 4.3 — Safe multi-sig execTransaction calls */
+  safeExecutions: number;
 }
 
 export interface WalletProfile {

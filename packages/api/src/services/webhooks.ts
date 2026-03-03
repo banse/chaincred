@@ -1,3 +1,5 @@
+import { getDb } from '@chaincred/common';
+
 export interface WebhookSubscription {
   id: string;
   url: string;
@@ -6,14 +8,12 @@ export interface WebhookSubscription {
   createdAt: number;
 }
 
-/** address → subscriptions */
-const subscriptions = new Map<string, WebhookSubscription[]>();
-
-export function registerWebhook(
+export async function registerWebhook(
   address: string,
   url: string,
   secret?: string,
-): WebhookSubscription {
+): Promise<WebhookSubscription> {
+  const sql = getDb();
   const sub: WebhookSubscription = {
     id: crypto.randomUUID(),
     url,
@@ -22,39 +22,38 @@ export function registerWebhook(
     createdAt: Date.now(),
   };
 
-  const key = address.toLowerCase();
-  if (!subscriptions.has(key)) {
-    subscriptions.set(key, []);
-  }
-  subscriptions.get(key)!.push(sub);
+  await sql`
+    INSERT INTO webhooks (id, address, url, secret, created_at)
+    VALUES (${sub.id}, ${sub.address}, ${sub.url}, ${sub.secret ?? null}, ${sub.createdAt})
+  `;
+
   return sub;
 }
 
-export function removeWebhook(id: string): boolean {
-  for (const [key, subs] of subscriptions) {
-    const idx = subs.findIndex((s) => s.id === id);
-    if (idx !== -1) {
-      subs.splice(idx, 1);
-      if (subs.length === 0) subscriptions.delete(key);
-      return true;
-    }
-  }
-  return false;
+export async function removeWebhook(id: string): Promise<boolean> {
+  const sql = getDb();
+  const result = await sql`DELETE FROM webhooks WHERE id = ${id}`;
+  return result.count > 0;
 }
 
-export function listWebhooks(): WebhookSubscription[] {
-  const all: WebhookSubscription[] = [];
-  for (const subs of subscriptions.values()) {
-    all.push(...subs);
-  }
-  return all;
+export async function listWebhooks(): Promise<WebhookSubscription[]> {
+  const sql = getDb();
+  const rows = await sql`SELECT id, address, url, secret, created_at FROM webhooks`;
+  return rows.map((row) => ({
+    id: row.id as string,
+    url: row.url as string,
+    address: row.address as string,
+    secret: (row.secret as string) || undefined,
+    createdAt: Number(row.created_at),
+  }));
 }
 
 /** Fire-and-forget POST to registered webhook URLs */
 export async function deliverWebhooks(address: string, score: any): Promise<void> {
+  const sql = getDb();
   const key = address.toLowerCase();
-  const subs = subscriptions.get(key);
-  if (!subs || subs.length === 0) return;
+  const rows = await sql`SELECT url, secret FROM webhooks WHERE address = ${key}`;
+  if (rows.length === 0) return;
 
   const payload = JSON.stringify({
     event: 'score.updated',
@@ -63,19 +62,19 @@ export async function deliverWebhooks(address: string, score: any): Promise<void
     timestamp: Date.now(),
   });
 
-  for (const sub of subs) {
+  for (const row of rows) {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
-    if (sub.secret) {
+    if (row.secret) {
       const encoder = new TextEncoder();
-      const key = await crypto.subtle.importKey(
+      const cryptoKey = await crypto.subtle.importKey(
         'raw',
-        encoder.encode(sub.secret),
+        encoder.encode(row.secret as string),
         { name: 'HMAC', hash: 'SHA-256' },
         false,
         ['sign'],
       );
-      const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+      const sig = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(payload));
       const hex = Array.from(new Uint8Array(sig))
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
@@ -83,6 +82,6 @@ export async function deliverWebhooks(address: string, score: any): Promise<void
     }
 
     // Fire and forget
-    fetch(sub.url, { method: 'POST', headers, body: payload }).catch(() => {});
+    fetch(row.url as string, { method: 'POST', headers, body: payload }).catch(() => {});
   }
 }

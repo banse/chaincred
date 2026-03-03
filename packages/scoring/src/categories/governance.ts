@@ -24,8 +24,11 @@ export function calculateGovernanceScore(activity: WalletActivity): CategoryScor
   // Independent voting (against/abstain votes): 40 pts each, capped at 120
   const independentVoteScore = Math.min(activity.independentVotes * 40, 120);
 
+  // Safe multi-sig execTransaction calls: 50 pts each, capped at 200
+  const safeScore = Math.min(activity.safeExecutions * 50, 200);
+
   const raw = Math.min(
-    voteScore + daoScore + proposalScore + delegateScore + executionScore + crossChainGovScore + independentVoteScore,
+    voteScore + daoScore + proposalScore + delegateScore + executionScore + crossChainGovScore + independentVoteScore + safeScore,
     MAX_CATEGORY_SCORE,
   );
   return {

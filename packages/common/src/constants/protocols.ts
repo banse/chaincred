@@ -243,4 +243,48 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
       ],
     },
   },
+  {
+    name: 'Treasure',
+    category: 'gaming',
+    launchTimestamp: 1630454400, // Sep 2021
+    contracts: {
+      // MagicSwap Router
+      42161: ['0x539bde0d7dbd336b79148aa742883198bbf60342'],
+    },
+  },
+  {
+    name: 'Aavegotchi',
+    category: 'gaming',
+    launchTimestamp: 1614556800, // Mar 2021
+    contracts: {
+      // Diamond
+      137: ['0x86935f11c86623dec8a25696e1c19a8659cbf95d'],
+    },
+  },
+  {
+    name: 'Deterministic Deployment Proxy',
+    category: 'builder-tools',
+    launchTimestamp: 1585699200, // Apr 2020
+    contracts: {
+      1: ['0x4e59b44847b379578588920ca78fbf26c0b4956c'],
+      42161: ['0x4e59b44847b379578588920ca78fbf26c0b4956c'],
+      10: ['0x4e59b44847b379578588920ca78fbf26c0b4956c'],
+      8453: ['0x4e59b44847b379578588920ca78fbf26c0b4956c'],
+      324: ['0x4e59b44847b379578588920ca78fbf26c0b4956c'],
+      137: ['0x4e59b44847b379578588920ca78fbf26c0b4956c'],
+    },
+  },
+  {
+    name: 'CREATE2 Factory',
+    category: 'builder-tools',
+    launchTimestamp: 1609459200, // Jan 2021
+    contracts: {
+      1: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
+      42161: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
+      10: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
+      8453: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
+      324: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
+      137: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
+    },
+  },
 ];

@@ -81,11 +81,16 @@
 <div class="space-y-8">
   <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
     <h1 class="text-2xl font-bold">Wallet Score</h1>
-    <code
-      class="truncate rounded bg-[var(--color-surface)] px-3 py-1 text-sm text-[var(--color-text-muted)]"
-    >
-      {address}
-    </code>
+    <div class="flex flex-col gap-1">
+      {#if scoreData?.ensName}
+        <span class="text-lg font-semibold text-[var(--color-primary)]">{scoreData.ensName}</span>
+      {/if}
+      <code
+        class="truncate rounded bg-[var(--color-surface)] px-3 py-1 text-sm text-[var(--color-text-muted)]"
+      >
+        {address}
+      </code>
+    </div>
   </div>
 
   {#if loading}

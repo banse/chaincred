@@ -1,13 +1,71 @@
 import { Hono } from 'hono';
-import { isValidAddress } from '@chaincred/common';
+import { isValidAddress, BADGE_DEFINITIONS } from '@chaincred/common';
+import type { ScoreBreakdown, Badge } from '@chaincred/common';
 import { cache } from '../middleware/cache.js';
 import { getScore } from '../services/score.js';
+import { getWalletActivity } from '../services/activity.js';
+import { evaluateBadges } from '@chaincred/scoring';
+import { calculateScore } from '@chaincred/scoring';
 
 export const cardRoutes = new Hono();
 
-function renderSvg(address: string, score: number): string {
+interface CardData {
+  address: string;
+  score: number;
+  breakdown: ScoreBreakdown;
+  badges: Badge[];
+  ensName?: string;
+}
+
+function renderSvg(data: CardData): string {
+  const { address, score, breakdown, badges, ensName } = data;
   const shortAddr = `${address.slice(0, 6)}...${address.slice(-4)}`;
   const scoreColor = score >= 700 ? '#22c55e' : score >= 400 ? '#eab308' : '#ef4444';
+
+  const categories = [
+    { key: 'builder', label: 'Builder', color: '#F97316', raw: breakdown.builder.raw },
+    { key: 'governance', label: 'Governance', color: '#A855F7', raw: breakdown.governance.raw },
+    { key: 'temporal', label: 'Temporal', color: '#EAB308', raw: breakdown.temporal.raw },
+    { key: 'diversity', label: 'Diversity', color: '#14B8A6', raw: breakdown.protocolDiversity.raw },
+    { key: 'complexity', label: 'Complexity', color: '#3B82F6', raw: breakdown.complexity.raw },
+  ];
+
+  // Category breakdown bars
+  const barY = 200;
+  const barHeight = 14;
+  const barGap = 22;
+  const labelX = 40;
+  const barX = 160;
+  const barMaxW = 560;
+  const bars = categories
+    .map((cat, i) => {
+      const y = barY + i * barGap;
+      const w = Math.round((cat.raw / 1000) * barMaxW);
+      return `<text x="${labelX}" y="${y + 11}" font-family="system-ui,sans-serif" font-size="12" fill="#94a3b8">${cat.label}</text>
+    <rect x="${barX}" y="${y}" width="${barMaxW}" height="${barHeight}" rx="3" fill="#1e293b"/>
+    <rect x="${barX}" y="${y}" width="${w}" height="${barHeight}" rx="3" fill="${cat.color}"/>
+    <text x="${barX + barMaxW + 10}" y="${y + 11}" font-family="system-ui,sans-serif" font-size="11" fill="#64748b">${cat.raw}</text>`;
+    })
+    .join('\n  ');
+
+  // Badge row
+  const badgeY = barY + categories.length * barGap + 20;
+  const badgeStartX = 160;
+  const badgeGap = 36;
+  const badgeCircles = BADGE_DEFINITIONS.map((def, i) => {
+    const earned = badges.find((b) => b.type === def.type)?.earned ?? false;
+    const cx = badgeStartX + i * badgeGap;
+    const fill = earned ? def.color : '#334155';
+    const opacity = earned ? '1' : '0.4';
+    return `<circle cx="${cx}" cy="${badgeY}" r="12" fill="${fill}" opacity="${opacity}"/>
+    <text x="${cx}" y="${badgeY + 4}" font-size="10" text-anchor="middle" fill="white">${def.emoji}</text>`;
+  }).join('\n  ');
+
+  const identityY = badgeY + 40;
+  const ensLine = ensName
+    ? `<text x="400" y="${identityY}" font-family="system-ui,sans-serif" font-size="16" font-weight="600" fill="#e2e8f0" text-anchor="middle">${ensName}</text>`
+    : '';
+  const addrY = ensName ? identityY + 22 : identityY;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="418" viewBox="0 0 800 418">
   <defs>
@@ -18,11 +76,15 @@ function renderSvg(address: string, score: number): string {
   </defs>
   <rect width="800" height="418" rx="16" fill="url(#bg)"/>
   <text x="40" y="50" font-family="system-ui,sans-serif" font-size="20" font-weight="700" fill="#94a3b8">ChainCred</text>
-  <text x="400" y="200" font-family="system-ui,sans-serif" font-size="120" font-weight="800" fill="${scoreColor}" text-anchor="middle">${score}</text>
-  <text x="400" y="240" font-family="system-ui,sans-serif" font-size="18" fill="#64748b" text-anchor="middle">Expertise Score</text>
-  <text x="400" y="370" font-family="monospace" font-size="16" fill="#94a3b8" text-anchor="middle">${shortAddr}</text>
-  <rect x="20" y="390" width="760" height="4" rx="2" fill="#1e293b"/>
-  <rect x="20" y="390" width="${Math.round((score / 1000) * 760)}" height="4" rx="2" fill="${scoreColor}"/>
+  <text x="400" y="140" font-family="system-ui,sans-serif" font-size="80" font-weight="800" fill="${scoreColor}" text-anchor="middle">${score}</text>
+  <text x="400" y="170" font-family="system-ui,sans-serif" font-size="16" fill="#64748b" text-anchor="middle">Expertise Score</text>
+  ${bars}
+  <text x="${labelX}" y="${badgeY + 4}" font-family="system-ui,sans-serif" font-size="12" fill="#94a3b8">Badges</text>
+  ${badgeCircles}
+  ${ensLine}
+  <text x="400" y="${addrY}" font-family="monospace" font-size="14" fill="#94a3b8" text-anchor="middle">${shortAddr}</text>
+  <rect x="20" y="396" width="760" height="4" rx="2" fill="#1e293b"/>
+  <rect x="20" y="396" width="${Math.round((score / 1000) * 760)}" height="4" rx="2" fill="${scoreColor}"/>
 </svg>`;
 }
 
@@ -32,8 +94,17 @@ cardRoutes.get('/:address', cache(300), async (c) => {
   if (!isValidAddress(address)) {
     return c.json({ error: 'Invalid Ethereum address' }, 400);
   }
-  const { totalScore } = await getScore(address);
-  const svg = renderSvg(address, totalScore);
+  const scoreData = await getScore(address);
+  const activity = await getWalletActivity(address);
+  const badgeResult = activity ? evaluateBadges(activity, scoreData.breakdown) : { badges: [] as Badge[] };
+
+  const svg = renderSvg({
+    address,
+    score: scoreData.totalScore,
+    breakdown: scoreData.breakdown,
+    badges: badgeResult.badges,
+    ensName: scoreData.ensName,
+  });
   return new Response(svg, {
     headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=300' },
   });

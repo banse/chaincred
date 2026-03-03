@@ -42,5 +42,6 @@ export async function getWalletActivity(address: string): Promise<WalletActivity
     earlyAdoptions: Number(row.early_adoptions ?? 0),
     independentVotes: Number(row.independent_votes ?? 0),
     earliestDeploymentTimestamp: Number(row.earliest_deployment_timestamp ?? 0),
+    safeExecutions: Number(row.safe_executions ?? 0),
   };
 }

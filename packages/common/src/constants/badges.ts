@@ -48,7 +48,7 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
   {
     type: 'trusted',
     label: 'Trusted',
-    description: 'Governance in 3+ DAOs with delegation and proposals',
+    description: 'Safe multi-sig signer in 2+ transactions, 3+ DAOs with delegation',
     color: '#94A3B8',
     emoji: '🔐',
   },

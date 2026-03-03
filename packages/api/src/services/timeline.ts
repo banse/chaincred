@@ -115,6 +115,16 @@ export async function getTimeline(address: string): Promise<TimelineEvent[]> {
     });
   }
 
+  // Explorer badge: when 20th unique protocol appears
+  const protocolRows = await sql`
+    SELECT protocol, MIN(timestamp) AS first_seen
+    FROM events WHERE from_address = ${addr} AND protocol IS NOT NULL
+    GROUP BY protocol ORDER BY first_seen
+  `;
+  if (protocolRows.length >= 20) {
+    events.push({ type: 'badge_earned', timestamp: Number(protocolRows[19].first_seen), detail: 'explorer' });
+  }
+
   events.sort((a, b) => a.timestamp - b.timestamp);
   return events;
 }

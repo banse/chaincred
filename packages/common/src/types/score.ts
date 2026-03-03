@@ -18,6 +18,7 @@ export interface WalletScore {
   sybilMultiplier: number;
   rawScore: number;
   timestamp: number;
+  ensName?: string;
 }
 
 export type ScoreCategory = keyof ScoreBreakdown;

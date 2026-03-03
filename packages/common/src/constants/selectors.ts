@@ -20,6 +20,9 @@ export const ERC4337_SELECTORS = new Set([
   '0x4b1d7cf5', // handleAggregatedOps
 ]);
 
+/** PRD 4.3 — Safe multi-sig execTransaction selector */
+export const SAFE_EXEC_SELECTOR = '0x6a761202';
+
 /** PRD 4.6 — ERC-4337 EntryPoint contract addresses */
 export const ERC4337_ENTRYPOINTS = new Set([
   '0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789', // EntryPoint v0.6

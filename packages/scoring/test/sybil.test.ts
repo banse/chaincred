@@ -48,6 +48,7 @@ function activity(overrides: Partial<WalletActivity>): WalletActivity {
     earlyAdoptions: 0,
     independentVotes: 0,
     earliestDeploymentTimestamp: 0,
+    safeExecutions: 0,
     ...overrides,
   };
 }

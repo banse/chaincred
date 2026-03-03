@@ -54,8 +54,9 @@ Measures DAO participation depth and quality. The indexer classifies governance 
 | Treasury execution events | 60 per queue/execute | 120 |
 | Cross-chain governance | 50 per governance chain | 150 |
 | Independent voting | 40 per against/abstain vote | 120 |
+| Safe multi-sig executions | 50 per execTransaction | 200 |
 
-Proposals are the highest-value signal — creating proposals is rarer and more meaningful than voting. Treasury execution (queue/execute calls) indicates deep DAO operational involvement. Cross-chain governance rewards wallets that participate in DAOs across multiple networks. Independent voting parses the `support` parameter from castVote calldata — votes with support=0 (against) or support=2 (abstain) indicate independent thinking rather than rubber-stamping.
+Proposals are the highest-value signal — creating proposals is rarer and more meaningful than voting. Treasury execution (queue/execute calls) indicates deep DAO operational involvement. Cross-chain governance rewards wallets that participate in DAOs across multiple networks. Independent voting parses the `support` parameter from castVote calldata — votes with support=0 (against) or support=2 (abstain) indicate independent thinking rather than rubber-stamping. Safe multi-sig detection identifies `execTransaction` (selector `0x6a761202`) calls — wallets that co-sign and execute Safe multi-sig transactions demonstrate collaborative governance.
 
 ### Temporal Score (20%)
 
@@ -115,7 +116,7 @@ A wallet that has deployed 5 contracts across 2 chains with 15,000 total constru
 
 ## Protocol Detection
 
-The indexer recognizes **16 protocols** across all 6 chains and maps contract interactions to named protocols:
+The indexer recognizes **20 protocols** across all 6 chains and maps contract interactions to named protocols:
 
 | Protocol | Type | Chains |
 |----------|------|--------|
@@ -135,6 +136,10 @@ The indexer recognizes **16 protocols** across all 6 chains and maps contract in
 | Safe | Governance | Ethereum only |
 | Chainlink | Infrastructure | All 6 |
 | The Graph | Infrastructure | Ethereum, Arbitrum |
+| Treasure | Gaming | Arbitrum only |
+| Aavegotchi | Gaming | Polygon only |
+| Deterministic Deployment Proxy | Builder Tools | All 6 |
+| CREATE2 Factory | Builder Tools | All 6 |
 
 When a wallet interacts with any known contract address, it gets credited for that protocol. The protocol's category (DeFi, Social, etc.) is also tracked for the cross-domain coverage signal in the protocol diversity score.
 
@@ -202,11 +207,11 @@ Seven expertise badges recognize specific achievements. Each maps to a concrete 
 | Badge | Criteria | Status |
 |-------|----------|--------|
 | Builder | 3+ deployed contracts | Active |
-| Governor | Participated in 5+ DAOs | Active |
+| Governor | Participated in 5+ DAOs and authored 1+ proposal | Active |
 | Explorer | Used 20+ unique protocols | Active |
 | OG | First transaction before 2020 | Active |
 | Multichain | Active on 4+ chains | Active |
-| Trusted | Governance in 3+ DAOs, 3+ delegations, 1+ proposal | Active |
+| Trusted | Safe multi-sig signer (2+ executions), 3+ DAOs, 3+ delegations | Active |
 | Power User | Protocol diversity raw >= 700 and complexity raw >= 500 | Active |
 
 Badges are evaluated dynamically based on the wallet's indexed activity and score breakdown.
@@ -239,6 +244,8 @@ The REST API runs on [Hono](https://hono.dev/) (Bun runtime) and serves all scor
 | POST | `/v1/webhooks` | Register a webhook for score updates |
 | GET | `/v1/webhooks` | List registered webhooks |
 | DELETE | `/v1/webhooks/:id` | Unregister a webhook |
+| POST | `/v1/appeals` | Submit a sybil appeal |
+| GET | `/v1/appeals/:address` | Check appeal status |
 | WS | `/v1/stream/:address` | Real-time score updates via WebSocket |
 
 ### Rate limiting
@@ -346,7 +353,7 @@ A live demo is available at `http://localhost:5173/widget` when the dev server i
 
 ## Score Card & Farcaster Frame
 
-The API generates SVG score cards at `/v1/card/:address.png` for social sharing. Each card displays the wallet's total score with color coding (green >= 700, yellow >= 400, red < 400), a truncated address, and a progress bar.
+The API generates enhanced SVG score cards at `/v1/card/:address.png` for social sharing. Each card displays the wallet's total score with color coding (green >= 700, yellow >= 400, red < 400), five category breakdown bars (builder/governance/temporal/diversity/complexity), a badge row with colored circles for all 7 badges (earned badges filled, unearned grayed out), ENS name (if available), truncated address, and a progress bar.
 
 The score page includes OpenGraph and Farcaster Frame meta tags:
 
@@ -375,7 +382,7 @@ The timeline endpoint (`/v1/timeline/:address`) derives milestone events from th
 - **first_deployment** — First contract deployment
 - **first_governance** — First governance interaction
 - **chain_added** — Each new chain the wallet became active on
-- **badge_earned** — When a badge was first earned (builder: 3rd deployment, governor: 5th governance event, og: first tx before 2020, multichain: 4th chain)
+- **badge_earned** — When a badge was first earned (builder: 3rd deployment, governor: 5th governance event, og: first tx before 2020, multichain: 4th chain, explorer: 20th unique protocol)
 
 Events are returned sorted chronologically. The frontend renders them as a vertical timeline below the score cards, with badge milestone events showing the badge type (e.g., "Badge Earned — Builder").
 
@@ -414,7 +421,7 @@ The `X-Admin-Key` header must match the `ADMIN_API_KEY` environment variable for
 
 ## Webhooks
 
-Basic webhook support for score update notifications. Webhooks are stored in-memory (MVP — no persistence across restarts).
+Webhook support for score update notifications. Webhooks are persisted in PostgreSQL so they survive API restarts.
 
 - **Register:** `POST /v1/webhooks` with `{ address, url, secret? }`
 - **Delivery:** When scores are pushed via WebSocket (every 60s for subscribed addresses), registered webhooks also receive the update
@@ -429,8 +436,11 @@ Basic webhook support for score update notifications. Webhooks are stored in-mem
 
 PostgreSQL stores indexed wallet activity and Merkle proofs. The schema tracks:
 
-- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set, tx hour set, CREATE2 deployments, bear market periods, execution events, governance chains, permit interactions, flashloan transactions, smart wallet interactions, ERC-4337 operations, early adoptions, independent votes, earliest deployment timestamp
+- `wallet_activity` — per-wallet aggregated data: address, first tx timestamp, total transactions, contracts deployed, deployment chains, deployment calldata bytes, unique protocols, chains active, governance votes, DAOs participated, proposals created, delegation events, bear market transactions, active months, protocol categories, failed transactions, total calldata bytes, recipient addresses, chain:protocol pairs, gas price set, tx hour set, CREATE2 deployments, bear market periods, execution events, governance chains, permit interactions, flashloan transactions, smart wallet interactions, ERC-4337 operations, early adoptions, independent votes, earliest deployment timestamp, safe executions
 - `merkle_proofs` — per-wallet Merkle proofs (address, score, proof array, root hash, creation timestamp)
+- `webhooks` — persistent webhook subscriptions (id, address, url, secret, created_at)
+- `appeals` — sybil appeal queue (id, address, reason, status, created_at)
+- `wallet_scores` — pre-computed scores for leaderboard optimization (address, total_score, computed_at)
 
 Migrations run automatically via `bun run migrate`.
 
@@ -446,16 +456,16 @@ Migrations run automatically via `bun run migrate`.
 
 **GitHub Actions** runs three workflows:
 
-- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 90 tests (58 scoring + 32 API), builds and tests Solidity contracts, checks Solidity formatting
+- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 97 tests (61 scoring + 36 API), builds and tests Solidity contracts, checks Solidity formatting
 - **Weekly Merkle** (Monday 06:00 UTC, or manual) — Generates the Merkle tree against a PostgreSQL service and outputs the root for onchain submission
 - **Deploy Contracts** (manual trigger) — Deploys all 3 contracts to Sepolia or mainnet via Foundry with Etherscan verification. Supports dry-run mode.
 
 ### Testing
 
-90 automated tests cover:
+97 automated tests cover:
 
-- **Scoring engine** (58 tests) — Category calculators with multi-signal formulas, badge evaluation (trusted + power-user criteria), sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests (deployment longevity), governance signals (execution, cross-chain, independent voting), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets), protocol diversity signals (early adoption)
-- **API** (32 tests) — Health check, address validation, CORS, rate limiting, all route responses, timeline endpoint (validation, fields, badge milestones, DB-dependent), card image (SVG content, validation), Farcaster Frame (valid/invalid address), admin bear-period endpoints (list, auth), webhook CRUD (register, list, delete), WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup). Tests work with or without PostgreSQL/Redis running.
+- **Scoring engine** (61 tests) — Category calculators with multi-signal formulas, badge evaluation (governor proposal requirement, trusted Safe multi-sig + governance depth, power-user criteria), sybil detection with all 7 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests (deployment longevity), governance signals (execution, cross-chain, independent voting, Safe executions), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets), protocol diversity signals (early adoption)
+- **API** (36 tests) — Health check, address validation, CORS, rate limiting, all route responses, timeline endpoint (validation, fields, badge milestones, DB-dependent), card image (SVG content, validation), Farcaster Frame (valid/invalid address), admin bear-period endpoints (list, auth), webhook CRUD (register, list, validation), appeal validation (invalid address, missing fields), WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup). Tests work with or without PostgreSQL/Redis running.
 
 ---
 
@@ -477,3 +487,48 @@ All configuration is via environment variables. See `.env.example`:
 | `ADMIN_API_KEY` | Admin API key for bear market period management | — |
 | `API_BASE_URL` | API base URL for Farcaster Frame callbacks | `http://localhost:3001/v1` |
 | `FRONTEND_URL` | Frontend URL for Frame "View Details" links | `http://localhost:5173` |
+
+---
+
+## ENS Name Resolution
+
+When an Ethereum RPC endpoint is configured via `RPC_URL`, the score service resolves ENS names for wallet addresses via `getEnsName()`. Names are cached in-memory for 1 hour.
+
+ENS names appear in:
+- The score API response (`ensName` field in WalletScore)
+- The SVG score card (above the truncated address)
+- The frontend score page (displayed above the address code block)
+
+The resolution is fail-open — if `RPC_URL` is not set or the RPC is unreachable, the score is returned without an ENS name.
+
+---
+
+## Sybil Appeal System
+
+Wallets flagged by sybil detection can submit appeals for manual review:
+
+- **Submit:** `POST /v1/appeals` with `{ address, reason }` — creates a pending appeal
+- **Check:** `GET /v1/appeals/:address` — returns the latest appeal status (pending/approved/rejected)
+- **Score protection:** While an appeal is pending, the sybil multiplier is floored at 0.5 — the score is frozen but not zeroed
+
+Appeals are stored in PostgreSQL with status tracking. The appeal system is designed for integration with external review workflows (e.g., GitHub issues + signed messages).
+
+---
+
+## Leaderboard Optimization
+
+The leaderboard endpoint supports two paths:
+
+1. **Optimized path:** When the `wallet_scores` table has pre-computed scores (populated during Merkle tree generation), the leaderboard uses SQL-level `ORDER BY total_score DESC` with `LIMIT/OFFSET` — O(1) per request.
+2. **Fallback path:** Without pre-computed scores, falls back to loading all wallet activity rows, scoring each in JavaScript, and sorting in memory — O(N) per request.
+
+The Merkle tree generation script now upserts scores into `wallet_scores` automatically, so the optimized path is used after the first weekly Merkle run.
+
+---
+
+## Safe Multi-Sig Detection
+
+The indexer detects Safe `execTransaction` calls (selector `0x6a761202`) as a governance signal. Wallets that execute Safe multi-sig transactions are recognized as collaborative governance participants:
+
+- **Scoring:** 50 points per Safe execution, capped at 200 (governance category)
+- **Badge:** The Trusted badge now requires `safeExecutions >= 2` along with participation in 3+ DAOs and 3+ delegation events — replacing the previous proposal-based proxy with real multi-sig signer tracking

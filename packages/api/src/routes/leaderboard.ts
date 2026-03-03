@@ -40,6 +40,7 @@ function mapRow(row: any): WalletActivity {
     earlyAdoptions: Number(row.early_adoptions ?? 0),
     independentVotes: Number(row.independent_votes ?? 0),
     earliestDeploymentTimestamp: Number(row.earliest_deployment_timestamp ?? 0),
+    safeExecutions: Number(row.safe_executions ?? 0),
   };
 }
 
@@ -52,6 +53,30 @@ leaderboardRoutes.get('/', cache(60), async (c) => {
 
   const sql = getDb();
 
+  // Try optimized path: use pre-computed wallet_scores for overall leaderboard
+  if (category === 'overall') {
+    try {
+      const optimized = await sql`
+        SELECT wa.*, ws.total_score FROM wallet_scores ws
+        JOIN wallet_activity wa ON wa.address = ws.address
+        ORDER BY ws.total_score DESC LIMIT ${limit} OFFSET ${offset}
+      `;
+      if (optimized.length > 0) {
+        const [countRow] = await sql`SELECT COUNT(*) AS cnt FROM wallet_scores`;
+        const total = Number(countRow?.cnt ?? 0);
+        const entries = optimized.map((row: any) => {
+          const activity = mapRow(row);
+          const { totalScore, breakdown, sybilMultiplier } = calculateScore(activity);
+          return { address: row.address, score: totalScore, breakdown, sybilMultiplier };
+        });
+        return c.json({ category, entries, total, limit, offset });
+      }
+    } catch {
+      // wallet_scores table may not exist yet — fall through to full scan
+    }
+  }
+
+  // Fallback: full table scan
   const rows = await sql`SELECT * FROM wallet_activity`;
   const total = rows.length;
 

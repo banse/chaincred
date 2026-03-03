@@ -9,15 +9,14 @@ export function evaluateBadges(activity: WalletActivity, score: ScoreBreakdown):
 
   const criteriaChecks: Record<BadgeType, boolean> = {
     builder: activity.contractsDeployed >= 3,
-    governor: activity.daosParticipated.length >= 5,
+    governor: activity.daosParticipated.length >= 5 && activity.proposalsCreated >= 1,
     explorer: activity.uniqueProtocols.length >= 20,
     og: activity.firstTxTimestamp < TIMESTAMP_2020,
     multichain: activity.chainsActive.length >= 4,
-    // TODO: Full Safe multi-sig signer tracking deferred — using governance depth as proxy
     trusted:
+      activity.safeExecutions >= 2 &&
       activity.daosParticipated.length >= 3 &&
-      activity.delegationEvents >= 3 &&
-      activity.proposalsCreated >= 1,
+      activity.delegationEvents >= 3,
     'power-user': score.protocolDiversity.raw >= 700 && score.complexity.raw >= 500,
   };
 

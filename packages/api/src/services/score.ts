@@ -1,8 +1,10 @@
 import type { WalletScore } from '@chaincred/common';
+import { getDb } from '@chaincred/common';
 import { calculateScore } from '@chaincred/scoring';
 import { createPublicClient, http, type Address } from 'viem';
 import { mainnet } from 'viem/chains';
 import { getWalletActivity } from './activity.js';
+import { resolveEns } from './ens.js';
 
 const REGISTRY_ABI = [
   {
@@ -57,5 +59,29 @@ export async function getScore(address: string): Promise<WalletScore> {
 
   const activity = await getWalletActivity(address);
   if (!activity) throw new Error('Address not found');
-  return calculateScore(activity);
+  const result = calculateScore(activity);
+
+  // PRD 13.6 — If appeal is pending, floor sybilMultiplier at 0.5 (frozen, not zeroed)
+  const appeal = await getAppealStatus(address);
+  if (appeal?.status === 'pending') {
+    result.sybilMultiplier = Math.max(result.sybilMultiplier, 0.5);
+    result.totalScore = Math.round(result.rawScore * result.sybilMultiplier);
+  }
+
+  // ENS name resolution (fail-open)
+  const ensName = await resolveEns(address).catch(() => null);
+  return { ...result, ensName: ensName ?? undefined };
+}
+
+/** Check appeal status for an address. Returns null if no appeal exists. */
+async function getAppealStatus(address: string): Promise<{ status: string } | null> {
+  try {
+    const sql = getDb();
+    const [row] = await sql`
+      SELECT status FROM appeals WHERE address = ${address.toLowerCase()} ORDER BY created_at DESC LIMIT 1
+    `;
+    return row ? { status: row.status as string } : null;
+  } catch {
+    return null;
+  }
 }

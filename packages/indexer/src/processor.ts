@@ -10,6 +10,7 @@ import {
   FLASHLOAN_SELECTORS,
   ERC4337_SELECTORS,
   ERC4337_ENTRYPOINTS,
+  SAFE_EXEC_SELECTOR,
 } from '@chaincred/common';
 
 export interface ProcessedEvent {
@@ -30,6 +31,7 @@ export interface ProcessedEvent {
   isFlashloan?: boolean;
   isSmartWallet?: boolean;
   isErc4337?: boolean;
+  isSafeExec?: boolean;
   isEarlyAdoption?: boolean;
   voteSupport?: number;
   gasPriceGwei: string;
@@ -113,6 +115,7 @@ export async function processEvents(
       if (PERMIT_SELECTORS.has(selector)) event.isPermit = true;
       if (FLASHLOAN_SELECTORS.has(selector)) event.isFlashloan = true;
       if (ERC4337_SELECTORS.has(selector)) event.isErc4337 = true;
+      if (selector === SAFE_EXEC_SELECTOR) event.isSafeExec = true;
     }
 
     // Detect smart wallet interactions (tx.to is an ERC-4337 EntryPoint)

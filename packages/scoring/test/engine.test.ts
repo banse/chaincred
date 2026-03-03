@@ -38,6 +38,7 @@ function activity(overrides: Partial<WalletActivity> = {}): WalletActivity {
     earlyAdoptions: 0,
     independentVotes: 0,
     earliestDeploymentTimestamp: 0,
+    safeExecutions: 0,
     ...overrides,
   };
 }
@@ -98,6 +99,7 @@ describe('scoring engine', () => {
       earlyAdoptions: 0,
       independentVotes: 0,
       earliestDeploymentTimestamp: 0,
+      safeExecutions: 0,
     });
     const result = calculateScore(empty);
     expect(result.totalScore).toBe(0);
@@ -252,11 +254,35 @@ describe('complexity signals', () => {
 });
 
 describe('badge evaluation', () => {
-  test('trusted badge earned with sufficient governance depth', () => {
+  test('governor badge requires proposals', () => {
+    const withProposals = activity({
+      daosParticipated: ['ens', 'aave', 'compound', 'maker', 'uniswap'],
+      proposalsCreated: 1,
+    });
+    const withoutProposals = activity({
+      daosParticipated: ['ens', 'aave', 'compound', 'maker', 'uniswap'],
+      proposalsCreated: 0,
+    });
+    const score1 = calculateScore(withProposals);
+    const score2 = calculateScore(withoutProposals);
+    const badges1 = evaluateBadges(withProposals, score1.breakdown);
+    const badges2 = evaluateBadges(withoutProposals, score2.breakdown);
+    expect(badges1.badges.find((b) => b.type === 'governor')?.earned).toBe(true);
+    expect(badges2.badges.find((b) => b.type === 'governor')?.earned).toBe(false);
+  });
+
+  test('safe executions boost governance score', () => {
+    const base = { governanceVotes: 3, daosParticipated: ['ens'], proposalsCreated: 0, delegationEvents: 0 };
+    const withSafe = calculateScore(activity({ ...base, safeExecutions: 4 }));
+    const without = calculateScore(activity({ ...base, safeExecutions: 0 }));
+    expect(withSafe.breakdown.governance.raw).toBeGreaterThan(without.breakdown.governance.raw);
+  });
+
+  test('trusted badge earned with Safe multi-sig + governance depth', () => {
     const a = activity({
+      safeExecutions: 3,
       daosParticipated: ['ens', 'aave', 'compound'],
       delegationEvents: 5,
-      proposalsCreated: 2,
     });
     const score = calculateScore(a);
     const badges = evaluateBadges(a, score.breakdown);
@@ -264,11 +290,23 @@ describe('badge evaluation', () => {
     expect(trusted?.earned).toBe(true);
   });
 
+  test('trusted badge not earned without Safe executions', () => {
+    const a = activity({
+      safeExecutions: 0,
+      daosParticipated: ['ens', 'aave', 'compound'],
+      delegationEvents: 5,
+    });
+    const score = calculateScore(a);
+    const badges = evaluateBadges(a, score.breakdown);
+    const trusted = badges.badges.find((b) => b.type === 'trusted');
+    expect(trusted?.earned).toBe(false);
+  });
+
   test('trusted badge not earned with insufficient delegation', () => {
     const a = activity({
+      safeExecutions: 3,
       daosParticipated: ['ens', 'aave', 'compound'],
       delegationEvents: 1,
-      proposalsCreated: 2,
     });
     const score = calculateScore(a);
     const badges = evaluateBadges(a, score.breakdown);
@@ -278,9 +316,9 @@ describe('badge evaluation', () => {
 
   test('trusted badge not earned with insufficient DAOs', () => {
     const a = activity({
+      safeExecutions: 3,
       daosParticipated: ['ens'],
       delegationEvents: 5,
-      proposalsCreated: 2,
     });
     const score = calculateScore(a);
     const badges = evaluateBadges(a, score.breakdown);

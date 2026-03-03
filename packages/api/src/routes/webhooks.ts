@@ -21,19 +21,19 @@ webhookRoutes.post('/', async (c) => {
     return c.json({ error: 'Invalid webhook URL' }, 400);
   }
 
-  const sub = registerWebhook(body.address, body.url, body.secret);
+  const sub = await registerWebhook(body.address, body.url, body.secret);
   return c.json(sub, 201);
 });
 
 /** GET /v1/webhooks — list all webhooks */
-webhookRoutes.get('/', (c) => {
-  return c.json({ webhooks: listWebhooks() });
+webhookRoutes.get('/', async (c) => {
+  return c.json({ webhooks: await listWebhooks() });
 });
 
 /** DELETE /v1/webhooks/:id — unregister a webhook */
-webhookRoutes.delete('/:id', (c) => {
+webhookRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
-  const removed = removeWebhook(id);
+  const removed = await removeWebhook(id);
   if (!removed) {
     return c.json({ error: 'Webhook not found' }, 404);
   }

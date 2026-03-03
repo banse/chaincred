@@ -48,8 +48,37 @@ CREATE TABLE IF NOT EXISTS wallet_activity (
   early_adoptions INTEGER NOT NULL DEFAULT 0,
   independent_votes INTEGER NOT NULL DEFAULT 0,
   earliest_deployment_timestamp BIGINT NOT NULL DEFAULT 0,
+  safe_executions INTEGER NOT NULL DEFAULT 0,
   updated_at BIGINT NOT NULL DEFAULT 0
 );
+
+-- Webhook subscriptions (persistent across restarts)
+CREATE TABLE IF NOT EXISTS webhooks (
+  id TEXT PRIMARY KEY,
+  address TEXT NOT NULL,
+  url TEXT NOT NULL,
+  secret TEXT,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_webhooks_address ON webhooks (address);
+
+-- Sybil appeal queue
+CREATE TABLE IF NOT EXISTS appeals (
+  id TEXT PRIMARY KEY,
+  address TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_appeals_address ON appeals (address);
+
+-- Pre-computed wallet scores for leaderboard optimization
+CREATE TABLE IF NOT EXISTS wallet_scores (
+  address TEXT PRIMARY KEY,
+  total_score INTEGER NOT NULL DEFAULT 0,
+  computed_at BIGINT NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_wallet_scores_total ON wallet_scores (total_score DESC);
 
 -- Block cursor per chain
 CREATE TABLE IF NOT EXISTS indexer_cursors (

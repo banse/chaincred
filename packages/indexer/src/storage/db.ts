@@ -47,6 +47,7 @@ export function createStorage(): StorageLayer {
       const isErc4337 = event.isErc4337 ? 1 : 0;
       const isEarlyAdoption = event.isEarlyAdoption ? 1 : 0;
       const isIndependentVote = event.voteSupport !== undefined && event.voteSupport !== 1 ? 1 : 0;
+      const isSafeExec = event.isSafeExec ? 1 : 0;
       const ts = event.timestamp;
 
       await sql`
@@ -63,7 +64,7 @@ export function createStorage(): StorageLayer {
           permit_interactions, flashloan_transactions, smart_wallet_interactions,
           erc4337_operations,
           early_adoptions, independent_votes, earliest_deployment_timestamp,
-          updated_at
+          safe_executions, updated_at
         )
         VALUES (
           ${address},
@@ -98,6 +99,7 @@ export function createStorage(): StorageLayer {
           ${isEarlyAdoption},
           ${isIndependentVote},
           ${event.type === 'deployment' ? ts : 0},
+          ${isSafeExec},
           ${Date.now()}
         )
         ON CONFLICT (address) DO UPDATE SET
@@ -179,6 +181,7 @@ export function createStorage(): StorageLayer {
           erc4337_operations = wallet_activity.erc4337_operations + ${isErc4337},
           early_adoptions = wallet_activity.early_adoptions + ${isEarlyAdoption},
           independent_votes = wallet_activity.independent_votes + ${isIndependentVote},
+          safe_executions = wallet_activity.safe_executions + ${isSafeExec},
           earliest_deployment_timestamp = CASE
             WHEN ${event.type === 'deployment' ? ts : 0} > 0
             THEN CASE

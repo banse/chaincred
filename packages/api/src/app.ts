@@ -13,6 +13,7 @@ import { cardRoutes } from './routes/card.js';
 import { frameRoutes } from './routes/frame.js';
 import { adminRoutes } from './routes/admin.js';
 import { webhookRoutes } from './routes/webhooks.js';
+import { appealRoutes } from './routes/appeals.js';
 import { wsRoutes, websocket } from './routes/ws.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { rateLimit } from './middleware/rate-limit.js';
@@ -42,6 +43,7 @@ v1.route('/card', cardRoutes);
 v1.route('/frame', frameRoutes);
 v1.route('/admin', adminRoutes);
 v1.route('/webhooks', webhookRoutes);
+v1.route('/appeals', appealRoutes);
 v1.route('/', wsRoutes);
 app.route('/v1', v1);
 

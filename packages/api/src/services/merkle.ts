@@ -121,6 +121,7 @@ export async function buildMerkleTree(): Promise<MerkleTree> {
       earlyAdoptions: Number(row.early_adoptions ?? 0),
       independentVotes: Number(row.independent_votes ?? 0),
       earliestDeploymentTimestamp: Number(row.earliest_deployment_timestamp ?? 0),
+      safeExecutions: Number(row.safe_executions ?? 0),
     };
 
     const { totalScore } = calculateScore(activity);
@@ -140,6 +141,16 @@ export async function buildMerkleTree(): Promise<MerkleTree> {
   for (const leaf of leaves) {
     const idx = hashToIndex.get(leaf.hash)!;
     proofs.set(leaf.address.toLowerCase(), generateProof(layers, idx));
+  }
+
+  // Upsert wallet_scores for leaderboard optimization
+  const now = Date.now();
+  for (const leaf of leaves) {
+    await sql`
+      INSERT INTO wallet_scores (address, total_score, computed_at)
+      VALUES (${leaf.address.toLowerCase()}, ${leaf.score}, ${now})
+      ON CONFLICT (address) DO UPDATE SET total_score = ${leaf.score}, computed_at = ${now}
+    `.catch(() => {}); // Fail-open if table doesn't exist yet
   }
 
   return { root, leaves, proofs };
