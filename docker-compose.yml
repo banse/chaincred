@@ -100,13 +100,11 @@ services:
     entrypoint: ['anvil']
     command:
       [
-        '--fork-url', '${FORK_RPC_URL:-https://eth.llamarpc.com}',
         '--host', '0.0.0.0',
         '--port', '8545',
         '--chain-id', '1',
         '--accounts', '3',
         '--balance', '10000',
-        '--fork-block-number', '19000000',
       ]
     ports:
       - '8545:8545'

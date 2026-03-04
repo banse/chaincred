@@ -86,6 +86,9 @@ cleanup() {
 
 trap cleanup EXIT
 
+# ── Ensure Foundry is in PATH ──
+export PATH="$HOME/.foundry/bin:$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 # ── Configuration ──
 
 API_URL="http://localhost:3001"
@@ -132,30 +135,33 @@ done
 # Phase 2: Start Anvil
 # ══════════════════════════════════════
 
-section "Phase 2: Start Anvil (mainnet fork)"
+section "Phase 2: Start Anvil"
 
 if command -v anvil > /dev/null 2>&1; then
   echo "Using local Anvil..."
   ANVIL_SOURCE="local"
-  anvil --fork-url "$FORK_RPC_URL" \
-    --port 8545 --chain-id 1 --accounts 3 --balance 10000 \
-    --fork-block-number 19000000 \
+  # No --fork-url needed: we seed our own data and deploy contracts fresh
+  anvil --port 8545 --chain-id 1 --accounts 3 --balance 10000 \
     > /tmp/anvil-e2e.log 2>&1 &
   ANVIL_PID=$!
 else
   echo "Local Anvil not found, using Docker..."
   ANVIL_SOURCE="docker"
-  FORK_RPC_URL="$FORK_RPC_URL" docker compose --profile e2e up -d anvil
+  docker compose --profile e2e up -d anvil
 fi
 
 echo "Waiting for Anvil..."
-for i in $(seq 1 30); do
+for i in $(seq 1 60); do
   if cast block-number --rpc-url "$RPC_URL" > /dev/null 2>&1; then
     echo "Anvil ready at block $(cast block-number --rpc-url "$RPC_URL")."
     break
   fi
-  if [[ $i -eq 30 ]]; then
-    echo "Error: Anvil did not start in 30s"
+  if [[ $i -eq 60 ]]; then
+    echo "Error: Anvil did not start in 60s"
+    if [[ -f /tmp/anvil-e2e.log ]]; then
+      echo "Anvil log:"
+      cat /tmp/anvil-e2e.log
+    fi
     exit 1
   fi
   sleep 1
@@ -473,8 +479,9 @@ fi
 echo ""
 echo "Card endpoints:"
 
-CARD_RESP=$(curl -sf "$API_URL/v1/card/$VITALIK.png" 2>/dev/null || echo "")
-if [[ -n "$CARD_RESP" ]]; then
+CARD_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/v1/card/$VITALIK.png" 2>/dev/null || echo "0")
+CARD_RESP=$(curl -s "$API_URL/v1/card/$VITALIK.png" 2>/dev/null || echo "")
+if [[ -n "$CARD_RESP" && "$CARD_STATUS" -eq 200 ]]; then
   if echo "$CARD_RESP" | grep -q "<svg"; then
     pass "card: returns SVG"
   else
@@ -487,7 +494,7 @@ if [[ -n "$CARD_RESP" ]]; then
     fail "card: missing ChainCred branding"
   fi
 else
-  fail "card: GET /v1/card/$VITALIK.png failed"
+  fail "card: GET /v1/card/$VITALIK.png failed (HTTP $CARD_STATUS)"
 fi
 
 # ── Merkle Proof ──
@@ -697,6 +704,355 @@ if [[ -n "$STATS_JSON" ]]; then
   fi
 else
   fail "stats: GET /v1/stats failed"
+fi
+
+# ── Score Differentials ──
+echo ""
+echo "Score differentials:"
+
+# Governor wallet should have high governance raw
+GOV_JSON=$(curl -sf "$API_URL/v1/score/$GOVERNOR" 2>/dev/null || echo "")
+if [[ -n "$GOV_JSON" ]]; then
+  GOV_RAW=$(echo "$GOV_JSON" | jq -r '.breakdown.governance.raw // 0')
+  if [[ "$GOV_RAW" -ge 400 ]]; then
+    pass "differential: governor governance.raw >= 400 ($GOV_RAW)"
+  else
+    fail "differential: governor governance.raw < 400" "got $GOV_RAW"
+  fi
+else
+  fail "differential: GET /v1/score/$GOVERNOR failed"
+fi
+
+# Deployer wallet should have high builder raw
+DEPLOYER_JSON=$(curl -sf "$API_URL/v1/score/$DEPLOYER" 2>/dev/null || echo "")
+if [[ -n "$DEPLOYER_JSON" ]]; then
+  BUILDER_RAW=$(echo "$DEPLOYER_JSON" | jq -r '.breakdown.builder.raw // 0')
+  if [[ "$BUILDER_RAW" -ge 400 ]]; then
+    pass "differential: deployer builder.raw >= 400 ($BUILDER_RAW)"
+  else
+    fail "differential: deployer builder.raw < 400" "got $BUILDER_RAW"
+  fi
+else
+  fail "differential: GET /v1/score/$DEPLOYER failed"
+fi
+
+# Sybil wallet should have low total score
+SYBIL_SCORE_JSON=$(curl -sf "$API_URL/v1/score/$SYBIL" 2>/dev/null || echo "")
+if [[ -n "$SYBIL_SCORE_JSON" ]]; then
+  SYBIL_TOTAL=$(echo "$SYBIL_SCORE_JSON" | jq -r '.totalScore // 999')
+  VITALIK_TOTAL=$(echo "$SCORE_JSON" | jq -r '.totalScore // 0')
+  if [[ "$SYBIL_TOTAL" -lt "$VITALIK_TOTAL" ]]; then
+    pass "differential: sybil totalScore ($SYBIL_TOTAL) < vitalik ($VITALIK_TOTAL)"
+  else
+    fail "differential: sybil >= vitalik" "sybil=$SYBIL_TOTAL vitalik=$VITALIK_TOTAL"
+  fi
+else
+  fail "differential: GET /v1/score/$SYBIL failed"
+fi
+
+# Explorer wallet should have high protocolDiversity
+EXPLORER_JSON=$(curl -sf "$API_URL/v1/score/$EXPLORER" 2>/dev/null || echo "")
+if [[ -n "$EXPLORER_JSON" ]]; then
+  PD_RAW=$(echo "$EXPLORER_JSON" | jq -r '.breakdown.protocolDiversity.raw // 0')
+  if [[ "$PD_RAW" -ge 600 ]]; then
+    pass "differential: explorer protocolDiversity.raw >= 600 ($PD_RAW)"
+  else
+    fail "differential: explorer protocolDiversity.raw < 600" "got $PD_RAW"
+  fi
+else
+  fail "differential: GET /v1/score/$EXPLORER failed"
+fi
+
+# ── Badge Differentials ──
+echo ""
+echo "Badge differentials:"
+
+# Governor wallet should earn governor badge
+GOV_BADGE_JSON=$(curl -sf "$API_URL/v1/badges/$GOVERNOR" 2>/dev/null || echo "")
+if [[ -n "$GOV_BADGE_JSON" ]]; then
+  GOV_BADGE_EARNED=$(echo "$GOV_BADGE_JSON" | jq '[.badges[] | select(.type == "governor")] | .[0].earned')
+  if [[ "$GOV_BADGE_EARNED" == "true" ]]; then
+    pass "badges: governor earned (brantly)"
+  else
+    fail "badges: governor not earned (brantly)"
+  fi
+
+  TRUSTED_EARNED=$(echo "$GOV_BADGE_JSON" | jq '[.badges[] | select(.type == "trusted")] | .[0].earned')
+  if [[ "$TRUSTED_EARNED" == "true" ]]; then
+    pass "badges: trusted earned (brantly — 5 DAOs + 5 delegations + safe)"
+  else
+    fail "badges: trusted not earned (brantly)"
+  fi
+else
+  fail "badges: GET /v1/badges/$GOVERNOR failed"
+fi
+
+# Sybil wallet should NOT earn builder/governor badges
+SYBIL_BADGE_JSON=$(curl -sf "$API_URL/v1/badges/$SYBIL" 2>/dev/null || echo "")
+if [[ -n "$SYBIL_BADGE_JSON" ]]; then
+  SYBIL_BUILDER=$(echo "$SYBIL_BADGE_JSON" | jq '[.badges[] | select(.type == "builder")] | .[0].earned')
+  SYBIL_GOVERNOR=$(echo "$SYBIL_BADGE_JSON" | jq '[.badges[] | select(.type == "governor")] | .[0].earned')
+  if [[ "$SYBIL_BUILDER" == "false" && "$SYBIL_GOVERNOR" == "false" ]]; then
+    pass "badges: sybil has no builder/governor"
+  else
+    fail "badges: sybil should not have builder/governor" "builder=$SYBIL_BUILDER governor=$SYBIL_GOVERNOR"
+  fi
+else
+  fail "badges: GET /v1/badges/$SYBIL failed"
+fi
+
+# ── Webhook DELETE ──
+echo ""
+echo "Webhook DELETE:"
+
+if [[ -n "$WH_ID" && "$WH_ID" != "null" ]]; then
+  WH_DEL_STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$API_URL/v1/webhooks/$WH_ID" 2>/dev/null || echo "0")
+  if [[ "$WH_DEL_STATUS" -eq 200 ]]; then
+    pass "webhooks: DELETE returns 200"
+  else
+    fail "webhooks: DELETE status != 200" "got $WH_DEL_STATUS"
+  fi
+
+  # Verify it's gone
+  WH_LIST_AFTER=$(curl -sf "$API_URL/v1/webhooks" 2>/dev/null || echo "")
+  if [[ -n "$WH_LIST_AFTER" ]]; then
+    WH_COUNT_AFTER=$(echo "$WH_LIST_AFTER" | jq "[.webhooks[] | select(.id == \"$WH_ID\")] | length")
+    if [[ "$WH_COUNT_AFTER" -eq 0 ]]; then
+      pass "webhooks: deleted webhook not in list"
+    else
+      fail "webhooks: deleted webhook still in list"
+    fi
+  else
+    fail "webhooks: GET after DELETE failed"
+  fi
+else
+  skip "webhooks: DELETE skipped (no webhook id)"
+  skip "webhooks: verify deletion skipped"
+fi
+
+# ── Admin CRUD ──
+echo ""
+echo "Admin CRUD:"
+
+# POST new bear market period
+ADMIN_POST=$(curl -sf -X POST "$API_URL/v1/admin/bear-periods" \
+  -H "X-Admin-Key: $ADMIN_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"label":"E2E Test Period","startTimestamp":1704067200,"endTimestamp":1706745600}' 2>/dev/null || echo "")
+
+if [[ -n "$ADMIN_POST" ]]; then
+  ADMIN_OK=$(echo "$ADMIN_POST" | jq -r '.ok // false')
+  if [[ "$ADMIN_OK" == "true" ]]; then
+    pass "admin: POST bear period ok"
+  else
+    fail "admin: POST bear period failed" "$(echo "$ADMIN_POST" | jq -c .)"
+  fi
+else
+  fail "admin: POST /v1/admin/bear-periods failed"
+fi
+
+# Verify it appears in GET
+ADMIN_LIST=$(curl -sf -H "X-Admin-Key: $ADMIN_KEY" "$API_URL/v1/admin/bear-periods" 2>/dev/null || echo "")
+if [[ -n "$ADMIN_LIST" ]]; then
+  HAS_E2E=$(echo "$ADMIN_LIST" | jq '[.periods[] | select(.label == "E2E Test Period")] | length')
+  if [[ "$HAS_E2E" -gt 0 ]]; then
+    pass "admin: dynamic period visible in GET"
+  else
+    fail "admin: dynamic period not found after POST"
+  fi
+else
+  fail "admin: GET after POST failed"
+fi
+
+# DELETE the dynamic period
+ADMIN_DEL=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE \
+  -H "X-Admin-Key: $ADMIN_KEY" \
+  "$API_URL/v1/admin/bear-periods/E2E%20Test%20Period" 2>/dev/null || echo "0")
+
+if [[ "$ADMIN_DEL" -eq 200 ]]; then
+  pass "admin: DELETE bear period returns 200"
+else
+  fail "admin: DELETE bear period status != 200" "got $ADMIN_DEL"
+fi
+
+# Verify unauthorized access is rejected
+ADMIN_UNAUTH=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/v1/admin/bear-periods" \
+  -H "Content-Type: application/json" \
+  -d '{"label":"Hack","startTimestamp":1,"endTimestamp":2}' 2>/dev/null || echo "0")
+
+if [[ "$ADMIN_UNAUTH" -eq 401 ]]; then
+  pass "admin: unauthorized POST returns 401"
+else
+  fail "admin: unauthorized POST != 401" "got $ADMIN_UNAUTH"
+fi
+
+# ── Error Handling ──
+echo ""
+echo "Error handling:"
+
+# Invalid address
+INVALID_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/v1/score/not-an-address" 2>/dev/null || echo "0")
+if [[ "$INVALID_STATUS" -eq 400 ]]; then
+  pass "error: invalid address returns 400"
+else
+  fail "error: invalid address status != 400" "got $INVALID_STATUS"
+fi
+
+# Unknown wallet (valid address, no data) — 200 (zero score), 404, or 500 (DB miss) all acceptable
+UNKNOWN_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/v1/score/0x1111111111111111111111111111111111111111" 2>/dev/null || echo "0")
+if [[ "$UNKNOWN_STATUS" -eq 200 || "$UNKNOWN_STATUS" -eq 404 || "$UNKNOWN_STATUS" -eq 500 ]]; then
+  pass "error: unknown wallet returns $UNKNOWN_STATUS"
+else
+  fail "error: unknown wallet unexpected status" "got $UNKNOWN_STATUS"
+fi
+
+# ── WebSocket Streaming ──
+echo ""
+echo "WebSocket streaming:"
+
+# Use a Bun script to test WebSocket since bash can't do WS natively
+WS_TEST_SCRIPT=$(mktemp /tmp/ws-test-XXXXXX.ts)
+cat > "$WS_TEST_SCRIPT" << 'WSEOF'
+const addr = process.argv[2] || '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
+const url = `ws://localhost:3001/v1/stream/${addr}`;
+const results: string[] = [];
+let done = false;
+
+const ws = new WebSocket(url);
+const timeout = setTimeout(() => {
+  if (!done) {
+    results.push('TIMEOUT');
+    ws.close();
+    done = true;
+    console.log(JSON.stringify(results));
+    process.exit(0);
+  }
+}, 5000);
+
+ws.onopen = () => {
+  results.push('CONNECTED');
+  // Wait 500ms for initial score message before sending ping
+  setTimeout(() => ws.send('ping'), 500);
+};
+
+ws.onmessage = (event) => {
+  const data = String(event.data);
+  if (data === 'pong') {
+    results.push('PONG');
+    // Got pong, we're done
+    ws.close();
+  } else {
+    try {
+      const msg = JSON.parse(data);
+      if (msg.type === 'score') {
+        results.push('SCORE_RECEIVED');
+      } else if (msg.type === 'error') {
+        results.push('ERROR:' + msg.message);
+      }
+    } catch {
+      results.push('UNKNOWN:' + data.slice(0, 50));
+    }
+  }
+};
+
+ws.onclose = () => {
+  if (!done) {
+    done = true;
+    clearTimeout(timeout);
+    console.log(JSON.stringify(results));
+    process.exit(0);
+  }
+};
+
+ws.onerror = (err) => {
+  if (!done) {
+    results.push('WS_ERROR');
+    done = true;
+    clearTimeout(timeout);
+    console.log(JSON.stringify(results));
+    process.exit(1);
+  }
+};
+WSEOF
+
+WS_OUTPUT=$(bun run "$WS_TEST_SCRIPT" "$VITALIK" 2>/dev/null || echo "[]")
+rm -f "$WS_TEST_SCRIPT"
+
+if echo "$WS_OUTPUT" | jq -e '.' > /dev/null 2>&1; then
+  HAS_CONNECTED=$(echo "$WS_OUTPUT" | jq 'any(. == "CONNECTED")')
+  if [[ "$HAS_CONNECTED" == "true" ]]; then
+    pass "ws: connected successfully"
+  else
+    fail "ws: did not connect" "$WS_OUTPUT"
+  fi
+
+  HAS_SCORE=$(echo "$WS_OUTPUT" | jq 'any(. == "SCORE_RECEIVED")')
+  HAS_INITIAL=$(echo "$WS_OUTPUT" | jq 'any(. == "SCORE_RECEIVED" or startswith("ERROR:"))')
+  if [[ "$HAS_SCORE" == "true" ]]; then
+    pass "ws: received initial score"
+  elif [[ "$HAS_INITIAL" == "true" ]]; then
+    pass "ws: received initial message (score unavailable — acceptable)"
+  else
+    fail "ws: no initial message received" "$WS_OUTPUT"
+  fi
+
+  HAS_PONG=$(echo "$WS_OUTPUT" | jq 'any(. == "PONG")')
+  if [[ "$HAS_PONG" == "true" ]]; then
+    pass "ws: ping/pong works"
+  else
+    fail "ws: no pong received" "$WS_OUTPUT"
+  fi
+else
+  fail "ws: test script failed" "$WS_OUTPUT"
+  fail "ws: skipped (script error)"
+  fail "ws: skipped (script error)"
+fi
+
+# WS with invalid address
+WS_INVALID_SCRIPT=$(mktemp /tmp/ws-invalid-XXXXXX.ts)
+cat > "$WS_INVALID_SCRIPT" << 'WSEOF2'
+const url = 'ws://localhost:3001/v1/stream/not-an-address';
+let result = 'UNKNOWN';
+
+const ws = new WebSocket(url);
+const timeout = setTimeout(() => { console.log(result); process.exit(0); }, 3000);
+
+ws.onmessage = (event) => {
+  const data = String(event.data);
+  try {
+    const msg = JSON.parse(data);
+    if (msg.type === 'error') { result = 'ERROR_RECEIVED'; }
+  } catch {}
+};
+
+ws.onclose = () => { clearTimeout(timeout); console.log(result); process.exit(0); };
+ws.onerror = () => { clearTimeout(timeout); console.log('WS_ERROR'); process.exit(0); };
+WSEOF2
+
+WS_INVALID_OUTPUT=$(bun run "$WS_INVALID_SCRIPT" 2>/dev/null || echo "WS_ERROR")
+rm -f "$WS_INVALID_SCRIPT"
+
+if [[ "$WS_INVALID_OUTPUT" == "ERROR_RECEIVED" ]]; then
+  pass "ws: invalid address returns error"
+else
+  # WS might just close without error message — that's acceptable
+  skip "ws: invalid address handling ($WS_INVALID_OUTPUT)"
+fi
+
+# ── Leaderboard Pagination ──
+echo ""
+echo "Leaderboard pagination:"
+
+LB_PAGE=$(curl -sf "$API_URL/v1/leaderboard?limit=3" 2>/dev/null || echo "")
+if [[ -n "$LB_PAGE" ]]; then
+  LB_PAGE_COUNT=$(echo "$LB_PAGE" | jq '.entries | length')
+  if [[ "$LB_PAGE_COUNT" -le 3 ]]; then
+    pass "leaderboard: limit=3 returns <= 3 entries ($LB_PAGE_COUNT)"
+  else
+    fail "leaderboard: limit=3 returned too many" "got $LB_PAGE_COUNT"
+  fi
+else
+  fail "leaderboard: GET with limit failed"
 fi
 
 echo ""

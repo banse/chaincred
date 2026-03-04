@@ -1,11 +1,9 @@
 import { Hono } from 'hono';
 import { isValidAddress, BADGE_DEFINITIONS } from '@chaincred/common';
 import type { ScoreBreakdown, Badge } from '@chaincred/common';
-import { cache } from '../middleware/cache.js';
 import { getScore } from '../services/score.js';
 import { getWalletActivity } from '../services/activity.js';
 import { evaluateBadges } from '@chaincred/scoring';
-import { calculateScore } from '@chaincred/scoring';
 
 export const cardRoutes = new Hono();
 
@@ -88,24 +86,30 @@ function renderSvg(data: CardData): string {
 </svg>`;
 }
 
-cardRoutes.get('/:address', cache(300), async (c) => {
+cardRoutes.get('/:address', async (c) => {
   const raw = c.req.param('address') ?? '';
   const address = raw.replace(/\.png$/, '');
   if (!isValidAddress(address)) {
     return c.json({ error: 'Invalid Ethereum address' }, 400);
   }
-  const scoreData = await getScore(address);
-  const activity = await getWalletActivity(address);
-  const badgeResult = activity ? evaluateBadges(activity, scoreData.breakdown) : { badges: [] as Badge[] };
 
-  const svg = renderSvg({
-    address,
-    score: scoreData.totalScore,
-    breakdown: scoreData.breakdown,
-    badges: badgeResult.badges,
-    ensName: scoreData.ensName,
-  });
-  return new Response(svg, {
-    headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=300' },
-  });
+  try {
+    const scoreData = await getScore(address);
+    const activity = await getWalletActivity(address);
+    const badgeResult = activity ? evaluateBadges(activity, scoreData.breakdown) : { badges: [] as Badge[] };
+
+    const svg = renderSvg({
+      address,
+      score: scoreData.totalScore,
+      breakdown: scoreData.breakdown,
+      badges: badgeResult.badges,
+      ensName: scoreData.ensName,
+    });
+    return new Response(svg, {
+      headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=300' },
+    });
+  } catch (err) {
+    console.error('[Card Error]', err);
+    return c.json({ error: 'Failed to generate card' }, 500);
+  }
 });
