@@ -77,6 +77,7 @@ services:
         condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://chaincred:chaincred@postgres:5432/chaincred
+      HYPERSYNC_API_TOKEN: ${HYPERSYNC_API_TOKEN:-}
 
   # ── Merkle tree generation (run manually: docker compose run merkle-gen) ──
 
@@ -163,6 +164,7 @@ services:
         condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://chaincred:chaincred@postgres:5432/chaincred
+      HYPERSYNC_API_TOKEN: ${HYPERSYNC_API_TOKEN:-}
 
 volumes:
   pgdata:

@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChainCred Documentation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0b0f1a;
+    --surface: #111827;
+    --surface-2: #1a2234;
+    --border: #1e293b;
+    --border-2: #2d3a4f;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #6366f1;
+    --accent-soft: rgba(99, 102, 241, 0.12);
+    --builder: #f97316;
+    --governance: #a855f7;
+    --temporal: #eab308;
+    --diversity: #14b8a6;
+    --complexity: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f97316;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    background: var(--bg);
+  }
+
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  .page-wrap {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar Nav ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 24px 0;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-logo h1 {
+    font-size: 20px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+  }
+
+  .sidebar-logo .tagline {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .nav-section {
+    padding: 8px 16px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+
+  .nav-link {
+    display: block;
+    padding: 6px 20px;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+
+  .nav-link:hover {
+    color: var(--text);
+    background: var(--accent-soft);
+    border-left-color: var(--accent);
+  }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: 260px;
+    flex: 1;
+    max-width: 900px;
+    padding: 48px 56px 120px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    margin-bottom: 56px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero h1 {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 .gradient {
+    background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero p {
+    font-size: 17px;
+    color: var(--text-dim);
+    max-width: 640px;
+    line-height: 1.7;
+  }
+
+  .chain-pills {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .chain-pill {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-dim);
+  }
+
+  /* ── Sections ── */
+  section {
+    margin-bottom: 56px;
+  }
+
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+    padding-top: 24px;
+    color: #f1f5f9;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    margin-top: 32px;
+    color: #e2e8f0;
+  }
+
+  h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    margin-top: 20px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 12px;
+  }
+
+  p {
+    margin-bottom: 12px;
+    color: var(--text-dim);
+  }
+
+  p + p { margin-top: 0; }
+
+  strong { color: var(--text); font-weight: 600; }
+
+  /* ── Score Formula ── */
+  .formula-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 16px 0 24px;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  .formula-box .dim { color: var(--text-muted); }
+  .formula-box .accent { color: var(--accent); }
+  .formula-box .green { color: var(--green); }
+
+  /* ── Category Cards ── */
+  .category-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .category-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+  }
+
+  .category-card.builder::before { background: var(--builder); }
+  .category-card.governance::before { background: var(--governance); }
+  .category-card.temporal::before { background: var(--temporal); }
+  .category-card.diversity::before { background: var(--diversity); }
+  .category-card.complexity::before { background: var(--complexity); }
+
+  .category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .category-header h3 {
+    margin: 0;
+    font-size: 17px;
+  }
+
+  .weight-badge {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+  }
+
+  .weight-badge.builder { color: var(--builder); }
+  .weight-badge.governance { color: var(--governance); }
+  .weight-badge.temporal { color: var(--temporal); }
+  .weight-badge.diversity { color: var(--diversity); }
+  .weight-badge.complexity { color: var(--complexity); }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-2);
+  }
+
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--text); font-weight: 500; }
+
+  td code {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--accent);
+  }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 12px 0 16px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  p code, li code {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--accent);
+    font-size: 12.5px;
+  }
+
+  /* ── Badge grid ── */
+  .badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .badge-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .badge-card .badge-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .badge-card .badge-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .badge-card .badge-criteria {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── Sybil heuristic list ── */
+  .heuristic {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+
+  .heuristic-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .heuristic-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .heuristic-penalty {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--red);
+  }
+
+  .heuristic p {
+    font-size: 13px;
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  /* ── API endpoint list ── */
+  .endpoint {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .endpoint:last-child { border-bottom: none; }
+
+  .method {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    min-width: 48px;
+    text-align: center;
+  }
+
+  .method.get { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+  .method.post { background: rgba(59, 130, 246, 0.15); color: var(--complexity); }
+  .method.delete { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+  .method.ws { background: rgba(168, 85, 247, 0.15); color: var(--governance); }
+
+  .endpoint-path {
+    font-family: var(--mono);
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .endpoint-desc {
+    color: var(--text-muted);
+    margin-left: auto;
+    font-size: 12px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── Contract cards ── */
+  .contract-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 12px 0;
+  }
+
+  .contract-card h4 {
+    text-transform: none;
+    font-size: 16px;
+    letter-spacing: normal;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .contract-card ul {
+    margin: 8px 0 0 16px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .contract-card li {
+    margin-bottom: 4px;
+  }
+
+  /* ── Lists ── */
+  ul, ol {
+    margin: 8px 0 16px 20px;
+    color: var(--text-dim);
+  }
+
+  li { margin-bottom: 4px; }
+
+  /* ── Protocol table ── */
+  .protocol-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .protocol-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .protocol-name { font-weight: 500; color: var(--text); }
+  .protocol-cat {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+  }
+
+  /* ── Config table ── */
+  .config-table td:first-child {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 32px 20px 80px; }
+    .hero h1 { font-size: 28px; }
+    .endpoint { flex-wrap: wrap; gap: 4px; }
+    .endpoint-desc { margin-left: 58px; }
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h1>ChainCred</h1>
+    <div class="tagline">Onchain Expertise Reputation Layer</div>
+  </div>
+
+  <div class="nav-section">Overview</div>
+  <a class="nav-link" href="#overview">What is ChainCred</a>
+  <a class="nav-link" href="#scoring">How Scoring Works</a>
+
+  <div class="nav-section">Score Categories</div>
+  <a class="nav-link" href="#builder">Builder (30%)</a>
+  <a class="nav-link" href="#governance">Governance (25%)</a>
+  <a class="nav-link" href="#temporal">Temporal (20%)</a>
+  <a class="nav-link" href="#protocol-diversity">Protocol Diversity (15%)</a>
+  <a class="nav-link" href="#complexity">Complexity (10%)</a>
+
+  <div class="nav-section">Trust & Safety</div>
+  <a class="nav-link" href="#sybil">Sybil Detection</a>
+  <a class="nav-link" href="#badges">Badges</a>
+  <a class="nav-link" href="#appeals">Appeals</a>
+  <a class="nav-link" href="#exclusions">Exclusion Registry</a>
+
+  <div class="nav-section">Infrastructure</div>
+  <a class="nav-link" href="#api">REST API</a>
+  <a class="nav-link" href="#websocket">WebSocket & Webhooks</a>
+  <a class="nav-link" href="#contracts">Smart Contracts</a>
+  <a class="nav-link" href="#merkle">Merkle Proofs & IPFS</a>
+  <a class="nav-link" href="#indexer">Multi-Chain Indexer</a>
+
+  <div class="nav-section">Integrations</div>
+  <a class="nav-link" href="#protocols">Protocol Registry</a>
+  <a class="nav-link" href="#etherscan">Etherscan Enrichment</a>
+  <a class="nav-link" href="#ens">ENS Resolution</a>
+
+  <div class="nav-section">Frontend & Sharing</div>
+  <a class="nav-link" href="#explorer">Web Explorer</a>
+  <a class="nav-link" href="#card">Score Card & Frame</a>
+  <a class="nav-link" href="#widget">Verification Widget</a>
+
+  <div class="nav-section">Operations</div>
+  <a class="nav-link" href="#config">Configuration</a>
+  <a class="nav-link" href="#docker">Docker & CI/CD</a>
+  <a class="nav-link" href="#testing">Testing</a>
+</nav>
+
+<!-- ── Main Content ── -->
+<main class="main">
+
+<!-- ═══ HERO ═══ -->
+<header class="hero" id="overview">
+  <h1>ChainCred<br><span class="gradient">Documentation</span></h1>
+  <p>ChainCred is an onchain expertise reputation layer for Ethereum and EVM networks. It indexes wallet activity, computes sybil-resistant expertise scores from 0 to 1000, and makes results available through a REST API, web explorer, and EAS attestations.</p>
+  <p>Scores are based on <strong>what wallets do</strong> &mdash; not what they hold.</p>
+  <div class="chain-pills">
+    <span class="chain-pill">Ethereum</span>
+    <span class="chain-pill">Arbitrum</span>
+    <span class="chain-pill">Optimism</span>
+    <span class="chain-pill">Base</span>
+    <span class="chain-pill">zkSync Era</span>
+    <span class="chain-pill">Polygon</span>
+  </div>
+</header>
+
+<!-- ═══ SCORING OVERVIEW ═══ -->
+<section id="scoring">
+  <h2>How Scoring Works</h2>
+  <p>Every wallet receives a score from <strong>0 to 1000</strong>. The score is computed from five weighted categories, each producing a raw score (0&ndash;1000) from multiple onchain signals. The raw weighted sum is then multiplied by a <strong>sybil confidence multiplier</strong> (0.0&ndash;1.0).</p>
+
+  <div class="formula-box">
+    <span class="dim">rawScore</span> = builder<span class="dim">.weighted</span> + governance<span class="dim">.weighted</span> + temporal<span class="dim">.weighted</span> + diversity<span class="dim">.weighted</span> + complexity<span class="dim">.weighted</span><br>
+    <span class="accent">totalScore</span> = round(<span class="dim">rawScore</span> &times; <span class="green">sybilMultiplier</span>)
+  </div>
+
+  <table>
+    <tr><th>Category</th><th>Weight</th><th>Signals</th><th>What It Measures</th></tr>
+    <tr><td style="color:var(--builder)">Builder</td><td>30%</td><td>10</td><td>Contract deployments, verified source, real adoption</td></tr>
+    <tr><td style="color:var(--governance)">Governance</td><td>25%</td><td>9</td><td>DAO votes, proposals, multi-sig, delegation</td></tr>
+    <tr><td style="color:var(--temporal)">Temporal</td><td>20%</td><td>5</td><td>Wallet age, bear market activity, consistency</td></tr>
+    <tr><td style="color:var(--diversity)">Protocol Diversity</td><td>15%</td><td>4</td><td>Protocol breadth, chain diversity, domain coverage</td></tr>
+    <tr><td style="color:var(--complexity)">Complexity</td><td>10%</td><td>7</td><td>Calldata size, flashloans, permits, internal txs</td></tr>
+  </table>
+</section>
+
+<!-- ═══ BUILDER ═══ -->
+<section id="builder">
+  <div class="category-card builder">
+    <div class="category-header">
+      <h3>Builder Score</h3>
+      <span class="weight-badge builder">30%</span>
+    </div>
+    <p>Measures onchain creation activity. Rewards volume, cross-chain fluency, constructor sophistication, verified source code, and real-world contract adoption.</p>
+    <table>
+      <tr><th>Signal</th><th>Formula</th><th>Cap</th></tr>
+      <tr><td>Contract deployments</td><td><code>contracts &times; 60</code></td><td>420</td></tr>
+      <tr><td>Multi-chain deployments</td><td><code>chains &times; 80</code></td><td>320</td></tr>
+      <tr><td>Constructor complexity</td><td><code>sqrt(avgBytes) &times; 15</code></td><td>200</td></tr>
+      <tr><td>Deployment focus ratio</td><td><code>(deploys / totalTx) &times; 800</code></td><td>160</td></tr>
+      <tr><td>CREATE2 deployments</td><td><code>create2 &times; 50</code></td><td>150</td></tr>
+      <tr><td>ERC-4337 operations</td><td><code>ops &times; 40</code></td><td>200</td></tr>
+      <tr><td>Deployment longevity</td><td><code>floor(ageMonths / 6) &times; 60</code></td><td>180</td></tr>
+      <tr><td>Verified source deployments</td><td><code>verified &times; 80</code></td><td>240</td></tr>
+      <tr><td>Contract external users</td><td><code>uniqueCallers &times; 30</code></td><td>300</td></tr>
+      <tr><td>Active contracts (&gt;6mo)</td><td><code>active &times; 70</code></td><td>280</td></tr>
+    </table>
+    <p>Signal caps sum to 2,450 &mdash; intentionally over 1,000 since no wallet maxes all signals. Final raw capped at 1,000. Signals 8&ndash;10 require Etherscan enrichment.</p>
+  </div>
+</section>
+
+<!-- ═══ GOVERNANCE ═══ -->
+<section id="governance">
+  <div class="category-card governance">
+    <div class="category-header">
+      <h3>Governance Score</h3>
+      <span class="weight-badge governance">25%</span>
+    </div>
+    <p>Measures DAO participation depth and quality. The indexer classifies governance interactions into five subtypes: <strong>vote, propose, delegate, queue, execute</strong>.</p>
+    <table>
+      <tr><th>Signal</th><th>Formula</th><th>Cap</th></tr>
+      <tr><td>DAO votes cast</td><td><code>votes &times; 40</code></td><td>400</td></tr>
+      <tr><td>DAOs participated in</td><td><code>daos &times; 120</code></td><td>360</td></tr>
+      <tr><td>Proposals authored</td><td><code>proposals &times; 150</code></td><td>150</td></tr>
+      <tr><td>Delegation events</td><td><code>delegations &times; 30</code></td><td>90</td></tr>
+      <tr><td>Treasury execution</td><td><code>executions &times; 60</code></td><td>120</td></tr>
+      <tr><td>Cross-chain governance</td><td><code>govChains &times; 50</code></td><td>150</td></tr>
+      <tr><td>Independent votes</td><td><code>againstOrAbstain &times; 40</code></td><td>120</td></tr>
+      <tr><td>Safe multi-sig executions</td><td><code>safeExecs &times; 50</code></td><td>200</td></tr>
+      <tr><td>Reasoned votes</td><td><code>reasonedVotes &times; 50</code></td><td>150</td></tr>
+    </table>
+    <p>Independent votes parse the <code>support</code> parameter from castVote calldata &mdash; support=0 (against) or support=2 (abstain) indicates independent thinking. Reasoned votes detect <code>castVoteWithReason</code> variants.</p>
+  </div>
+</section>
+
+<!-- ═══ TEMPORAL ═══ -->
+<section id="temporal">
+  <div class="category-card temporal">
+    <div class="category-header">
+      <h3>Temporal Score</h3>
+      <span class="weight-badge temporal">20%</span>
+    </div>
+    <p>Time-weighted consistency &mdash; the hardest signal to fake. Rewards long-term presence and activity during market downturns.</p>
+    <table>
+      <tr><th>Signal</th><th>Formula</th><th>Cap</th></tr>
+      <tr><td>Wallet age</td><td><code>years &times; 100</code></td><td>400</td></tr>
+      <tr><td>Bear market activity</td><td><code>bearTxs &times; 10</code></td><td>300</td></tr>
+      <tr><td>Consistency ratio</td><td><code>(activeMonths / ageMonths) &times; 300</code></td><td>300</td></tr>
+      <tr><td>Activity entropy</td><td><code>(distinctHours / 24) &times; 200</code></td><td>200</td></tr>
+      <tr><td>Cross-cycle persistence</td><td><code>bearPeriods &times; 150</code></td><td>300</td></tr>
+    </table>
+    <p>Three hardcoded bear market windows: <strong>Nov 2018&ndash;Mar 2019</strong>, <strong>May 2021&ndash;Nov 2021</strong>, <strong>Nov 2022&ndash;Jan 2023</strong>. Additional periods can be added via the admin API. Activity entropy measures distinct transaction hours (humans: 8&ndash;15, bots: 2&ndash;3).</p>
+  </div>
+</section>
+
+<!-- ═══ PROTOCOL DIVERSITY ═══ -->
+<section id="protocol-diversity">
+  <div class="category-card diversity">
+    <div class="category-header">
+      <h3>Protocol Diversity Score</h3>
+      <span class="weight-badge diversity">15%</span>
+    </div>
+    <p>Measures breadth of protocol engagement across protocols, chains, and domain categories.</p>
+    <table>
+      <tr><th>Signal</th><th>Formula</th><th>Cap</th></tr>
+      <tr><td>Unique protocols used</td><td><code>protocols &times; 35</code></td><td>350</td></tr>
+      <tr><td>Chains active on</td><td><code>chains &times; 50</code></td><td>250</td></tr>
+      <tr><td>Cross-domain coverage</td><td><code>categories &times; 80</code></td><td>400</td></tr>
+      <tr><td>Early protocol adoption</td><td><code>earlyAdoptions &times; 60</code></td><td>300</td></tr>
+    </table>
+    <p>Six domain categories: <strong>DeFi, Social, Governance, Infrastructure, Gaming, Builder Tools</strong>. Early adoption awards points for using a protocol within 6 months of its launch timestamp.</p>
+  </div>
+</section>
+
+<!-- ═══ COMPLEXITY ═══ -->
+<section id="complexity">
+  <div class="category-card complexity">
+    <div class="category-header">
+      <h3>Complexity Score</h3>
+      <span class="weight-badge complexity">10%</span>
+    </div>
+    <p>Measures sophistication of individual interactions. Failed transactions contribute positively &mdash; failures mean pushing limits.</p>
+    <table>
+      <tr><th>Signal</th><th>Formula</th><th>Cap</th></tr>
+      <tr><td>Transaction volume</td><td><code>txs &times; 3</code></td><td>300</td></tr>
+      <tr><td>Failed tx ratio</td><td><code>(failed / total) &times; 2000</code></td><td>300</td></tr>
+      <tr><td>Average calldata size</td><td><code>sqrt(avgBytes) &times; 20</code></td><td>400</td></tr>
+      <tr><td>EIP-712 permit interactions</td><td><code>permits &times; 20</code></td><td>200</td></tr>
+      <tr><td>Flashloan transactions</td><td><code>flashloans &times; 100</code></td><td>300</td></tr>
+      <tr><td>Smart wallet interactions</td><td><code>smartWallet &times; 30</code></td><td>150</td></tr>
+      <tr><td>Internal transactions</td><td><code>sqrt(count) &times; 15</code></td><td>200</td></tr>
+    </table>
+    <p>Flashloan detection covers Aave V2/V3, Balancer, Uniswap V3, and dYdX. Permit detection covers ERC-2612 and Permit2 variants. Internal transactions require Etherscan enrichment.</p>
+  </div>
+</section>
+
+<!-- ═══ SYBIL DETECTION ═══ -->
+<section id="sybil">
+  <h2>Sybil Detection</h2>
+  <p>Every wallet is analyzed for bot-like behavior using <strong>10 heuristics</strong>. Each detected flag reduces the confidence multiplier multiplicatively. Wallets are never banned &mdash; just discounted. The confidence score and all detected flags are always visible.</p>
+
+  <div class="formula-box">
+    <span class="dim">confidence</span> = 1.0<br>
+    <span class="dim">for each detected flag:</span><br>
+    &nbsp;&nbsp;confidence &times;= (1 &minus; <span class="accent">penalty</span>)<br><br>
+    <span class="accent">totalScore</span> = round(rawScore &times; confidence)
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">1. Temporal Clustering</span>
+      <span class="heuristic-penalty">&minus;40%</span>
+    </div>
+    <p>Fires when avg &gt;20 txs/day AND wallet age &lt;90 days. 500 txs over 3 years is normal; 500 in 2 weeks is suspicious.</p>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">2. Action Repetition</span>
+      <span class="heuristic-penalty">&minus;30%</span>
+    </div>
+    <p>Fires when &gt;100 txs but &lt;3 protocols on a single chain. Single-protocol farming pattern.</p>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">3. Funding Graph Clustering</span>
+      <span class="heuristic-penalty">&minus;50%</span>
+    </div>
+    <p>Fires when &gt;10 unique recipients but &lt;3 protocols. Detects sybil cluster coordinators distributing funds.</p>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">4. Cross-Chain Mirroring</span>
+      <span class="heuristic-penalty">&minus;60%</span>
+    </div>
+    <p>Fires when 3+ chains share an identical protocol set. Automated sybil farms replicate the same interactions across chains.</p>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">5. CEX Withdrawal Freshness</span>
+      <span class="heuristic-penalty">up to &minus;30%</span>
+    </div>
+    <p>Graduated penalty for wallets &lt;30 days old. Penalty = 30% &times; (1 &minus; ageDays/30). Zero penalty after 30 days.</p>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">6. Zero Failure Rate</span>
+      <span class="heuristic-penalty">&minus;20%</span>
+    </div>
+    <p>Fires when &gt;200 txs and zero failures. Real users inevitably encounter reverts. Perfect success at volume suggests automated pre-simulation.</p>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">7. Perfect Gas Patterns</span>
+      <span class="heuristic-penalty">&minus;15%</span>
+    </div>
+    <p>Fires when &gt;50 txs and &lt;5% distinct gas prices. Bots hardcode gas; humans encounter varying network conditions.</p>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">8. MEV Bot Activity</span>
+      <span class="heuristic-penalty">&minus;15%</span>
+    </div>
+    <p>Fires when &gt;20 MEV interactions AND &gt;30% of total txs. Tracks 6 known MEV contract addresses. Both conditions required (conservative).</p>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">9. Funding Source Cluster</span>
+      <span class="heuristic-penalty">&minus;50%</span>
+    </div>
+    <p>Uses Etherscan to find the first incoming tx funder. If that funder sent to &gt;10 unique wallets, this wallet is likely part of a sybil cluster. Requires <code>ETHERSCAN_API_KEY</code>.</p>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">10. CEX Fresh Wallet</span>
+      <span class="heuristic-penalty">up to &minus;30%</span>
+    </div>
+    <p>Graduated penalty for wallets funded by a known CEX hot wallet (Binance, Coinbase, Kraken, OKX, Gemini) and &lt;90 days old. Requires <code>ETHERSCAN_API_KEY</code>.</p>
+  </div>
+</section>
+
+<!-- ═══ BADGES ═══ -->
+<section id="badges">
+  <h2>Badges</h2>
+  <p>Seven expertise badges recognize specific onchain achievements. Each maps to concrete, verifiable behavior. Badges are also registered onchain in the <code>BadgeResolver</code> contract.</p>
+
+  <div class="badge-grid">
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--builder)">&#x1F3D7;</div>
+      <div class="badge-name">Builder</div>
+      <div class="badge-criteria">3+ deployed contracts</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--governance)">&#x1F5F3;</div>
+      <div class="badge-name">Governor</div>
+      <div class="badge-criteria">5+ DAOs participated, 1+ proposal authored</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--diversity)">&#x1F9EA;</div>
+      <div class="badge-name">Explorer</div>
+      <div class="badge-criteria">20+ unique protocols used</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--temporal)">&#x26F0;</div>
+      <div class="badge-name">OG</div>
+      <div class="badge-criteria">First transaction before Jan 1, 2020</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--complexity)">&#x1F310;</div>
+      <div class="badge-name">Multichain</div>
+      <div class="badge-criteria">Active on 4+ chains</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:#94a3b8">&#x1F510;</div>
+      <div class="badge-name">Trusted</div>
+      <div class="badge-criteria">2+ Safe executions, 3+ DAOs, 3+ delegations</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--red)">&#x26A1;</div>
+      <div class="badge-name">Power User</div>
+      <div class="badge-criteria">Protocol diversity raw &ge;700, complexity raw &ge;500</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ APPEALS ═══ -->
+<section id="appeals">
+  <h2>Sybil Appeal System</h2>
+  <p>Wallets flagged by sybil detection can submit appeals for manual review.</p>
+  <ul>
+    <li><strong>Submit:</strong> <code>POST /v1/appeals</code> with <code>{ address, reason }</code></li>
+    <li><strong>Check:</strong> <code>GET /v1/appeals/:address</code> returns the latest appeal status</li>
+    <li><strong>Score protection:</strong> While an appeal is pending, the sybil multiplier is floored at <strong>0.5</strong> &mdash; the score is reduced but not zeroed</li>
+  </ul>
+  <p>Appeals are stored in PostgreSQL with status tracking (pending/approved/rejected).</p>
+</section>
+
+<!-- ═══ EXCLUSION REGISTRY ═══ -->
+<section id="exclusions">
+  <h2>Exclusion Registry</h2>
+  <p>When <code>CHAINCRED_REGISTRY_ADDRESS</code> is set, the score service checks the onchain <code>ChainCredRegistry</code> contract before scoring. Excluded addresses (protocol-owned wallets, known bots) always receive a score of <strong>0</strong>.</p>
+  <p>The check is <strong>fail-open</strong> &mdash; if the RPC is unreachable, scoring proceeds normally. Admins manage the registry via <code>setExcluded(address, bool)</code> on the contract.</p>
+</section>
+
+<!-- ═══ API ═══ -->
+<section id="api">
+  <h2>REST API</h2>
+  <p>Built on <a href="https://hono.dev" style="color:var(--accent)">Hono</a> (Bun runtime). Base URL: <code>http://localhost:3001/v1</code></p>
+  <p><strong>Rate limit:</strong> 100 requests / 60s per IP. <strong>Cache:</strong> Redis with per-route TTLs (1&ndash;10 min). Fail-open if Redis unavailable.</p>
+
+  <h3>Endpoints</h3>
+
+  <h4>Scoring</h4>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/score/:address</span><span class="endpoint-desc">Full score with category breakdown, ENS, IPFS CID</span></div>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/badges/:address</span><span class="endpoint-desc">Badge evaluation (7 types, earned status)</span></div>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/sybil/:address</span><span class="endpoint-desc">Sybil confidence and detected flags</span></div>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/leaderboard</span><span class="endpoint-desc">Paginated, filterable by category</span></div>
+
+  <h4>Verification</h4>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/attestation/:address</span><span class="endpoint-desc">EAS attestation lookup</span></div>
+  <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/v1/verify</span><span class="endpoint-desc">Verify score against onchain Merkle root</span></div>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/proof/:address</span><span class="endpoint-desc">Merkle proof for trustless verification</span></div>
+
+  <h4>Social & Sharing</h4>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/timeline/:address</span><span class="endpoint-desc">Wallet activity milestones</span></div>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/card/:address.png</span><span class="endpoint-desc">SVG score card for social embeds</span></div>
+  <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/v1/frame</span><span class="endpoint-desc">Farcaster Frame action handler</span></div>
+
+  <h4>Real-time</h4>
+  <div class="endpoint"><span class="method ws">WS</span><span class="endpoint-path">/v1/ws/stream/:address</span><span class="endpoint-desc">Live score updates (60s push interval)</span></div>
+  <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/v1/webhooks</span><span class="endpoint-desc">Register webhook for score updates</span></div>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/webhooks</span><span class="endpoint-desc">List registered webhooks</span></div>
+  <div class="endpoint"><span class="method delete">DEL</span><span class="endpoint-path">/v1/webhooks/:id</span><span class="endpoint-desc">Unregister webhook</span></div>
+
+  <h4>Admin</h4>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/admin/bear-periods</span><span class="endpoint-desc">List bear market periods</span></div>
+  <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/v1/admin/bear-periods</span><span class="endpoint-desc">Add dynamic period (X-Admin-Key auth)</span></div>
+  <div class="endpoint"><span class="method delete">DEL</span><span class="endpoint-path">/v1/admin/bear-periods/:label</span><span class="endpoint-desc">Remove dynamic period</span></div>
+  <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/v1/appeals</span><span class="endpoint-desc">Submit sybil appeal</span></div>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/appeals/:address</span><span class="endpoint-desc">Check appeal status</span></div>
+  <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/v1/stats</span><span class="endpoint-desc">Platform statistics</span></div>
+
+  <h3>Example Response</h3>
+  <pre>{
+  "address": "0xd8da6bf2...96045",
+  "totalScore": 789,
+  "rawScore": 842.7,
+  "sybilMultiplier": 0.937,
+  "breakdown": {
+    "builder":          { "raw": 500, "weighted": 150 },
+    "governance":       { "raw": 1000, "weighted": 250 },
+    "temporal":         { "raw": 940, "weighted": 188 },
+    "protocolDiversity": { "raw": 790, "weighted": 118.5 },
+    "complexity":       { "raw": 816, "weighted": 81.6 }
+  },
+  "ensName": "vitalik.eth",
+  "breakdownCID": "QmX4z...abc123",
+  "timestamp": 1772665463
+}</pre>
+</section>
+
+<!-- ═══ WEBSOCKET & WEBHOOKS ═══ -->
+<section id="websocket">
+  <h2>WebSocket & Webhooks</h2>
+  <h3>WebSocket Streaming</h3>
+  <p>Connect to <code>ws://localhost:3001/v1/ws/stream/:address</code> for real-time score updates. The server sends the current score immediately on connect, then pushes refreshed scores every 60 seconds.</p>
+  <p>Messages: <code>{ type: "score", data: WalletScore }</code>. Supports ping/pong keepalive.</p>
+
+  <h3>Webhooks</h3>
+  <p>Register persistent webhooks for score update notifications. Webhooks survive API restarts (stored in PostgreSQL).</p>
+  <ul>
+    <li><strong>Payload:</strong> <code>{ event: "score.updated", address, score, timestamp }</code></li>
+    <li><strong>HMAC-SHA256:</strong> If a <code>secret</code> is provided at registration, payloads are signed via <code>X-ChainCred-Signature</code> header</li>
+    <li><strong>Delivery:</strong> Best-effort, fired alongside WebSocket pushes</li>
+  </ul>
+</section>
+
+<!-- ═══ SMART CONTRACTS ═══ -->
+<section id="contracts">
+  <h2>Smart Contracts</h2>
+  <p>Solidity 0.8.24, built with Foundry. Three contracts handle onchain verification and configuration.</p>
+
+  <div class="contract-card">
+    <h4>ChainCredRegistry</h4>
+    <p>Central configuration contract. Inherits <code>Ownable</code>, <code>Pausable</code>.</p>
+    <ul>
+      <li>Stores EAS schema UIDs for score and badge attestations</li>
+      <li>Manages admin roles (<code>setAdmin</code>)</li>
+      <li>Maintains exclusion list for protocol-owned wallets and bots (<code>setExcluded</code>)</li>
+      <li>Pausable by admins, unpausable by owner only</li>
+    </ul>
+  </div>
+
+  <div class="contract-card">
+    <h4>ScoreMerkleRoot</h4>
+    <p>Publishes weekly Merkle roots for trustless score verification. Inherits <code>Ownable</code>.</p>
+    <ul>
+      <li><code>updateMerkleRoot(bytes32)</code> &mdash; increments epoch, sets timestamp</li>
+      <li><code>verifyScore(address, uint256, bytes32[])</code> &mdash; view function, double-hash leaf encoding</li>
+      <li>Leaf: <code>keccak256(keccak256(abi.encode(address, score)))</code> (OpenZeppelin standard)</li>
+      <li>Reverts if score &gt; 1000 (<code>ScoreOutOfRange</code>)</li>
+    </ul>
+  </div>
+
+  <div class="contract-card">
+    <h4>BadgeResolver</h4>
+    <p>EAS SchemaResolver for badge attestations. Inherits <code>Ownable</code>.</p>
+    <ul>
+      <li>Validates attestations come from the authorized attestor</li>
+      <li>Registers 7 badge type hashes: builder, governor, explorer, og, multichain, trusted, power-user</li>
+      <li><code>onAttest</code> / <code>onRevoke</code> callbacks from EAS</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ MERKLE & IPFS ═══ -->
+<section id="merkle">
+  <h2>Merkle Proofs & IPFS</h2>
+  <h3>Merkle Tree</h3>
+  <p>A weekly Merkle tree is generated from all scored wallets. Proofs are stored in PostgreSQL and served via <code>/v1/proof/:address</code>. The root is published onchain via <code>ScoreMerkleRoot.updateMerkleRoot()</code>, enabling trustless verification without trusting the API.</p>
+
+  <h3>IPFS Score Breakdowns</h3>
+  <p>When <code>PINATA_API_KEY</code> and <code>PINATA_API_SECRET</code> are set, score breakdowns are uploaded to IPFS via <a href="https://www.pinata.cloud" style="color:var(--accent)">Pinata</a>.</p>
+  <ul>
+    <li><strong>Score route:</strong> Uploads breakdown after scoring, returns <code>breakdownCID</code></li>
+    <li><strong>Merkle generation:</strong> Batch-uploads breakdowns, stores CID in <code>merkle_proofs.breakdown_cid</code></li>
+    <li><strong>Content-hash cache:</strong> Identical breakdowns reuse the same CID (24h TTL)</li>
+    <li><strong>Fail-open:</strong> If Pinata is unreachable, scoring proceeds without CID</li>
+  </ul>
+  <p>CIDs resolve via any IPFS gateway: <code>https://gateway.pinata.cloud/ipfs/{CID}</code></p>
+</section>
+
+<!-- ═══ INDEXER ═══ -->
+<section id="indexer">
+  <h2>Multi-Chain Indexer</h2>
+  <p>Indexes wallet activity across 6 chains using <a href="https://docs.envio.dev/docs/HyperSync/overview" style="color:var(--accent)">HyperSync</a> for fast historical backfill.</p>
+
+  <table>
+    <tr><th>Chain</th><th>Chain ID</th><th>Type</th></tr>
+    <tr><td>Ethereum</td><td><code>1</code></td><td>L1</td></tr>
+    <tr><td>Arbitrum One</td><td><code>42161</code></td><td>L2</td></tr>
+    <tr><td>Optimism</td><td><code>10</code></td><td>L2</td></tr>
+    <tr><td>Base</td><td><code>8453</code></td><td>L2</td></tr>
+    <tr><td>zkSync Era</td><td><code>324</code></td><td>L2</td></tr>
+    <tr><td>Polygon</td><td><code>137</code></td><td>L2</td></tr>
+  </table>
+
+  <h3>Main Indexer</h3>
+  <p>Syncs all transactions from block 0 across all chains in parallel. Pages of 2,000 blocks, polls every 30 seconds. Persists cursor per chain in <code>indexer_cursors</code> table.</p>
+
+  <h3>Single-Wallet Indexer</h3>
+  <p>Fast CLI tool for indexing a specific wallet's transactions:</p>
+  <pre>bun run index-wallet 0x887b86B6B6957F7bbeA88B8CEfD392f39236A88C</pre>
+  <p>Scans all 6 chains from block 0 in parallel with wider pages (10,000 blocks). Uses the same enrichment pipeline as the full indexer. Typical runtime: seconds to minutes depending on wallet activity.</p>
+
+  <h3>Enrichment Pipeline</h3>
+  <p>Every transaction is enriched with:</p>
+  <ul>
+    <li><strong>Protocol lookup:</strong> Maps <code>tx.to</code> to one of 20 known protocols + category</li>
+    <li><strong>Governance classification:</strong> 5 subtypes (vote, propose, delegate, queue, execute)</li>
+    <li><strong>CREATE2 detection:</strong> 4 known factory addresses</li>
+    <li><strong>Selector detection:</strong> Permits, flashloans, ERC-4337, Safe execTransaction, reasoned votes</li>
+    <li><strong>Smart wallet detection:</strong> Calls to ERC-4337 EntryPoint v0.6/v0.7</li>
+    <li><strong>MEV detection:</strong> 6 known MEV contract addresses</li>
+    <li><strong>Early adoption:</strong> Protocol used within 6 months of launch</li>
+    <li><strong>Vote support parsing:</strong> Extracts against/abstain from castVote calldata</li>
+  </ul>
+</section>
+
+<!-- ═══ PROTOCOLS ═══ -->
+<section id="protocols">
+  <h2>Protocol Registry</h2>
+  <p>20 protocols across 6 categories with multi-chain contract address mappings and launch timestamps.</p>
+
+  <h4>DeFi (10)</h4>
+  <div class="protocol-grid">
+    <div class="protocol-item"><span class="protocol-name">Uniswap</span><span class="protocol-cat">All 6 chains</span></div>
+    <div class="protocol-item"><span class="protocol-name">Aave</span><span class="protocol-cat">All 6 chains</span></div>
+    <div class="protocol-item"><span class="protocol-name">Compound</span><span class="protocol-cat">4 chains</span></div>
+    <div class="protocol-item"><span class="protocol-name">Lido</span><span class="protocol-cat">All 6 chains</span></div>
+    <div class="protocol-item"><span class="protocol-name">Curve</span><span class="protocol-cat">All 6 chains</span></div>
+    <div class="protocol-item"><span class="protocol-name">1inch</span><span class="protocol-cat">All 6 chains</span></div>
+    <div class="protocol-item"><span class="protocol-name">SushiSwap</span><span class="protocol-cat">4 chains</span></div>
+    <div class="protocol-item"><span class="protocol-name">Balancer</span><span class="protocol-cat">5 chains</span></div>
+    <div class="protocol-item"><span class="protocol-name">MakerDAO</span><span class="protocol-cat">Ethereum</span></div>
+    <div class="protocol-item"><span class="protocol-name">GMX</span><span class="protocol-cat">Arbitrum</span></div>
+  </div>
+
+  <h4>Social (3)</h4>
+  <div class="protocol-grid">
+    <div class="protocol-item"><span class="protocol-name">ENS</span><span class="protocol-cat">Ethereum</span></div>
+    <div class="protocol-item"><span class="protocol-name">Lens Protocol</span><span class="protocol-cat">Polygon</span></div>
+    <div class="protocol-item"><span class="protocol-name">Farcaster</span><span class="protocol-cat">Optimism</span></div>
+  </div>
+
+  <h4>Governance (1) &middot; Infrastructure (2) &middot; Gaming (2) &middot; Builder Tools (2)</h4>
+  <div class="protocol-grid">
+    <div class="protocol-item"><span class="protocol-name">Safe</span><span class="protocol-cat">Governance</span></div>
+    <div class="protocol-item"><span class="protocol-name">Chainlink</span><span class="protocol-cat">Infrastructure</span></div>
+    <div class="protocol-item"><span class="protocol-name">The Graph</span><span class="protocol-cat">Infrastructure</span></div>
+    <div class="protocol-item"><span class="protocol-name">Treasure</span><span class="protocol-cat">Gaming</span></div>
+    <div class="protocol-item"><span class="protocol-name">Aavegotchi</span><span class="protocol-cat">Gaming</span></div>
+    <div class="protocol-item"><span class="protocol-name">Deterministic Deploy Proxy</span><span class="protocol-cat">Builder Tools</span></div>
+    <div class="protocol-item"><span class="protocol-name">CREATE2 Factory</span><span class="protocol-cat">Builder Tools</span></div>
+  </div>
+
+  <h3>DAO Registry</h3>
+  <p>17 governance contracts mapped to DAOs: <strong>ENS, Uniswap, Aave, Compound, MakerDAO, Nouns, Gitcoin, Safe, Hop, Lido, Curve, Arbitrum DAO, GMX, Optimism Collective, Polygon Governance</strong>.</p>
+</section>
+
+<!-- ═══ ETHERSCAN ═══ -->
+<section id="etherscan">
+  <h2>Etherscan Enrichment</h2>
+  <p>When <code>ETHERSCAN_API_KEY</code> is set, the score service enriches wallet data via the Etherscan V2 API. All enrichment is <strong>fail-open</strong>.</p>
+  <table>
+    <tr><th>Data Point</th><th>API Call</th><th>Used In</th></tr>
+    <tr><td>Verified source code</td><td><code>contract/getsourcecode</code></td><td>Builder signal #8</td></tr>
+    <tr><td>Deployed contracts</td><td><code>account/txlistinternal</code></td><td>Builder signals #9-10</td></tr>
+    <tr><td>Contract external users</td><td><code>account/txlist</code> per contract</td><td>Builder signal #9</td></tr>
+    <tr><td>Contract recency</td><td><code>account/txlist</code> per contract</td><td>Builder signal #10</td></tr>
+    <tr><td>Internal tx count</td><td><code>account/txlistinternal</code></td><td>Complexity signal #7</td></tr>
+    <tr><td>First incoming tx (funder)</td><td><code>account/txlist</code></td><td>Sybil heuristics #9-10</td></tr>
+    <tr><td>Funder outbound count</td><td><code>account/txlist</code></td><td>Sybil heuristic #9</td></tr>
+  </table>
+  <p>Supported chains: Ethereum, Arbitrum, Optimism, Base, Polygon. zkSync not supported by Etherscan V2. 240ms throttle between requests. 24-hour in-memory cache.</p>
+</section>
+
+<!-- ═══ ENS ═══ -->
+<section id="ens">
+  <h2>ENS Resolution</h2>
+  <p>Reverse ENS resolution via <code>getEnsName()</code> on Ethereum mainnet. Names are cached in-memory for 1 hour. Fail-open.</p>
+  <p>ENS names appear in: the score API response (<code>ensName</code> field), the SVG score card, and the frontend score page.</p>
+</section>
+
+<!-- ═══ EXPLORER ═══ -->
+<section id="explorer">
+  <h2>Web Explorer</h2>
+  <p>SvelteKit 5 + Tailwind CSS frontend at <code>http://localhost:5173</code>.</p>
+  <table>
+    <tr><th>Page</th><th>Description</th></tr>
+    <tr><td><code>/</code></td><td>Search any wallet, platform stats (wallets scored, chains indexed)</td></tr>
+    <tr><td><code>/score/:address</code></td><td>Radar chart of 5 categories, badge display, sybil indicator, activity timeline, share buttons (X, Warpcast, copy link)</td></tr>
+    <tr><td><code>/leaderboard</code></td><td>Top wallets with category filtering and pagination</td></tr>
+    <tr><td><code>/widget</code></td><td>Live verification widget playground with embed code</td></tr>
+  </table>
+  <p>Includes wallet connection (MetaMask / EIP-1193), OpenGraph + Farcaster Frame meta tags for social sharing, mobile-responsive layouts.</p>
+</section>
+
+<!-- ═══ CARD & FRAME ═══ -->
+<section id="card">
+  <h2>Score Card & Farcaster Frame</h2>
+  <h3>SVG Score Card</h3>
+  <p>Generated at <code>/v1/card/:address.png</code>. 800&times;418 pixel SVG with:</p>
+  <ul>
+    <li>Large score number (green &ge;700, yellow &ge;400, red &lt;400)</li>
+    <li>5 category progress bars (color-coded)</li>
+    <li>7 badge circles (earned = filled, unearned = grayed)</li>
+    <li>ENS name + truncated address</li>
+    <li>Full-width score progress bar</li>
+  </ul>
+
+  <h3>Farcaster Frame</h3>
+  <p>Frame v1 implementation at <code>POST /v1/frame</code>. Reads address from <code>untrustedData.inputText</code>, returns HTML with frame meta tags: score card image, "View Details" link button, "Look Up" input for another address. Error frame with retry on invalid input.</p>
+</section>
+
+<!-- ═══ WIDGET ═══ -->
+<section id="widget">
+  <h2>Verification Widget</h2>
+  <p>Standalone Web Component (Shadow DOM, no framework dependencies) for embedding ChainCred verification into any page.</p>
+  <pre>&lt;script src="https://your-cdn.com/chaincred-verify.js"&gt;&lt;/script&gt;
+&lt;chaincred-verify
+  wallet="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+  min-score="500"
+  required-badges="builder,governor"
+  api-url="https://api.chaincred.xyz/v1"
+/&gt;</pre>
+  <table>
+    <tr><th>Attribute</th><th>Description</th><th>Default</th></tr>
+    <tr><td><code>wallet</code></td><td>Ethereum address to verify</td><td>(required)</td></tr>
+    <tr><td><code>min-score</code></td><td>Minimum score threshold for PASS</td><td><code>0</code></td></tr>
+    <tr><td><code>required-badges</code></td><td>Comma-separated badge types that must be earned</td><td>(none)</td></tr>
+    <tr><td><code>api-url</code></td><td>ChainCred API base URL</td><td><code>http://localhost:3001/v1</code></td></tr>
+  </table>
+  <p>Renders a pass/fail card with score, sybil confidence, and earned badges. Live demo at <code>/widget</code>.</p>
+</section>
+
+<!-- ═══ CONFIG ═══ -->
+<section id="config">
+  <h2>Configuration</h2>
+  <p>All configuration via environment variables. See <code>.env.example</code>.</p>
+  <table class="config-table">
+    <tr><th>Variable</th><th>Purpose</th><th>Required</th></tr>
+    <tr><td>DATABASE_URL</td><td>PostgreSQL connection string</td><td>Yes</td></tr>
+    <tr><td>REDIS_URL</td><td>Redis connection string</td><td>Yes</td></tr>
+    <tr><td>HYPERSYNC_API_TOKEN</td><td>HyperSync/Envio API token for indexer</td><td>Yes</td></tr>
+    <tr><td>VITE_API_URL</td><td>Frontend API base URL</td><td>Frontend</td></tr>
+    <tr><td>PORT</td><td>API server port (default: 3001)</td><td>No</td></tr>
+    <tr><td>ETHERSCAN_API_KEY</td><td>Etherscan V2 API for enrichment</td><td>No</td></tr>
+    <tr><td>PINATA_API_KEY</td><td>Pinata IPFS for score breakdowns</td><td>No</td></tr>
+    <tr><td>PINATA_API_SECRET</td><td>Pinata IPFS secret</td><td>No</td></tr>
+    <tr><td>RPC_URL</td><td>Ethereum RPC for ENS resolution + onchain reads</td><td>No</td></tr>
+    <tr><td>ADMIN_API_KEY</td><td>Admin API auth key</td><td>No</td></tr>
+    <tr><td>SCORE_MERKLE_ADDRESS</td><td>Deployed ScoreMerkleRoot contract</td><td>No</td></tr>
+    <tr><td>CHAINCRED_REGISTRY_ADDRESS</td><td>ChainCredRegistry for exclusion checks</td><td>No</td></tr>
+    <tr><td>EAS_GRAPHQL_URL</td><td>EAS GraphQL endpoint</td><td>No</td></tr>
+    <tr><td>CHAINCRED_SCHEMA_UID</td><td>EAS schema UID</td><td>No</td></tr>
+    <tr><td>API_BASE_URL</td><td>API URL for Farcaster Frame callbacks</td><td>No</td></tr>
+    <tr><td>FRONTEND_URL</td><td>Frontend URL for Frame links</td><td>No</td></tr>
+  </table>
+</section>
+
+<!-- ═══ DOCKER ═══ -->
+<section id="docker">
+  <h2>Docker & CI/CD</h2>
+  <h3>Docker Compose</h3>
+  <ul>
+    <li><strong>Dev:</strong> <code>docker compose up</code> &mdash; PostgreSQL, Redis, API (hot reload), indexer with bind-mounted source</li>
+    <li><strong>Prod:</strong> <code>docker compose --profile prod up</code> &mdash; multi-stage Dockerfile, optimized images, no bind mounts</li>
+    <li><strong>E2E:</strong> <code>docker compose --profile e2e up -d anvil</code> &mdash; Anvil mainnet fork</li>
+    <li><strong>Merkle:</strong> <code>docker compose run --profile tools merkle-gen</code></li>
+  </ul>
+
+  <h3>GitHub Actions</h3>
+  <ul>
+    <li><strong>CI</strong> (push/PR) &mdash; Typechecks all packages, runs 109 tests, builds+tests Solidity, checks formatting</li>
+    <li><strong>Weekly Merkle</strong> (Monday 06:00 UTC) &mdash; Generates Merkle tree, outputs root for onchain submission</li>
+    <li><strong>Deploy Contracts</strong> (manual) &mdash; Deploys to Sepolia/mainnet via Foundry with Etherscan verification</li>
+  </ul>
+</section>
+
+<!-- ═══ TESTING ═══ -->
+<section id="testing">
+  <h2>Testing</h2>
+  <h3>Unit & Integration Tests</h3>
+  <pre>bun run test   # 109 tests (72 scoring + 37 API)</pre>
+  <p>Scoring tests cover all 5 category calculators, all 10 sybil heuristics, 7 badge types, combined penalty math, and enriched signal contributions. API tests use <code>app.fetch</code> directly (Hono) without an HTTP server.</p>
+
+  <h3>E2E Testing</h3>
+  <pre>bun run e2e    # 56 assertions across 10 phases</pre>
+  <p>Self-contained harness that seeds 15 wallet profiles, deploys contracts to Anvil, generates Merkle tree, publishes root onchain, and runs 56 assertions across all 15 API routes + WebSocket. Requires Docker + Foundry.</p>
+
+  <table>
+    <tr><th>Phase</th><th>Description</th></tr>
+    <tr><td>1&ndash;2</td><td>Start PostgreSQL + Redis + Anvil</td></tr>
+    <tr><td>3&ndash;4</td><td>DB migration + seed 15 wallets</td></tr>
+    <tr><td>5&ndash;6</td><td>Deploy contracts + generate Merkle tree</td></tr>
+    <tr><td>7&ndash;8</td><td>Publish Merkle root onchain + start API</td></tr>
+    <tr><td>9</td><td>56 endpoint assertions (score, badges, sybil, leaderboard, timeline, card, proof, verify, attestation, appeals, webhooks, admin, frame, stats, WebSocket)</td></tr>
+    <tr><td>10</td><td>Cleanup</td></tr>
+  </table>
+</section>
+
+</main>
+</div>
+
+</body>
+</html>
