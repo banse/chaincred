@@ -111,14 +111,14 @@ export function createStorage(): StorageLayer {
           total_transactions = wallet_activity.total_transactions + 1,
           contracts_deployed = wallet_activity.contracts_deployed + ${event.type === 'deployment' ? 1 : 0},
           deployment_chains = CASE
-            WHEN ${event.type === 'deployment' ? chainSlug : null} IS NOT NULL AND NOT (${event.type === 'deployment' ? chainSlug : ''} = ANY(wallet_activity.deployment_chains))
-            THEN array_append(wallet_activity.deployment_chains, ${event.type === 'deployment' ? chainSlug : ''})
+            WHEN ${event.type === 'deployment' ? chainSlug : null}::text IS NOT NULL AND NOT (${event.type === 'deployment' ? chainSlug : ''}::text = ANY(wallet_activity.deployment_chains))
+            THEN array_append(wallet_activity.deployment_chains, ${event.type === 'deployment' ? chainSlug : ''}::text)
             ELSE wallet_activity.deployment_chains
           END,
           deployment_calldata_bytes = wallet_activity.deployment_calldata_bytes + ${event.type === 'deployment' ? event.calldataBytes : 0},
           unique_protocols = CASE
-            WHEN ${event.protocol ?? null} IS NOT NULL AND NOT (${event.protocol ?? ''} = ANY(wallet_activity.unique_protocols))
-            THEN array_append(wallet_activity.unique_protocols, ${event.protocol ?? ''})
+            WHEN ${event.protocol ?? null}::text IS NOT NULL AND NOT (${event.protocol ?? ''}::text = ANY(wallet_activity.unique_protocols))
+            THEN array_append(wallet_activity.unique_protocols, ${event.protocol ?? ''}::text)
             ELSE wallet_activity.unique_protocols
           END,
           chains_active = CASE
@@ -128,8 +128,8 @@ export function createStorage(): StorageLayer {
           END,
           governance_votes = wallet_activity.governance_votes + ${event.type === 'governance' ? 1 : 0},
           daos_participated = CASE
-            WHEN ${event.dao ?? null} IS NOT NULL AND NOT (${event.dao ?? ''} = ANY(wallet_activity.daos_participated))
-            THEN array_append(wallet_activity.daos_participated, ${event.dao ?? ''})
+            WHEN ${event.dao ?? null}::text IS NOT NULL AND NOT (${event.dao ?? ''}::text = ANY(wallet_activity.daos_participated))
+            THEN array_append(wallet_activity.daos_participated, ${event.dao ?? ''}::text)
             ELSE wallet_activity.daos_participated
           END,
           proposals_created = wallet_activity.proposals_created + ${isProposal},
@@ -141,20 +141,20 @@ export function createStorage(): StorageLayer {
             ELSE wallet_activity.active_month_set
           END,
           protocol_categories = CASE
-            WHEN ${event.protocolCategory ?? null} IS NOT NULL AND NOT (${event.protocolCategory ?? ''} = ANY(wallet_activity.protocol_categories))
-            THEN array_append(wallet_activity.protocol_categories, ${event.protocolCategory ?? ''})
+            WHEN ${event.protocolCategory ?? null}::text IS NOT NULL AND NOT (${event.protocolCategory ?? ''}::text = ANY(wallet_activity.protocol_categories))
+            THEN array_append(wallet_activity.protocol_categories, ${event.protocolCategory ?? ''}::text)
             ELSE wallet_activity.protocol_categories
           END,
           failed_transactions = wallet_activity.failed_transactions + ${isFailed},
           total_calldata_bytes = wallet_activity.total_calldata_bytes + ${event.calldataBytes},
           recipient_addresses = CASE
-            WHEN ${recipientAddr ?? null} IS NOT NULL AND NOT (${recipientAddr ?? ''} = ANY(wallet_activity.recipient_addresses))
-            THEN array_append(wallet_activity.recipient_addresses, ${recipientAddr ?? ''})
+            WHEN ${recipientAddr ?? null}::text IS NOT NULL AND NOT (${recipientAddr ?? ''}::text = ANY(wallet_activity.recipient_addresses))
+            THEN array_append(wallet_activity.recipient_addresses, ${recipientAddr ?? ''}::text)
             ELSE wallet_activity.recipient_addresses
           END,
           chain_protocol_pairs = CASE
-            WHEN ${chainProtocolPair ?? null} IS NOT NULL AND NOT (${chainProtocolPair ?? ''} = ANY(wallet_activity.chain_protocol_pairs))
-            THEN array_append(wallet_activity.chain_protocol_pairs, ${chainProtocolPair ?? ''})
+            WHEN ${chainProtocolPair ?? null}::text IS NOT NULL AND NOT (${chainProtocolPair ?? ''}::text = ANY(wallet_activity.chain_protocol_pairs))
+            THEN array_append(wallet_activity.chain_protocol_pairs, ${chainProtocolPair ?? ''}::text)
             ELSE wallet_activity.chain_protocol_pairs
           END,
           gas_price_set = CASE
@@ -169,14 +169,14 @@ export function createStorage(): StorageLayer {
           END,
           create2_deployments = wallet_activity.create2_deployments + ${isCreate2},
           bear_market_periods = CASE
-            WHEN ${bearPeriodLabel ?? null} IS NOT NULL AND NOT (${bearPeriodLabel ?? ''} = ANY(wallet_activity.bear_market_periods))
-            THEN array_append(wallet_activity.bear_market_periods, ${bearPeriodLabel ?? ''})
+            WHEN ${bearPeriodLabel ?? null}::text IS NOT NULL AND NOT (${bearPeriodLabel ?? ''}::text = ANY(wallet_activity.bear_market_periods))
+            THEN array_append(wallet_activity.bear_market_periods, ${bearPeriodLabel ?? ''}::text)
             ELSE wallet_activity.bear_market_periods
           END,
           execution_events = wallet_activity.execution_events + ${isExecution},
           governance_chains = CASE
-            WHEN ${governanceChain ?? null} IS NOT NULL AND NOT (${governanceChain ?? ''} = ANY(wallet_activity.governance_chains))
-            THEN array_append(wallet_activity.governance_chains, ${governanceChain ?? ''})
+            WHEN ${governanceChain ?? null}::text IS NOT NULL AND NOT (${governanceChain ?? ''}::text = ANY(wallet_activity.governance_chains))
+            THEN array_append(wallet_activity.governance_chains, ${governanceChain ?? ''}::text)
             ELSE wallet_activity.governance_chains
           END,
           permit_interactions = wallet_activity.permit_interactions + ${isPermit},

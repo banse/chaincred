@@ -25,7 +25,7 @@ export async function createClients(): Promise<Record<number, HypersyncClient>> 
     const url = HYPERSYNC_URLS[chain.id];
     if (!url) continue;
 
-    const hypersync = new RealHypersyncClient({ url, apiToken: '' });
+    const hypersync = new RealHypersyncClient({ url, apiToken: process.env.HYPERSYNC_API_TOKEN ?? '' });
 
     clients[chain.id] = {
       chainId: chain.id,
