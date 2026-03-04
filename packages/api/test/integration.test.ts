@@ -338,3 +338,19 @@ describe('webhook validation', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('IPFS breakdown CID', () => {
+  test('GET /v1/score/:address may include breakdownCID field', async () => {
+    const res = await req('/v1/score/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045');
+    if (res.status === 200) {
+      const body = await res.json();
+      // breakdownCID is optional — present only when PINATA_API_KEY is configured
+      if (body.breakdownCID) {
+        expect(typeof body.breakdownCID).toBe('string');
+        expect(body.breakdownCID.length).toBeGreaterThan(0);
+      }
+    } else {
+      expect(res.status).toBe(500);
+    }
+  });
+});

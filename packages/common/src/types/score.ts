@@ -19,6 +19,7 @@ export interface WalletScore {
   rawScore: number;
   timestamp: number;
   ensName?: string;
+  breakdownCID?: string;
 }
 
 export type ScoreCategory = keyof ScoreBreakdown;

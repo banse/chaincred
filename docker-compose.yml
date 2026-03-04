@@ -60,6 +60,9 @@ services:
       PORT: '3001'
       DATABASE_URL: postgresql://chaincred:chaincred@postgres:5432/chaincred
       REDIS_URL: redis://redis:6379
+      ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY:-}
+      PINATA_API_KEY: ${PINATA_API_KEY:-}
+      PINATA_API_SECRET: ${PINATA_API_SECRET:-}
 
   indexer:
     image: oven/bun:1
@@ -91,6 +94,8 @@ services:
         condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://chaincred:chaincred@postgres:5432/chaincred
+      PINATA_API_KEY: ${PINATA_API_KEY:-}
+      PINATA_API_SECRET: ${PINATA_API_SECRET:-}
 
   # ── E2E testing (Anvil mainnet fork) ──
 

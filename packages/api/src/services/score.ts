@@ -7,6 +7,7 @@ import { CEX_HOT_WALLETS } from '@chaincred/common';
 import { getWalletActivity } from './activity.js';
 import { resolveEns } from './ens.js';
 import { EtherscanClient } from './etherscan.js';
+import { uploadJSON } from './ipfs.js';
 
 const REGISTRY_ABI = [
   {
@@ -110,9 +111,16 @@ export async function getScore(address: string): Promise<WalletScore> {
     result.totalScore = Math.round(result.rawScore * result.sybilMultiplier);
   }
 
+  // PRD 6.2 — IPFS score breakdown storage (fail-open)
+  const breakdownCID = await uploadJSON(result.breakdown).catch(() => '');
+
   // ENS name resolution (fail-open)
   const ensName = await resolveEns(address).catch(() => null);
-  return { ...result, ensName: ensName ?? undefined };
+  return {
+    ...result,
+    ensName: ensName ?? undefined,
+    breakdownCID: breakdownCID || undefined,
+  };
 }
 
 /** Check appeal status for an address. Returns null if no appeal exists. */

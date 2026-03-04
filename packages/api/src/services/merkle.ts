@@ -8,11 +8,13 @@ import {
   type Address,
   type Hex,
 } from 'viem';
+import { uploadJSON } from './ipfs.js';
 
 export interface MerkleLeaf {
   address: Address;
   score: number;
   hash: Hex;
+  breakdownCID?: string;
 }
 
 export interface MerkleTree {
@@ -133,10 +135,14 @@ export async function buildMerkleTree(): Promise<MerkleTree> {
       fundedByCex: false,
     };
 
-    const { totalScore } = calculateScore(activity);
+    const result = calculateScore(activity);
     const address = row.address as Address;
-    const hash = hashLeaf(address, BigInt(totalScore));
-    leaves.push({ address, score: totalScore, hash });
+    const hash = hashLeaf(address, BigInt(result.totalScore));
+
+    // PRD 6.2 — Upload breakdown to IPFS (fail-open)
+    const breakdownCID = await uploadJSON(result.breakdown).catch(() => '');
+
+    leaves.push({ address, score: result.totalScore, hash, breakdownCID: breakdownCID || undefined });
   }
 
   const hashes = leaves.map((l) => l.hash);
@@ -176,9 +182,15 @@ export async function storeMerkleProofs(tree: MerkleTree): Promise<void> {
       score INTEGER NOT NULL,
       proof TEXT[] NOT NULL,
       root TEXT NOT NULL,
-      created_at BIGINT NOT NULL
+      created_at BIGINT NOT NULL,
+      breakdown_cid TEXT DEFAULT ''
     )
   `;
+
+  // Add breakdown_cid column if it doesn't exist (for existing tables)
+  await sql`
+    ALTER TABLE merkle_proofs ADD COLUMN IF NOT EXISTS breakdown_cid TEXT DEFAULT ''
+  `.catch(() => {}); // Ignore if already exists or unsupported
 
   // Truncate and re-insert
   await sql`TRUNCATE merkle_proofs`;
@@ -187,8 +199,8 @@ export async function storeMerkleProofs(tree: MerkleTree): Promise<void> {
   for (const leaf of tree.leaves) {
     const proof = tree.proofs.get(leaf.address.toLowerCase()) ?? [];
     await sql`
-      INSERT INTO merkle_proofs (address, score, proof, root, created_at)
-      VALUES (${leaf.address.toLowerCase()}, ${leaf.score}, ${sql.array(proof)}, ${tree.root}, ${now})
+      INSERT INTO merkle_proofs (address, score, proof, root, created_at, breakdown_cid)
+      VALUES (${leaf.address.toLowerCase()}, ${leaf.score}, ${sql.array(proof)}, ${tree.root}, ${now}, ${leaf.breakdownCID ?? ''})
     `;
   }
 }

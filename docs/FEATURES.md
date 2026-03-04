@@ -292,7 +292,8 @@ GET /v1/score/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
     "temporal": { "raw": 940, "weighted": 188 },
     "protocolDiversity": { "raw": 790, "weighted": 119 },
     "complexity": { "raw": 816, "weighted": 82 }
-  }
+  },
+  "breakdownCID": "QmX4z...abc123"
 }
 ```
 
@@ -487,6 +488,19 @@ Migrations run automatically via `bun run migrate`.
 
 ---
 
+## IPFS Score Breakdown Storage
+
+When `PINATA_API_KEY` and `PINATA_API_SECRET` are set, score breakdowns are uploaded to IPFS via [Pinata](https://www.pinata.cloud/) and the resulting CID is included in the API response.
+
+- **Score route:** After computing a score, the breakdown is uploaded as pinned JSON. The `breakdownCID` field is returned alongside the score.
+- **Merkle generation:** During weekly Merkle tree generation, each wallet's breakdown is uploaded and the CID is stored in the `merkle_proofs` table.
+- **Content-addressed caching:** Breakdowns are hashed before upload — identical breakdowns reuse the same CID without re-uploading. Cache TTL is 24 hours.
+- **Fail-open:** If Pinata is unreachable or keys are not configured, scoring proceeds normally without a CID. The `breakdownCID` field is simply omitted from the response.
+
+CIDs can be resolved via any IPFS gateway, e.g. `https://gateway.pinata.cloud/ipfs/{CID}`.
+
+---
+
 ## Configuration
 
 All configuration is via environment variables. See `.env.example`:
@@ -506,6 +520,8 @@ All configuration is via environment variables. See `.env.example`:
 | `API_BASE_URL` | API base URL for Farcaster Frame callbacks | `http://localhost:3001/v1` |
 | `FRONTEND_URL` | Frontend URL for Frame "View Details" links | `http://localhost:5173` |
 | `ETHERSCAN_API_KEY` | Etherscan V2 API key for verified source + internal tx enrichment | — |
+| `PINATA_API_KEY` | Pinata API key for IPFS score breakdown storage | — |
+| `PINATA_API_SECRET` | Pinata API secret for IPFS score breakdown storage | — |
 | `FORK_RPC_URL` | RPC URL for Anvil mainnet fork (E2E testing) | `https://eth.llamarpc.com` |
 
 ---
