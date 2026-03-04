@@ -27,7 +27,7 @@ Every wallet gets a single score from **0 to 1000**, computed from five categori
 
 ### Builder Score (30%)
 
-Measures onchain creation activity with eight signals that reward volume, cross-chain fluency, constructor sophistication, builder-focused behavior, account abstraction infrastructure, and verified source code.
+Measures onchain creation activity with ten signals that reward volume, cross-chain fluency, constructor sophistication, builder-focused behavior, account abstraction infrastructure, verified source code, and real-world contract adoption.
 
 | Signal | Points | Cap |
 |--------|--------|-----|
@@ -39,8 +39,10 @@ Measures onchain creation activity with eight signals that reward volume, cross-
 | ERC-4337 operations | 40 per handleOps call | 200 |
 | Deployment longevity | 60 per 6-month period since first deploy | 180 |
 | Verified source deployments | 80 per verified contract | 240 |
+| Contract external users | 30 per unique caller | 300 |
+| Active contracts (>6mo) | 70 per active contract | 280 |
 
-ERC-4337 operations detect `handleOps` and `handleAggregatedOps` calls to EntryPoint contracts — operating AA infrastructure (bundler/paymaster activity) is a strong builder signal. Deployment longevity rewards wallets with long-standing deployed contracts — 60 points per 6-month period since their first deployment. Verified source detection uses the Etherscan V2 API to check if deployed contracts have verified source code — publishing source is a strong quality signal. Caps sum to 1870 — intentionally over 1000 since no wallet can max all signals simultaneously. Final capped at 1000.
+ERC-4337 operations detect `handleOps` and `handleAggregatedOps` calls to EntryPoint contracts — operating AA infrastructure (bundler/paymaster activity) is a strong builder signal. Deployment longevity rewards wallets with long-standing deployed contracts — 60 points per 6-month period since their first deployment. Verified source detection uses the Etherscan V2 API to check if deployed contracts have verified source code — publishing source is a strong quality signal. Contract external users counts unique callers (excluding the deployer) across deployed contracts via Etherscan `txlistinternal` and `txlist` — contracts with real users indicate genuine utility. Active contracts checks whether deployed contracts have received transactions in the last 6 months — maintained contracts are a stronger builder signal than abandoned ones. Both new signals are capped at 10 analyzed contracts per wallet. Caps sum to 2450 — intentionally over 1000 since no wallet can max all signals simultaneously. Final capped at 1000.
 
 ### Governance Score (25%)
 
@@ -191,6 +193,12 @@ Detects uniform gas pricing that suggests automation. If a wallet has 50+ transa
 
 ### MEV Bot Activity (penalty: -15%)
 Detects wallets primarily interacting with known MEV bot/searcher contracts. If a wallet has more than 20 MEV interactions AND those interactions comprise more than 30% of total transactions, it gets flagged. Both conditions are required (conservative) — MEV bot behavior inflates transaction counts artificially through automated arbitrage, sandwich attacks, and liquidations. Six known MEV contract addresses are tracked.
+
+### Funding Source Cluster (penalty: -50%)
+Detects wallets that are part of a sybil cluster funded by a single coordinator. Uses Etherscan to find the wallet's first incoming transaction, then counts how many unique addresses the funder sent to. If the funder distributed to more than 10 wallets, this wallet is flagged as likely part of a sybil cluster. This is the highest-penalty heuristic because funding graph analysis is one of the strongest sybil indicators. Requires `ETHERSCAN_API_KEY` — without it, the heuristic is skipped (no false positives).
+
+### CEX Fresh Wallet (graduated penalty: 0–30%)
+Detects wallets funded directly from a known CEX hot wallet (Binance, Coinbase, Kraken, OKX, Gemini — 12 addresses) that are suspiciously young. The penalty graduates linearly: a brand-new CEX-funded wallet gets 30%, decreasing to 0% at 90 days old. Wallets older than 90 days or not funded by a CEX are not penalized. This catches fresh sybil accounts created via CEX withdrawals while not penalizing established wallets that happened to start from a CEX. Requires `ETHERSCAN_API_KEY`.
 
 ### How penalties combine
 
@@ -472,9 +480,9 @@ Migrations run automatically via `bun run migrate`.
 
 #### Unit & Integration Tests
 
-103 automated tests cover:
+108 automated tests cover:
 
-- **Scoring engine** (67 tests) — Category calculators with multi-signal formulas, badge evaluation (governor proposal requirement, trusted Safe multi-sig + governance depth, power-user criteria), sybil detection with all 8 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns, MEV bot activity), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests (deployment longevity, verified source), governance signals (execution, cross-chain, independent voting, Safe executions, reasoned votes), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets, internal transactions), protocol diversity signals (early adoption)
+- **Scoring engine** (72 tests) — Category calculators with multi-signal formulas, badge evaluation (governor proposal requirement, trusted Safe multi-sig + governance depth, power-user criteria), sybil detection with all 10 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns, MEV bot activity, funding source cluster, CEX fresh wallet), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests (deployment longevity, verified source, contract external users, active contracts), governance signals (execution, cross-chain, independent voting, Safe executions, reasoned votes), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets, internal transactions), protocol diversity signals (early adoption), sybil heuristic differential tests (funding source cluster, CEX fresh wallet graduation)
 - **API** (36 tests) — Health check, address validation, CORS, rate limiting, all route responses, timeline endpoint (validation, fields, badge milestones, DB-dependent), card image (SVG content, validation), Farcaster Frame (valid/invalid address), admin bear-period endpoints (list, auth), webhook CRUD (register, list, validation), appeal validation (invalid address, missing fields), WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup). Tests work with or without PostgreSQL/Redis running.
 
 ---
