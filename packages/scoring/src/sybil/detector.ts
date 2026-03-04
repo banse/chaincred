@@ -8,6 +8,8 @@ import {
   checkZeroFailureRate,
   checkGasPatterns,
   checkMevActivity,
+  checkFundingSourceCluster,
+  checkCexFreshWallet,
 } from './heuristics.js';
 
 export function detectSybil(activity: WalletActivity): SybilResult {
@@ -20,6 +22,8 @@ export function detectSybil(activity: WalletActivity): SybilResult {
     checkZeroFailureRate(activity),
     checkGasPatterns(activity),
     checkMevActivity(activity),
+    checkFundingSourceCluster(activity),
+    checkCexFreshWallet(activity),
   ];
 
   let confidence = 1.0;

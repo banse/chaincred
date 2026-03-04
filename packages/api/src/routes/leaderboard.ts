@@ -45,6 +45,11 @@ function mapRow(row: any): WalletActivity {
     reasonedVotes: Number(row.reasoned_votes ?? 0),
     mevInteractions: Number(row.mev_interactions ?? 0),
     internalTransactions: Number(row.internal_transactions ?? 0),
+    contractExternalUsers: Number(row.contract_external_users ?? 0),
+    activeContracts: Number(row.active_contracts ?? 0),
+    fundingSource: '',
+    fundingSourceOutboundCount: 0,
+    fundedByCex: false,
   };
 }
 

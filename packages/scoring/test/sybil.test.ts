@@ -54,6 +54,11 @@ function activity(overrides: Partial<WalletActivity>): WalletActivity {
     reasonedVotes: 0,
     mevInteractions: 0,
     internalTransactions: 0,
+    contractExternalUsers: 0,
+    activeContracts: 0,
+    fundingSource: '',
+    fundingSourceOutboundCount: 0,
+    fundedByCex: false,
     ...overrides,
   };
 }
@@ -72,10 +77,10 @@ describe('sybil detection', () => {
     expect(result.confidence).toBeLessThanOrEqual(1);
   });
 
-  test('returns flags array with all 8 heuristics', () => {
+  test('returns flags array with all 10 heuristics', () => {
     const result = detectSybil(activity({}));
     expect(Array.isArray(result.flags)).toBe(true);
-    expect(result.flags.length).toBe(8);
+    expect(result.flags.length).toBe(10);
   });
 
   test('clean wallet has confidence 1.0', () => {

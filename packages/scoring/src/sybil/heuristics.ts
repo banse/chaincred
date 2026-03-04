@@ -239,6 +239,74 @@ export function checkMevActivity(activity: WalletActivity): SybilPenalty {
   };
 }
 
+/**
+ * PRD 5.3 — Funding source cluster detection (penalty 0.50)
+ *
+ * If a wallet's first funder sent ETH to >10 unique wallets, the wallet
+ * is likely part of a sybil cluster funded by a single coordinator.
+ *
+ * Requires Etherscan enrichment: fundingSourceOutboundCount > 0 means data is available.
+ */
+export function checkFundingSourceCluster(activity: WalletActivity): SybilPenalty {
+  const hasData = activity.fundingSourceOutboundCount > 0;
+  const detected = hasData && activity.fundingSourceOutboundCount > 10;
+
+  return {
+    flag: 'funding-source-cluster',
+    label: 'Funding Source Cluster',
+    penalty: 0.50,
+    detected,
+    details: detected
+      ? `Funding source sent to ${activity.fundingSourceOutboundCount} unique wallets`
+      : hasData
+        ? `Funding source sent to ${activity.fundingSourceOutboundCount} wallets (below threshold)`
+        : 'No funding source data available',
+  };
+}
+
+/**
+ * PRD 5.2 — CEX fresh wallet detection (graduated penalty 0.00–0.30)
+ *
+ * Wallets funded directly from a CEX hot wallet with low age are suspicious.
+ * Graduated: 0-30 days = 0.30 penalty, linearly decreasing to 0 at 90 days.
+ *
+ * Requires Etherscan enrichment: fundedByCex must be true.
+ */
+export function checkCexFreshWallet(activity: WalletActivity): SybilPenalty {
+  if (!activity.fundedByCex) {
+    return {
+      flag: 'cex-fresh-wallet',
+      label: 'CEX Fresh Wallet',
+      penalty: 0,
+      detected: false,
+      details: 'Wallet not funded by known CEX',
+    };
+  }
+
+  const now = Date.now() / 1000;
+  const ageDays = Math.max((now - activity.firstTxTimestamp) / 86400, 0);
+
+  if (ageDays >= 90) {
+    return {
+      flag: 'cex-fresh-wallet',
+      label: 'CEX Fresh Wallet',
+      penalty: 0,
+      detected: false,
+      details: `CEX-funded but wallet age (${Math.round(ageDays)} days) exceeds 90-day threshold`,
+    };
+  }
+
+  const penalty = 0.30 * (1 - ageDays / 90);
+
+  return {
+    flag: 'cex-fresh-wallet',
+    label: 'CEX Fresh Wallet',
+    penalty: Math.round(penalty * 100) / 100,
+    detected: true,
+    details: `CEX-funded wallet is ${Math.round(ageDays)} days old (penalty: ${(penalty * 100).toFixed(0)}%)`,
+  };
+}
+
 export function checkGasPatterns(activity: WalletActivity): SybilPenalty {
   if (activity.totalTransactions < 50 || activity.distinctGasPrices === 0) {
     return {

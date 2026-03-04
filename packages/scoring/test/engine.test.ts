@@ -43,6 +43,11 @@ function activity(overrides: Partial<WalletActivity> = {}): WalletActivity {
     reasonedVotes: 0,
     mevInteractions: 0,
     internalTransactions: 0,
+    contractExternalUsers: 0,
+    activeContracts: 0,
+    fundingSource: '',
+    fundingSourceOutboundCount: 0,
+    fundedByCex: false,
     ...overrides,
   };
 }
@@ -442,5 +447,53 @@ describe('internal transactions signal', () => {
     expect(withInternal.breakdown.complexity.raw).toBeGreaterThan(
       without.breakdown.complexity.raw,
     );
+  });
+});
+
+describe('contract external users signal', () => {
+  test('contract external users boost builder score', () => {
+    const withUsers = calculateScore(activity({ contractExternalUsers: 10 }));
+    const without = calculateScore(activity({ contractExternalUsers: 0 }));
+    expect(withUsers.breakdown.builder.raw).toBeGreaterThan(without.breakdown.builder.raw);
+  });
+});
+
+describe('active contracts signal', () => {
+  test('active contracts boost builder score', () => {
+    const withActive = calculateScore(activity({ activeContracts: 4 }));
+    const without = calculateScore(activity({ activeContracts: 0 }));
+    expect(withActive.breakdown.builder.raw).toBeGreaterThan(without.breakdown.builder.raw);
+  });
+});
+
+describe('funding source cluster heuristic', () => {
+  test('funding source with >10 outbound addresses reduces sybil confidence', () => {
+    const flagged = calculateScore(activity({ fundingSourceOutboundCount: 50 }));
+    const clean = calculateScore(activity({ fundingSourceOutboundCount: 5 }));
+    expect(flagged.sybilMultiplier).toBeLessThan(clean.sybilMultiplier);
+  });
+});
+
+describe('CEX fresh wallet heuristic', () => {
+  test('CEX-funded fresh wallet reduces sybil confidence', () => {
+    const now = Math.floor(Date.now() / 1000);
+    const freshCex = calculateScore(
+      activity({ fundedByCex: true, firstTxTimestamp: now - 15 * 86400 }), // 15 days old
+    );
+    const oldCex = calculateScore(
+      activity({ fundedByCex: true, firstTxTimestamp: now - 365 * 86400 }), // 1 year old
+    );
+    expect(freshCex.sybilMultiplier).toBeLessThan(oldCex.sybilMultiplier);
+  });
+
+  test('non-CEX wallet not penalized', () => {
+    const now = Math.floor(Date.now() / 1000);
+    const freshNonCex = calculateScore(
+      activity({ fundedByCex: false, firstTxTimestamp: now - 15 * 86400 }),
+    );
+    const freshCex = calculateScore(
+      activity({ fundedByCex: true, firstTxTimestamp: now - 15 * 86400 }),
+    );
+    expect(freshNonCex.sybilMultiplier).toBeGreaterThan(freshCex.sybilMultiplier);
   });
 });

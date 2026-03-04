@@ -158,10 +158,10 @@ describe('DB-dependent routes (require PostgreSQL)', () => {
     }
   });
 
-  test('GET /v1/proof/:address returns 404 or 500', async () => {
+  test('GET /v1/proof/:address returns 200, 404 or 500', async () => {
     const res = await req('/v1/proof/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045');
-    // 404 when no proof exists, 500 when no DB
-    expect([404, 500]).toContain(res.status);
+    // 200 when proof exists, 404 when no proof exists, 500 when no DB
+    expect([200, 404, 500]).toContain(res.status);
   });
 
   test('GET /v1/timeline/:address returns 200 or 500', async () => {

@@ -47,6 +47,8 @@ interface WalletSeed {
   reasoned_votes: number;
   mev_interactions: number;
   internal_transactions: number;
+  contract_external_users: number;
+  active_contracts: number;
 }
 
 /** Generate an array of YYYY-MM strings spread over years */
@@ -139,6 +141,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 10,
     mev_interactions: 0,
     internal_transactions: 150,
+    contract_external_users: 45,
+    active_contracts: 8,
   },
 
   // 2. DeFi builder (hayden.eth)
@@ -186,6 +190,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 4,
     mev_interactions: 0,
     internal_transactions: 80,
+    contract_external_users: 30,
+    active_contracts: 5,
   },
 
   // 3. Governor (brantly.eth)
@@ -230,6 +236,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 4,
     mev_interactions: 0,
     internal_transactions: 20,
+    contract_external_users: 2,
+    active_contracts: 0,
   },
 
   // 4. Governance whale
@@ -275,6 +283,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 6,
     mev_interactions: 0,
     internal_transactions: 30,
+    contract_external_users: 0,
+    active_contracts: 0,
   },
 
   // 5. OG contributor (timbeiko.eth)
@@ -326,6 +336,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 3,
     mev_interactions: 0,
     internal_transactions: 40,
+    contract_external_users: 5,
+    active_contracts: 1,
   },
 
   // 6. Builder+governor (nick.eth)
@@ -370,6 +382,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 3,
     mev_interactions: 0,
     internal_transactions: 60,
+    contract_external_users: 20,
+    active_contracts: 4,
   },
 
   // 7. Early adopter / explorer
@@ -423,6 +437,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 1,
     mev_interactions: 0,
     internal_transactions: 35,
+    contract_external_users: 0,
+    active_contracts: 0,
   },
 
   // 8. Verified deployer
@@ -467,6 +483,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 0,
     mev_interactions: 0,
     internal_transactions: 90,
+    contract_external_users: 50,
+    active_contracts: 10,
   },
 
   // 9. DeFi power user
@@ -517,6 +535,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 2,
     mev_interactions: 0,
     internal_transactions: 120,
+    contract_external_users: 3,
+    active_contracts: 1,
   },
 
   // 10. L2-native multi-chain
@@ -567,6 +587,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 1,
     mev_interactions: 0,
     internal_transactions: 15,
+    contract_external_users: 0,
+    active_contracts: 0,
   },
 
   // 11. Safe operator
@@ -611,6 +633,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 2,
     mev_interactions: 0,
     internal_transactions: 10,
+    contract_external_users: 0,
+    active_contracts: 0,
   },
 
   // 12. Sybil-like
@@ -652,6 +676,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 0,
     mev_interactions: 200,
     internal_transactions: 0,
+    contract_external_users: 0,
+    active_contracts: 0,
   },
 
   // 13. MEV-adjacent
@@ -693,6 +719,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 0,
     mev_interactions: 100,
     internal_transactions: 5,
+    contract_external_users: 0,
+    active_contracts: 0,
   },
 
   // 14. Average user
@@ -734,6 +762,56 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 0,
     mev_interactions: 0,
     internal_transactions: 5,
+    contract_external_users: 0,
+    active_contracts: 0,
+  },
+
+  // 16. Custom wallet
+  {
+    address: '0x887b86B6B6957F7bbeA88B8CEfD392f39236A88C',
+    first_tx_timestamp: 1609459200, // Jan 2021
+    total_transactions: 950,
+    contracts_deployed: 2,
+    deployment_chains: ['ethereum', 'base'],
+    deployment_calldata_bytes: 24000,
+    unique_protocols: [
+      'Uniswap', 'Aave', 'Lido', 'Curve', '1inch', 'ENS', 'Safe',
+    ],
+    chains_active: ['ethereum', 'arbitrum', 'base'],
+    governance_votes: 8,
+    daos_participated: ['ENS', 'Aave'],
+    proposals_created: 0,
+    delegation_events: 2,
+    bear_market_txs: 35,
+    active_month_set: months(2021, 30),
+    protocol_categories: ['defi', 'governance', 'infrastructure'],
+    failed_transactions: 18,
+    total_calldata_bytes: 180000,
+    recipient_addresses: recipients(35),
+    chain_protocol_pairs: [
+      'ethereum:Uniswap', 'ethereum:Aave', 'ethereum:Lido', 'ethereum:ENS',
+      'arbitrum:Aave', 'base:Uniswap', 'base:1inch',
+    ],
+    gas_price_set: gasPrices(40),
+    tx_hour_set: hours(14),
+    create2_deployments: 1,
+    bear_market_periods: ['Nov 2022 – Jan 2023'],
+    execution_events: 1,
+    governance_chains: ['ethereum'],
+    permit_interactions: 6,
+    flashloan_transactions: 0,
+    smart_wallet_interactions: 1,
+    erc4337_operations: 0,
+    early_adoptions: 2,
+    independent_votes: 3,
+    earliest_deployment_timestamp: 1640000000,
+    safe_executions: 1,
+    verified_deployments: 1,
+    reasoned_votes: 2,
+    mev_interactions: 0,
+    internal_transactions: 25,
+    contract_external_users: 4,
+    active_contracts: 1,
   },
 
   // 15. Excluded (burn address)
@@ -775,6 +853,8 @@ const wallets: WalletSeed[] = [
     reasoned_votes: 0,
     mev_interactions: 0,
     internal_transactions: 0,
+    contract_external_users: 0,
+    active_contracts: 0,
   },
 ];
 
@@ -899,7 +979,7 @@ function generateEvents(w: WalletSeed): EventSeed[] {
 // ── Main seed function ──
 
 async function seed() {
-  console.log('Seeding 15 wallet profiles...');
+  console.log('Seeding 16 wallet profiles...');
 
   for (const w of wallets) {
     const addr = w.address.toLowerCase();
@@ -920,6 +1000,7 @@ async function seed() {
         early_adoptions, independent_votes, earliest_deployment_timestamp,
         safe_executions, verified_deployments, reasoned_votes,
         mev_interactions, internal_transactions,
+        contract_external_users, active_contracts,
         updated_at
       ) VALUES (
         ${addr}, ${w.first_tx_timestamp}, ${w.total_transactions}, ${w.contracts_deployed},
@@ -936,6 +1017,7 @@ async function seed() {
         ${w.early_adoptions}, ${w.independent_votes}, ${w.earliest_deployment_timestamp},
         ${w.safe_executions}, ${w.verified_deployments}, ${w.reasoned_votes},
         ${w.mev_interactions}, ${w.internal_transactions},
+        ${w.contract_external_users}, ${w.active_contracts},
         ${Date.now()}
       )
       ON CONFLICT (address) DO UPDATE SET
@@ -975,6 +1057,8 @@ async function seed() {
         reasoned_votes = EXCLUDED.reasoned_votes,
         mev_interactions = EXCLUDED.mev_interactions,
         internal_transactions = EXCLUDED.internal_transactions,
+        contract_external_users = EXCLUDED.contract_external_users,
+        active_contracts = EXCLUDED.active_contracts,
         updated_at = EXCLUDED.updated_at
     `;
 

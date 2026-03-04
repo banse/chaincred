@@ -65,6 +65,16 @@ export interface WalletActivity {
   mevInteractions: number;
   /** PRD 4.6 — Internal transactions (contract-to-contract calls) via Etherscan */
   internalTransactions: number;
+  /** PRD 4.2 — Unique external callers across deployed contracts (Etherscan enrichment) */
+  contractExternalUsers: number;
+  /** PRD 4.2 — Deployed contracts still active in last 6 months (Etherscan enrichment) */
+  activeContracts: number;
+  /** PRD 5.3 — Address that first funded this wallet (enrichment-only, not persisted) */
+  fundingSource: string;
+  /** PRD 5.3 — Number of unique outbound addresses from the funding source (enrichment-only) */
+  fundingSourceOutboundCount: number;
+  /** PRD 5.2 — Whether the wallet was funded by a known CEX hot wallet (enrichment-only) */
+  fundedByCex: boolean;
 }
 
 export interface WalletProfile {

@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS wallet_activity (
   reasoned_votes INTEGER NOT NULL DEFAULT 0,
   mev_interactions INTEGER NOT NULL DEFAULT 0,
   internal_transactions INTEGER NOT NULL DEFAULT 0,
+  contract_external_users INTEGER NOT NULL DEFAULT 0,
+  active_contracts INTEGER NOT NULL DEFAULT 0,
   updated_at BIGINT NOT NULL DEFAULT 0
 );
 

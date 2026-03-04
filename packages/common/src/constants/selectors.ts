@@ -35,3 +35,19 @@ export const ERC4337_ENTRYPOINTS = new Set([
   '0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789', // EntryPoint v0.6
   '0x0000000071727de22e5e9d8baf0edac6f37da032', // EntryPoint v0.7
 ]);
+
+/** PRD 5.2 — Known CEX hot wallet addresses (lowercase) */
+export const CEX_HOT_WALLETS = new Set([
+  '0x28c6c06298d514db089934071355e5743bf21d60', // Binance 14
+  '0x21a31ee1afc51d94c2efccaa2092ad1028285549', // Binance 15
+  '0xdfd5293d8e347dfe59e90efd55b2956a1343963d', // Binance 16
+  '0xa9d1e08c7793af67e9d92fe308d5697fb81d3e43', // Coinbase 10
+  '0x503828976d22510aad0201ac7ec88293211d23da', // Coinbase 6
+  '0x71660c4005ba85c37ccec55d0c4493e66fe775d3', // Coinbase 3
+  '0x2910543af39aba0cd09dbb2d50200b3e800a63d2', // Kraken 13
+  '0x53d284357ec70ce289d6d64134dfac8e511c8a3d', // Kraken 4
+  '0x6cc5f688a315f3dc28a7781717a9a798a59fda7b', // OKX 6
+  '0x98ec059dc3adfbdd63429227115656b07c44a2e1', // OKX 8
+  '0xd24400ae8bfebb18ca49be86258a3c749cf46853', // Gemini 4
+  '0x07ee55aa48bb72dcc6e9d78256648910de513eca', // Gemini 7
+]);

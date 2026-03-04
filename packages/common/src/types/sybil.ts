@@ -6,7 +6,9 @@ export type SybilFlag =
   | 'cex-withdrawal-freshness'
   | 'zero-failure-rate'
   | 'perfect-gas-patterns'
-  | 'mev-bot-activity';
+  | 'mev-bot-activity'
+  | 'funding-source-cluster'
+  | 'cex-fresh-wallet';
 
 export interface SybilPenalty {
   flag: SybilFlag;

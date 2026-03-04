@@ -41,8 +41,14 @@ export function calculateBuilderScore(activity: WalletActivity): CategoryScore {
   // Signal 8: Verified source deployments — 80 pts each, cap 240
   const verifiedScore = Math.min(activity.verifiedDeployments * 80, 240);
 
+  // Signal 9: Contract external users — 30 pts per unique caller, cap 300
+  const externalUsersScore = Math.min(activity.contractExternalUsers * 30, 300);
+
+  // Signal 10: Active contracts (>6mo) — 70 pts each, cap 280
+  const activeContractsScore = Math.min(activity.activeContracts * 70, 280);
+
   const raw = Math.min(
-    deployScore + chainScore + constructorScore + focusScore + create2Score + erc4337Score + longevityScore + verifiedScore,
+    deployScore + chainScore + constructorScore + focusScore + create2Score + erc4337Score + longevityScore + verifiedScore + externalUsersScore + activeContractsScore,
     MAX_CATEGORY_SCORE,
   );
   return {
