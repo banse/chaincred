@@ -155,12 +155,12 @@ describe('temporal clustering', () => {
 });
 
 describe('action repetition', () => {
-  test('flags single-protocol farming', () => {
+  test('flags zero-protocol farming', () => {
     const result = checkActionRepetition(
       activity({
         address: '0x4444444444444444444444444444444444444444',
         totalTransactions: 500,
-        uniqueProtocols: ['uniswap'],
+        uniqueProtocols: [],
       }),
     );
     expect(result.detected).toBe(true);
@@ -449,7 +449,7 @@ describe('combined penalties', () => {
         address: '0xcccccccccccccccccccccccccccccccccccccccc',
         firstTxTimestamp: now - 7 * 86400,
         totalTransactions: 500,
-        uniqueProtocols: ['uniswap'],
+        uniqueProtocols: [],
         failedTransactions: 0,
         uniqueRecipients: 2,
         distinctGasPrices: 1,

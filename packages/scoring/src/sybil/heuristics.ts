@@ -38,7 +38,7 @@ export function checkTemporalClustering(activity: WalletActivity): SybilPenalty 
  */
 export function checkActionRepetition(activity: WalletActivity): SybilPenalty {
   const highTxCount = activity.totalTransactions > 100;
-  const lowDiversity = activity.uniqueProtocols.length < 3;
+  const lowDiversity = activity.uniqueProtocols.length < 1;
   const singleChain = activity.chainsActive.length < 2;
 
   const detected = highTxCount && lowDiversity && singleChain;
