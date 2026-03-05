@@ -69,6 +69,8 @@ export interface WalletActivity {
   contractExternalUsers: number;
   /** PRD 4.2 — Deployed contracts still active in last 6 months (Etherscan enrichment) */
   activeContracts: number;
+  /** Cached ENS name from indexing */
+  ensName?: string;
   /** PRD 5.3 — Address that first funded this wallet (enrichment-only, not persisted) */
   fundingSource: string;
   /** PRD 5.3 — Number of unique outbound addresses from the funding source (enrichment-only) */

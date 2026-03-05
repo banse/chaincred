@@ -10,3 +10,9 @@ export function getDb() {
   }
   return sql;
 }
+
+/** Run lightweight migrations that add columns if missing. */
+export async function runMigrations() {
+  const db = getDb();
+  await db`ALTER TABLE wallet_activity ADD COLUMN IF NOT EXISTS ens_name TEXT DEFAULT NULL`;
+}

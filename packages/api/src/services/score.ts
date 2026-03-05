@@ -114,8 +114,18 @@ export async function getScore(address: string): Promise<WalletScore> {
   // PRD 6.2 — IPFS score breakdown storage (fail-open)
   const breakdownCID = await uploadJSON(result.breakdown).catch(() => '');
 
-  // ENS name resolution (fail-open)
-  const ensName = await resolveEns(address).catch(() => null);
+  // ENS name resolution: prefer cached DB value, fall back to RPC (fail-open)
+  let ensName = activity.ensName ?? null;
+  if (!ensName) {
+    ensName = await resolveEns(address).catch(() => null);
+    // Persist resolved ENS name to DB for future requests
+    if (ensName) {
+      const sql = getDb();
+      await sql`UPDATE wallet_activity SET ens_name = ${ensName} WHERE address = ${address.toLowerCase()}`.catch(
+        () => {},
+      );
+    }
+  }
   return {
     ...result,
     ensName: ensName ?? undefined,

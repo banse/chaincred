@@ -49,6 +49,7 @@ interface WalletSeed {
   internal_transactions: number;
   contract_external_users: number;
   active_contracts: number;
+  ens_name?: string;
 }
 
 /** Generate an array of YYYY-MM strings spread over years */
@@ -97,6 +98,7 @@ const wallets: WalletSeed[] = [
   // 1. OG builder (vitalik.eth)
   {
     address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+    ens_name: 'vitalik.eth',
     first_tx_timestamp: 1438269973, // July 2015
     total_transactions: 2500,
     contracts_deployed: 12,
@@ -148,6 +150,7 @@ const wallets: WalletSeed[] = [
   // 2. DeFi builder (hayden.eth)
   {
     address: '0x11E4857Bb9993a50c685A79AFad4E6F65D518DDa',
+    ens_name: 'hayden.eth',
     first_tx_timestamp: 1534000000, // Aug 2018
     total_transactions: 1800,
     contracts_deployed: 8,
@@ -197,6 +200,7 @@ const wallets: WalletSeed[] = [
   // 3. Governor (brantly.eth)
   {
     address: '0xd26a3F686D43f2A62BA9eaE2ff77e9f516d945B9',
+    ens_name: 'brantly.eth',
     first_tx_timestamp: 1580000000, // Jan 2020
     total_transactions: 900,
     contracts_deployed: 1,
@@ -290,6 +294,7 @@ const wallets: WalletSeed[] = [
   // 5. OG contributor (timbeiko.eth)
   {
     address: '0xDBF5E9c5206d0dB70a90108bf936DA60221dC080',
+    ens_name: 'timbeiko.eth',
     first_tx_timestamp: 1420070400, // Jan 2015
     total_transactions: 1500,
     contracts_deployed: 2,
@@ -343,6 +348,7 @@ const wallets: WalletSeed[] = [
   // 6. Builder+governor (nick.eth)
   {
     address: '0xa1E4380A3B1f749673E270229993eE55F35663b4',
+    ens_name: 'nick.eth',
     first_tx_timestamp: 1495000000, // May 2017
     total_transactions: 1100,
     contracts_deployed: 6,
@@ -1001,7 +1007,7 @@ async function seed() {
         safe_executions, verified_deployments, reasoned_votes,
         mev_interactions, internal_transactions,
         contract_external_users, active_contracts,
-        updated_at
+        ens_name, updated_at
       ) VALUES (
         ${addr}, ${w.first_tx_timestamp}, ${w.total_transactions}, ${w.contracts_deployed},
         ${w.deployment_chains}, ${w.deployment_calldata_bytes},
@@ -1018,7 +1024,7 @@ async function seed() {
         ${w.safe_executions}, ${w.verified_deployments}, ${w.reasoned_votes},
         ${w.mev_interactions}, ${w.internal_transactions},
         ${w.contract_external_users}, ${w.active_contracts},
-        ${Date.now()}
+        ${w.ens_name ?? null}, ${Date.now()}
       )
       ON CONFLICT (address) DO UPDATE SET
         first_tx_timestamp = EXCLUDED.first_tx_timestamp,
@@ -1059,6 +1065,7 @@ async function seed() {
         internal_transactions = EXCLUDED.internal_transactions,
         contract_external_users = EXCLUDED.contract_external_users,
         active_contracts = EXCLUDED.active_contracts,
+        ens_name = EXCLUDED.ens_name,
         updated_at = EXCLUDED.updated_at
     `;
 

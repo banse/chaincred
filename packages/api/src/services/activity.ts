@@ -49,6 +49,7 @@ export async function getWalletActivity(address: string): Promise<WalletActivity
     internalTransactions: Number(row.internal_transactions ?? 0),
     contractExternalUsers: Number(row.contract_external_users ?? 0),
     activeContracts: Number(row.active_contracts ?? 0),
+    ensName: row.ens_name ?? undefined,
     fundingSource: '',
     fundingSourceOutboundCount: 0,
     fundedByCex: false,

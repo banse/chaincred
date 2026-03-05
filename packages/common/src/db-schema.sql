@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS wallet_activity (
   internal_transactions INTEGER NOT NULL DEFAULT 0,
   contract_external_users INTEGER NOT NULL DEFAULT 0,
   active_contracts INTEGER NOT NULL DEFAULT 0,
+  ens_name TEXT DEFAULT NULL,
   updated_at BIGINT NOT NULL DEFAULT 0
 );
 

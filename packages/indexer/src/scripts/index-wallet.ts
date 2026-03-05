@@ -24,9 +24,11 @@ import {
   MEV_CONTRACT_ADDRESSES,
   STARKNET_CHAIN_ID,
 } from '@chaincred/common';
-import { isValidStarknetAddress, normalizeStarknetAddress } from '@chaincred/common';
+import { isValidStarknetAddress, normalizeStarknetAddress, getDb } from '@chaincred/common';
 import { createStarknetClient } from '../starknet-client.js';
 import { processStarknetTx } from '../starknet-processor.js';
+import { createPublicClient, http } from 'viem';
+import { mainnet } from 'viem/chains';
 
 const MAX_NUM_BLOCKS = 10_000;
 const SIX_MONTHS = 15_768_000;
@@ -219,9 +221,15 @@ async function indexStarknet(
 async function main() {
   const address = process.argv[2];
   if (!address || !address.startsWith('0x')) {
-    console.error('Usage: bun run index-wallet <0x address>');
+    console.error('Usage: bun run index-wallet <0x address> [--skip chain1,chain2]');
     process.exit(1);
   }
+
+  // Parse --skip flag: e.g. --skip arbitrum,polygon
+  const skipIdx = process.argv.indexOf('--skip');
+  const skipChains = new Set(
+    skipIdx > -1 ? (process.argv[skipIdx + 1] || '').toLowerCase().split(',') : [],
+  );
 
   const isStarknet = isValidStarknetAddress(address) && address.length !== 42;
   const isEvm = address.length === 42;
@@ -242,8 +250,16 @@ async function main() {
   if (isEvm) {
     // Index all 6 EVM chains via HyperSync
     const clients = await createClients();
+    const activeClients = Object.values(clients).filter((client) => {
+      const nameLC = client.chainName.toLowerCase();
+      if ([...skipChains].some((s) => nameLC.includes(s))) {
+        console.log(`  [${client.chainName}] Skipped (--skip)`);
+        return false;
+      }
+      return true;
+    });
     const results = await Promise.all(
-      Object.values(clients).map(async (client) => {
+      activeClients.map(async (client) => {
         try {
           return await indexChain(client, normalizedAddress, storage);
         } catch (err) {
@@ -265,6 +281,24 @@ async function main() {
       if (starknetTxs > 0) chainsActive++;
     } catch (err) {
       console.error('  [Starknet] Error:', (err as Error).message);
+    }
+  }
+
+  // Resolve ENS name for EVM addresses and cache in DB
+  if (isEvm) {
+    try {
+      const viemClient = createPublicClient({
+        chain: mainnet,
+        transport: http(process.env.RPC_URL, { timeout: 5_000 }),
+      });
+      const ensName = await viemClient.getEnsName({ address: normalizedAddress as `0x${string}` });
+      if (ensName) {
+        const sql = getDb();
+        await sql`UPDATE wallet_activity SET ens_name = ${ensName} WHERE address = ${normalizedAddress}`;
+        console.log(`ENS: ${ensName}`);
+      }
+    } catch {
+      // Fail-open: skip ENS if RPC is unreachable
     }
   }
 
