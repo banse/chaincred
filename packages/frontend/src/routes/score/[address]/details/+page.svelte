@@ -189,27 +189,36 @@
     >
       <span>&larr;</span> Back to score
     </a>
-    <div class="mt-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-      <h1 class="text-2xl font-bold">Score Details</h1>
-      <div class="flex flex-col gap-1">
-        <div class="flex items-center gap-2">
-          {#if scoreData?.ensName}
-            <span class="text-lg font-semibold text-[var(--color-primary)]">{scoreData.ensName}</span>
-          {/if}
-          {#if scoreData}
-            {@const level = getLevelBadge(Math.round(scoreData.totalScore))}
-            <span
-              class="rounded-full px-2.5 py-0.5 text-xs font-bold text-white"
-              style="background-color: {level.color}"
-            >
-              {level.label}
-            </span>
-          {/if}
+    <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+        <h1 class="text-2xl font-bold">Score Details</h1>
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center gap-2">
+            {#if scoreData?.ensName}
+              <span class="text-lg font-semibold text-[var(--color-primary)]">{scoreData.ensName}</span>
+            {/if}
+            {#if scoreData}
+              {@const level = getLevelBadge(Math.round(scoreData.totalScore))}
+              <span
+                class="rounded-full px-2.5 py-0.5 text-xs font-bold text-white"
+                style="background-color: {level.color}"
+              >
+                {level.label}
+              </span>
+            {/if}
+          </div>
+          <code class="truncate rounded bg-[var(--color-surface)] px-3 py-1 text-sm text-[var(--color-text-muted)]">
+            {address}
+          </code>
         </div>
-        <code class="truncate rounded bg-[var(--color-surface)] px-3 py-1 text-sm text-[var(--color-text-muted)]">
-          {address}
-        </code>
       </div>
+      {#if scoreData}
+        <div class="text-right">
+          <p class="text-sm text-[var(--color-text-muted)]">Total Score</p>
+          <p class="text-4xl font-bold text-[var(--color-primary)]">{Math.round(scoreData.totalScore)}</p>
+          <p class="text-xs text-[var(--color-text-muted)]">/ {MAX_CATEGORY_SCORE}</p>
+        </div>
+      {/if}
     </div>
   </div>
 
