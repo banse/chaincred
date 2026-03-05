@@ -207,7 +207,8 @@ export function checkZeroFailureRate(activity: WalletActivity): SybilPenalty {
  * resulting in diverse gas prices. A ratio of distinct gas prices to total
  * transactions below 5% with 50+ txs suggests automation.
  *
- * Heuristic: if totalTransactions > 50 AND distinctGasPrices / totalTransactions < 0.05, flag it.
+ * Heuristic: if totalTransactions > 50 AND distinctGasPrices / totalTransactions < 0.005
+ * AND distinctGasPrices < 200, flag it.
  */
 /**
  * PRD 5.2 — MEV bot activity detection (penalty 0.15)
@@ -242,14 +243,20 @@ export function checkMevActivity(activity: WalletActivity): SybilPenalty {
 /**
  * PRD 5.3 — Funding source cluster detection (penalty 0.50)
  *
- * If a wallet's first funder sent ETH to >10 unique wallets, the wallet
+ * If a wallet's first funder sent ETH to 10–500 unique wallets, the wallet
  * is likely part of a sybil cluster funded by a single coordinator.
  *
  * Requires Etherscan enrichment: fundingSourceOutboundCount > 0 means data is available.
  */
 export function checkFundingSourceCluster(activity: WalletActivity): SybilPenalty {
   const hasData = activity.fundingSourceOutboundCount > 0;
-  const detected = hasData && activity.fundingSourceOutboundCount > 10;
+  // Only flag funders in the 10–500 outbound range — the "cluster coordinator" sweet spot.
+  // Below 10 is normal. Above 500 is almost certainly a CEX, bridge, or protocol router
+  // (those are legitimate funding sources, not sybil coordinators).
+  const detected =
+    hasData &&
+    activity.fundingSourceOutboundCount > 10 &&
+    activity.fundingSourceOutboundCount <= 500;
 
   return {
     flag: 'funding-source-cluster',
@@ -319,7 +326,10 @@ export function checkGasPatterns(activity: WalletActivity): SybilPenalty {
   }
 
   const ratio = activity.distinctGasPrices / activity.totalTransactions;
-  const detected = ratio < 0.05;
+  // Post-EIP-1559, base fees are network-set — legitimate high-volume wallets naturally reuse
+  // gas prices. Scale threshold: <0.5% for wallets with <1000 txs, but never flag wallets
+  // with >200 distinct prices (enough entropy to rule out simple bot scripts).
+  const detected = ratio < 0.005 && activity.distinctGasPrices < 200;
 
   return {
     flag: 'perfect-gas-patterns',

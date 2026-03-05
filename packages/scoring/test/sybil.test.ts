@@ -354,8 +354,8 @@ describe('perfect gas patterns', () => {
   test('flags wallet with very few distinct gas prices', () => {
     const result = checkGasPatterns(
       activity({
-        totalTransactions: 200,
-        distinctGasPrices: 2, // 1% ratio
+        totalTransactions: 500,
+        distinctGasPrices: 2, // 0.4% ratio with only 2 prices — bot-like
       }),
     );
     expect(result.detected).toBe(true);

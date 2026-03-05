@@ -467,8 +467,8 @@ describe('active contracts signal', () => {
 });
 
 describe('funding source cluster heuristic', () => {
-  test('funding source with >10 outbound addresses reduces sybil confidence', () => {
-    const flagged = calculateScore(activity({ fundingSourceOutboundCount: 50 }));
+  test('funding source with 10-500 outbound addresses reduces sybil confidence', () => {
+    const flagged = calculateScore(activity({ fundingSourceOutboundCount: 100 }));
     const clean = calculateScore(activity({ fundingSourceOutboundCount: 5 }));
     expect(flagged.sybilMultiplier).toBeLessThan(clean.sybilMultiplier);
   });
