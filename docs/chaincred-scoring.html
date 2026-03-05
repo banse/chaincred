@@ -646,7 +646,7 @@
 <header class="hero" id="overview">
   <h1>How ChainCred<br><span class="gradient">Scores Work</span></h1>
   <p>Every wallet gets a single number between 0 and 1000. This document explains every layer of the calculation &mdash; from the final score down to individual protocol-level signals and why each decision was made.</p>
-  <p style="margin-top: 12px">Scores measure <strong>what wallets do</strong>, not what they hold. Depth and breadth of onchain activity across 7 chains, 25 protocols, 35 signals, and 10 sybil heuristics.</p>
+  <p style="margin-top: 12px">Scores measure <strong>what wallets do</strong>, not what they hold. Depth and breadth of onchain activity across 7 chains, 26 protocols, 35 signals, and 10 sybil heuristics.</p>
 </header>
 
 <!-- ═══ FORMULA ═══ -->
@@ -922,7 +922,7 @@
         <td>Protocol count</td>
         <td><code>unique_protocols &times; 18</code></td>
         <td>350</td>
-        <td>Raw count of distinct protocols from the 25 in the registry</td>
+        <td>Raw count of distinct protocols from the 26 in the registry</td>
       </tr>
       <tr>
         <td>Chain diversity</td>
@@ -1036,8 +1036,8 @@
       <span class="heuristic-name">2. Action Repetition</span>
       <span class="heuristic-penalty">&minus;30%</span>
     </div>
-    <p>Repetitive single-protocol, single-chain activity suggests scripted farming. Real users explore.</p>
-    <span class="trigger">total_txs &gt; 100 AND unique_protocols &lt; 3 AND chains_active &lt; 2</span>
+    <p>Repetitive zero-protocol, single-chain activity suggests scripted farming. Wallets interacting with at least one recognized protocol are exempt &mdash; single-protocol gaming users (e.g. FrenPet) are legitimate.</p>
+    <span class="trigger">total_txs &gt; 100 AND unique_protocols &lt; 1 AND chains_active &lt; 2</span>
   </div>
 
   <div class="heuristic">
@@ -1171,7 +1171,7 @@
 <!-- ═══ PROTOCOL OVERVIEW ═══ -->
 <section id="protocol-overview">
   <h2>Protocol Registry</h2>
-  <p>ChainCred tracks <strong>25 protocols</strong> across <strong>6 domains</strong>. Wallet interactions are detected by matching transaction <code>to</code> addresses against the registry's contract addresses per chain.</p>
+  <p>ChainCred tracks <strong>26 protocols</strong> across <strong>6 domains</strong>. Wallet interactions are detected by matching transaction <code>to</code> addresses against the registry's contract addresses per chain.</p>
 
   <h3>Selection Criteria</h3>
   <p>The registry is curated for:</p>
@@ -1201,7 +1201,7 @@
     </div>
     <div class="domain-item">
       <span class="domain-name">Gaming</span>
-      <span class="domain-count" style="color: var(--orange)">2</span>
+      <span class="domain-count" style="color: var(--orange)">3</span>
     </div>
     <div class="domain-item">
       <span class="domain-name">Builder Tools</span>
@@ -1504,6 +1504,18 @@
     </div>
     <p>DeFi-integrated gaming on Polygon. Combines NFTs with Aave's interest-bearing tokens, making it a cross-domain protocol. Also provides Polygon-specific gaming coverage. Tracked: Diamond (EIP-2535).</p>
     <div class="launch">Launched March 2021</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">FrenPet</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge gaming">Gaming</span>
+        <span class="protocol-card-chains">Base only</span>
+      </div>
+    </div>
+    <p>The most active onchain game on Base. Virtual pet game using EIP-2535 Diamond architecture &mdash; players feed, battle (bonk), train, and evolve NFT pets. Fully onchain tokenomics: FP token has 4% tx tax redistributed to active players, mushroom purchases burn 100% of tokens. Provides Base-specific gaming coverage. Tracked: Diamond Proxy (V2), V1 Main, V1 Game Manager, FP Token, pGOLD Token, NFT (6 contracts).</p>
+    <div class="launch">Launched August 2023</div>
   </div>
 
   <h3>Builder Tools</h3>

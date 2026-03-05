@@ -122,7 +122,7 @@ A wallet that has deployed 5 contracts across 2 chains with 15,000 total constru
 
 ## Protocol Detection
 
-The indexer recognizes **25 protocols** across all 7 chains and maps contract interactions to named protocols:
+The indexer recognizes **26 protocols** across all 7 chains and maps contract interactions to named protocols:
 
 | Protocol | Type | Chains |
 |----------|------|--------|
@@ -144,6 +144,7 @@ The indexer recognizes **25 protocols** across all 7 chains and maps contract in
 | The Graph | Infrastructure | Ethereum, Arbitrum |
 | Treasure | Gaming | Arbitrum only |
 | Aavegotchi | Gaming | Polygon only |
+| FrenPet | Gaming | Base only |
 | Deterministic Deployment Proxy | Builder Tools | All 6 |
 | CREATE2 Factory | Builder Tools | All 6 EVM |
 | JediSwap | DeFi | Starknet |
@@ -180,7 +181,7 @@ Every wallet is analyzed for bot-like behavior using ten heuristics. Each heuris
 Detects wallets with compressed activity windows. If a wallet averages more than 20 transactions per day and is less than 90 days old, it gets flagged. A real user with 500 transactions over 3 years is normal; 500 transactions in 2 weeks is suspicious.
 
 ### Action Repetition (penalty: -30%)
-Detects single-protocol farming. If a wallet has over 100 transactions but uses fewer than 3 protocols on a single chain, it gets flagged. Genuine users tend to interact with a variety of protocols over time.
+Detects zero-protocol farming. If a wallet has over 100 transactions but interacts with zero recognized protocols on a single chain, it gets flagged. Wallets using at least one known protocol (e.g. FrenPet, Uniswap) are exempt — single-protocol gaming users are legitimate, not sybils.
 
 ### Zero Failure Rate (penalty: -20%)
 Detects bot-like perfection. If a wallet has over 200 transactions and has never had a single failed transaction, it gets flagged. Real users inevitably encounter reverts, out-of-gas errors, and other failures. A perfect success rate at high volume suggests automated pre-simulation.

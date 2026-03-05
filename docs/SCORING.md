@@ -155,7 +155,7 @@ The total score maps to a human-readable level:
 
 | Signal | Formula | Cap | Why |
 |--------|---------|-----|-----|
-| **Protocol Count** | `unique_protocols × 18` | 350 | Raw count of distinct protocols interacted with (from the 25 in the registry) |
+| **Protocol Count** | `unique_protocols × 18` | 350 | Raw count of distinct protocols interacted with (from the 26 in the registry) |
 | **Chain Diversity** | `chains_active × 40` | 250 | Number of chains with activity. Max 7 chains indexed → effective max 280 (capped at 250) |
 | **Cross-domain Coverage** | `protocol_categories × 40` | 400 | Number of distinct protocol categories touched (6 domains: defi, governance, infrastructure, social, gaming, builder-tools) → effective max 240 |
 | **Early Adoption** | `early_adoptions × 30` | 300 | Number of protocols used within 6 months of their launch. Early adopters take risk on new protocols |
@@ -207,7 +207,7 @@ Multiple detections compound. For example, if both Temporal Clustering (0.40 pen
 | # | Heuristic | Penalty | Trigger | Rationale |
 |---|-----------|---------|---------|-----------|
 | 1 | **Temporal Clustering** | 0.40 | `avg_txs_per_day > 20` AND `wallet_age < 90 days` | New wallets with extreme activity are likely farming. Real users don't sustain 20+ txs/day from day one. |
-| 2 | **Action Repetition** | 0.30 | `total_txs > 100` AND `unique_protocols < 3` AND `chains_active < 2` | Repetitive single-protocol, single-chain activity suggests scripted farming. Real users explore. |
+| 2 | **Action Repetition** | 0.30 | `total_txs > 100` AND `unique_protocols < 1` AND `chains_active < 2` | Repetitive zero-protocol, single-chain activity suggests scripted farming. Wallets interacting with at least one recognized protocol are exempt — single-protocol gaming users (e.g. FrenPet) are legitimate. |
 | 3 | **Funding Graph Clustering** | 0.50 | `unique_recipients > 50` AND `unique_protocols < 2` AND `chains_active > 1` | Distributing to 50+ addresses through 1 protocol across chains = token/ETH distribution bot. Requires multi-chain to avoid flagging gaming users who interact with many addresses on one chain. |
 | 4 | **Cross-chain Mirroring** | 0.60 | 3+ chains with identical sorted protocol sets (requires `chains_active >= 3`) | Using the exact same protocols in the exact same order across 3+ chains is a hallmark of scripted sybil farming that replays the same sequence everywhere. |
 | 5 | **CEX Withdrawal Freshness** | 0.00–0.30 | `wallet_age < 30 days`: penalty = `0.30 × (1 - age/30)` | Brand new wallets funded directly from CEX withdrawal are often sybil accounts. Graduated: full penalty at day 0, decays to 0 by day 30. |
@@ -260,7 +260,7 @@ ChainCred indexes 7 chains. 6 EVM chains are indexed via [HyperSync](https://doc
 
 ## Protocol Registry
 
-ChainCred tracks 25 protocols across 6 domains. A wallet's interaction with a protocol is detected by matching transaction `to` addresses against the registry's contract addresses per chain.
+ChainCred tracks 26 protocols across 6 domains. A wallet's interaction with a protocol is detected by matching transaction `to` addresses against the registry's contract addresses per chain.
 
 ### Why These Protocols?
 
@@ -425,7 +425,7 @@ The registry is curated to cover the most important protocols in each domain, wi
 - **Contracts:** ETH bridge
 - **Why included:** The canonical Starknet bridge. Bridging assets to Starknet is the entry point for the ecosystem and represents commitment to exploring a non-EVM execution environment.
 
-### Gaming Protocols (2)
+### Gaming Protocols (3)
 
 #### Treasure
 - **Category:** Gaming
@@ -440,6 +440,13 @@ The registry is curated to cover the most important protocols in each domain, wi
 - **Chains:** Polygon only
 - **Contracts:** Diamond (EIP-2535)
 - **Why included:** DeFi-integrated gaming on Polygon. Aavegotchi combines NFTs with Aave's interest-bearing tokens, making it a cross-domain protocol that tests both gaming and DeFi understanding. Also provides Polygon-specific gaming coverage.
+
+#### FrenPet
+- **Category:** Gaming
+- **Launched:** August 2023
+- **Chains:** Base only
+- **Contracts:** Diamond Proxy (V2), V1 Main Contract, V1 Game Manager, FP Token, pGOLD Token, NFT (6 contracts)
+- **Why included:** The most active onchain game on Base. FrenPet is a virtual pet game using EIP-2535 Diamond architecture where players feed, battle (bonk), train, and evolve NFT pets. Its tokenomics are fully onchain — the FP token has a 4% transaction tax redistributed to active players, and mushroom purchases result in 100% token burn. FrenPet provides Base-specific gaming coverage and represents a distinct class of high-frequency single-chain gaming activity.
 
 ### Builder Tools (2)
 
@@ -465,7 +472,7 @@ The registry is curated to cover the most important protocols in each domain, wi
 | **Social** | 3 | Identity and social graph — ENS names, Lens profiles, Farcaster IDs |
 | **Governance** | 1 | Multi-sig and organizational wallets — Safe signers |
 | **Infrastructure** | 3 | Oracles, indexing, bridges — the stack under DeFi |
-| **Gaming** | 2 | Onchain gaming — distinct from financial DeFi usage |
+| **Gaming** | 3 | Onchain gaming — distinct from financial DeFi usage |
 | **Builder Tools** | 2 | CREATE2 factories — advanced deployment patterns |
 
 ---
