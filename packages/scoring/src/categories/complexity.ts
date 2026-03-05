@@ -41,5 +41,14 @@ export function calculateComplexityScore(activity: WalletActivity): CategoryScor
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.complexity,
+    signals: {
+      transactionVolume: volumeScore,
+      failRatio: failRatioScore,
+      avgCalldata: avgCalldataScore,
+      permit: permitScore,
+      flashloan: flashloanScore,
+      smartWallet: smartWalletScore,
+      internalTx: internalTxScore,
+    },
   };
 }

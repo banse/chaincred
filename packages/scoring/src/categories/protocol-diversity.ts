@@ -21,5 +21,11 @@ export function calculateProtocolDiversityScore(activity: WalletActivity): Categ
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.protocolDiversity,
+    signals: {
+      protocolCount: protocolScore,
+      chainDiversity: chainScore,
+      crossDomainCoverage: categoryScore,
+      earlyAdoption: earlyAdoptionScore,
+    },
   };
 }

@@ -1,6 +1,7 @@
 export interface CategoryScore {
   raw: number;
   weighted: number;
+  signals?: Record<string, number>;
 }
 
 export interface ScoreBreakdown {

@@ -39,5 +39,16 @@ export function calculateGovernanceScore(activity: WalletActivity): CategoryScor
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.governance,
+    signals: {
+      votes: voteScore,
+      daoBreadth: daoScore,
+      proposals: proposalScore,
+      delegation: delegateScore,
+      treasuryExecution: executionScore,
+      crossChainGov: crossChainGovScore,
+      independentVotes: independentVoteScore,
+      safeExecutions: safeScore,
+      reasonedVotes: reasonedScore,
+    },
   };
 }

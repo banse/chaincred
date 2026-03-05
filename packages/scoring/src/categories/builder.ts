@@ -56,5 +56,17 @@ export function calculateBuilderScore(activity: WalletActivity): CategoryScore {
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.builder,
+    signals: {
+      deployments: deployScore,
+      multiChainDeploys: chainScore,
+      constructorComplexity: constructorScore,
+      deploymentFocus: focusScore,
+      create2: create2Score,
+      erc4337: erc4337Score,
+      longevity: longevityScore,
+      verifiedSource: verifiedScore,
+      externalUsers: externalUsersScore,
+      activeContracts: activeContractsScore,
+    },
   };
 }

@@ -32,5 +32,12 @@ export function calculateTemporalScore(activity: WalletActivity): CategoryScore 
   return {
     raw,
     weighted: raw * CATEGORY_WEIGHTS.temporal,
+    signals: {
+      walletAge: ageScore,
+      bearMarketTxs: bearScore,
+      consistency: consistencyScore,
+      activityEntropy: entropyScore,
+      crossCyclePersistence: crossCycleScore,
+    },
   };
 }

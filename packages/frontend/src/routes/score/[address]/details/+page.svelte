@@ -13,55 +13,56 @@
 
   interface Signal {
     name: string;
+    key: string;
     desc: string;
     cap: number;
   }
 
   const categorySignals: Record<ScoreCategory, Signal[]> = {
     builder: [
-      { name: 'Contract Deployments', desc: '40 pts each', cap: 280 },
-      { name: 'Multi-chain Deploys', desc: '50 pts per chain', cap: 200 },
-      { name: 'Constructor Complexity', desc: 'Based on avg calldata size', cap: 100 },
-      { name: 'Deployment Focus', desc: 'Deploys / total tx ratio', cap: 80 },
-      { name: 'CREATE2 Deployments', desc: '30 pts each', cap: 120 },
-      { name: 'ERC-4337 Operations', desc: '25 pts each', cap: 100 },
-      { name: 'Deployment Longevity', desc: '30 pts per 6-month period', cap: 90 },
-      { name: 'Verified Source', desc: '50 pts per verified deploy', cap: 200 },
-      { name: 'Contract Users', desc: '15 pts per unique caller', cap: 150 },
-      { name: 'Active Contracts', desc: '40 pts per contract (>6mo)', cap: 200 },
+      { name: 'Contract Deployments', key: 'deployments', desc: '40 pts each', cap: 280 },
+      { name: 'Multi-chain Deploys', key: 'multiChainDeploys', desc: '50 pts per chain', cap: 200 },
+      { name: 'Constructor Complexity', key: 'constructorComplexity', desc: 'Based on avg calldata size', cap: 100 },
+      { name: 'Deployment Focus', key: 'deploymentFocus', desc: 'Deploys / total tx ratio', cap: 80 },
+      { name: 'CREATE2 Deployments', key: 'create2', desc: '30 pts each', cap: 120 },
+      { name: 'ERC-4337 Operations', key: 'erc4337', desc: '25 pts each', cap: 100 },
+      { name: 'Deployment Longevity', key: 'longevity', desc: '30 pts per 6-month period', cap: 90 },
+      { name: 'Verified Source', key: 'verifiedSource', desc: '50 pts per verified deploy', cap: 200 },
+      { name: 'Contract Users', key: 'externalUsers', desc: '15 pts per unique caller', cap: 150 },
+      { name: 'Active Contracts', key: 'activeContracts', desc: '40 pts per contract (>6mo)', cap: 200 },
     ],
     governance: [
-      { name: 'Governance Votes', desc: '20 pts each', cap: 400 },
-      { name: 'DAO Breadth', desc: '60 pts per DAO', cap: 360 },
-      { name: 'Proposals Created', desc: '100 pts each', cap: 150 },
-      { name: 'Delegation Events', desc: '15 pts each', cap: 90 },
-      { name: 'Treasury Executions', desc: '30 pts each', cap: 120 },
-      { name: 'Cross-chain Governance', desc: '25 pts per chain', cap: 150 },
-      { name: 'Independent Voting', desc: '20 pts each (against/abstain)', cap: 120 },
-      { name: 'Safe Multi-sig', desc: '25 pts per execution', cap: 200 },
-      { name: 'Reasoned Votes', desc: '25 pts each', cap: 150 },
+      { name: 'Governance Votes', key: 'votes', desc: '20 pts each', cap: 400 },
+      { name: 'DAO Breadth', key: 'daoBreadth', desc: '60 pts per DAO', cap: 360 },
+      { name: 'Proposals Created', key: 'proposals', desc: '100 pts each', cap: 150 },
+      { name: 'Delegation Events', key: 'delegation', desc: '15 pts each', cap: 90 },
+      { name: 'Treasury Executions', key: 'treasuryExecution', desc: '30 pts each', cap: 120 },
+      { name: 'Cross-chain Governance', key: 'crossChainGov', desc: '25 pts per chain', cap: 150 },
+      { name: 'Independent Voting', key: 'independentVotes', desc: '20 pts each (against/abstain)', cap: 120 },
+      { name: 'Safe Multi-sig', key: 'safeExecutions', desc: '25 pts per execution', cap: 200 },
+      { name: 'Reasoned Votes', key: 'reasonedVotes', desc: '25 pts each', cap: 150 },
     ],
     temporal: [
-      { name: 'Wallet Age', desc: '50 pts per year', cap: 400 },
-      { name: 'Bear Market Activity', desc: '5 pts per tx in bear markets', cap: 300 },
-      { name: 'Consistency Ratio', desc: 'Active months / wallet age', cap: 300 },
-      { name: 'Activity Entropy', desc: 'Distinct hours of activity / 24', cap: 200 },
-      { name: 'Cross-cycle Persistence', desc: '75 pts per bear/bull cycle', cap: 300 },
+      { name: 'Wallet Age', key: 'walletAge', desc: '50 pts per year', cap: 400 },
+      { name: 'Bear Market Activity', key: 'bearMarketTxs', desc: '5 pts per tx in bear markets', cap: 300 },
+      { name: 'Consistency Ratio', key: 'consistency', desc: 'Active months / wallet age', cap: 300 },
+      { name: 'Activity Entropy', key: 'activityEntropy', desc: 'Distinct hours of activity / 24', cap: 200 },
+      { name: 'Cross-cycle Persistence', key: 'crossCyclePersistence', desc: '75 pts per bear/bull cycle', cap: 300 },
     ],
     protocolDiversity: [
-      { name: 'Unique Protocols', desc: '18 pts each', cap: 350 },
-      { name: 'Chain Diversity', desc: '40 pts per chain', cap: 250 },
-      { name: 'Cross-domain Coverage', desc: '40 pts per domain (DeFi, social, etc.)', cap: 400 },
-      { name: 'Early Adoption', desc: '30 pts per protocol used within 6mo of launch', cap: 300 },
+      { name: 'Unique Protocols', key: 'protocolCount', desc: '18 pts each', cap: 350 },
+      { name: 'Chain Diversity', key: 'chainDiversity', desc: '40 pts per chain', cap: 250 },
+      { name: 'Cross-domain Coverage', key: 'crossDomainCoverage', desc: '40 pts per domain (DeFi, social, etc.)', cap: 400 },
+      { name: 'Early Adoption', key: 'earlyAdoption', desc: '30 pts per protocol used within 6mo of launch', cap: 300 },
     ],
     complexity: [
-      { name: 'Transaction Volume', desc: '1.5 pts each', cap: 300 },
-      { name: 'Failed Tx Ratio', desc: 'Failure rate signal', cap: 300 },
-      { name: 'Avg Calldata Size', desc: 'Based on calldata complexity', cap: 400 },
-      { name: 'EIP-712 Permits', desc: '10 pts each', cap: 200 },
-      { name: 'Flashloans', desc: '50 pts each', cap: 300 },
-      { name: 'Smart Wallet Interactions', desc: '15 pts each', cap: 150 },
-      { name: 'Internal Transactions', desc: 'Based on internal call count', cap: 200 },
+      { name: 'Transaction Volume', key: 'transactionVolume', desc: '1.5 pts each', cap: 300 },
+      { name: 'Failed Tx Ratio', key: 'failRatio', desc: 'Failure rate signal', cap: 300 },
+      { name: 'Avg Calldata Size', key: 'avgCalldata', desc: 'Based on calldata complexity', cap: 400 },
+      { name: 'EIP-712 Permits', key: 'permit', desc: '10 pts each', cap: 200 },
+      { name: 'Flashloans', key: 'flashloan', desc: '50 pts each', cap: 300 },
+      { name: 'Smart Wallet Interactions', key: 'smartWallet', desc: '15 pts each', cap: 150 },
+      { name: 'Internal Transactions', key: 'internalTx', desc: 'Based on internal call count', cap: 200 },
     ],
   };
 
@@ -319,12 +320,16 @@
                 </p>
                 <div class="space-y-1.5">
                   {#each signals as signal}
+                    {@const value = Math.round(score.signals?.[signal.key] ?? 0)}
                     <div class="flex items-center justify-between text-xs">
                       <div>
                         <span class="text-[var(--color-text)]">{signal.name}</span>
                         <span class="ml-1 text-[var(--color-text-muted)]">&mdash; {signal.desc}</span>
                       </div>
-                      <span class="ml-2 shrink-0 text-[var(--color-text-muted)]">cap {signal.cap}</span>
+                      <span class="ml-2 shrink-0 font-medium" style="color: {cat.color}">
+                        {value}
+                        <span class="font-normal text-[var(--color-text-muted)]">/ {signal.cap}</span>
+                      </span>
                     </div>
                   {/each}
                 </div>
