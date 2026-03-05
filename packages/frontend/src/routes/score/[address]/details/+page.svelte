@@ -300,7 +300,7 @@
     {@const sybilPct = (scoreData.sybilMultiplier * 100).toFixed(0)}
     {@const sybilColor = scoreData.sybilMultiplier >= 0.8 ? '#10B981' : scoreData.sybilMultiplier >= 0.5 ? '#F59E0B' : '#EF4444'}
     {@const cardFindings = generateWalletFindings(scoreData)}
-    {@const cardHeight = 480 + (cardFindings.length > 0 ? 90 + cardFindings.length * 30 + 24 : 0)}
+    {@const cardHeight = 500 + (cardFindings.length > 0 ? 90 + cardFindings.length * 30 + 24 : 0)}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
@@ -317,8 +317,8 @@
         <svg
           id="chaincred-card-svg"
           xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 800 {cardHeight}"
-          class="w-full max-w-[800px] rounded-2xl"
+          viewBox="0 0 1600 {cardHeight * 2}"
+          class="w-full max-w-[1600px] rounded-2xl"
         >
           <defs>
             <linearGradient id="card-bg" x1="0" y1="0" x2="0" y2="1">
@@ -326,7 +326,8 @@
               <stop offset="100%" stop-color="#1e293b" />
             </linearGradient>
           </defs>
-          <rect width="800" height={cardHeight} rx="16" fill="url(#card-bg)" />
+          <rect width="1600" height={cardHeight * 2} rx="32" fill="url(#card-bg)" />
+          <g transform="scale(2)">
 
           <!-- Header -->
           <text x="30" y="38" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#94a3b8">ChainCred</text>
@@ -336,53 +337,53 @@
           <text x="400" y="58" font-family="monospace" font-size="12" fill="#64748b" text-anchor="middle">{address}</text>
 
           <!-- Score -->
-          <text x="400" y="120" font-family="system-ui, sans-serif" font-size="64" font-weight="800" fill={scoreColor(total)} text-anchor="middle">{total}</text>
-          <text x="400" y="145" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">
-            {level.label} — Expertise Score
-          </text>
+          <text x="400" y="85" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill={scoreColor(total)} text-anchor="middle">{level.label}</text>
+          <text x="400" y="140" font-family="system-ui, sans-serif" font-size="62" font-weight="800" fill={scoreColor(total)} text-anchor="middle">{total}</text>
+          <text x="400" y="162" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">Expertise Score</text>
 
           <!-- Badges (centered, below score) -->
           {#each earnedBadgeDefs as badge, i}
             {@const bx = (800 - (earnedBadgeDefs.length * 100 + 110)) / 2 + i * 100}
-            <rect x={bx} y="166" width="90" height="30" rx="8" fill="none" stroke={badge.color} stroke-width="1.5" />
-            <text x={bx + 45} y="186" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill={badge.color} text-anchor="middle">{badge.emoji} {badge.label}</text>
+            <rect x={bx} y="186" width="90" height="30" rx="8" fill="none" stroke={badge.color} stroke-width="1.5" />
+            <text x={bx + 45} y="206" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill={badge.color} text-anchor="middle">{badge.emoji} {badge.label}</text>
           {/each}
           <!-- Sybil confidence pseudo-badge -->
-          <rect x={(800 - (earnedBadgeDefs.length * 100 + 110)) / 2 + earnedBadgeDefs.length * 100} y="166" width="110" height="30" rx="8" fill="none" stroke={sybilColor} stroke-width="1.5" />
-          <text x={(800 - (earnedBadgeDefs.length * 100 + 110)) / 2 + earnedBadgeDefs.length * 100 + 55} y="186" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill={sybilColor} text-anchor="middle">🛡️ Sybil {sybilPct}%</text>
+          <rect x={(800 - (earnedBadgeDefs.length * 100 + 110)) / 2 + earnedBadgeDefs.length * 100} y="186" width="110" height="30" rx="8" fill="none" stroke={sybilColor} stroke-width="1.5" />
+          <text x={(800 - (earnedBadgeDefs.length * 100 + 110)) / 2 + earnedBadgeDefs.length * 100 + 55} y="206" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill={sybilColor} text-anchor="middle">🛡️ Sybil {sybilPct}%</text>
 
           <!-- Divider -->
-          <line x1="30" y1="210" x2="770" y2="210" stroke="#334155" stroke-width="1" />
+          <line x1="30" y1="230" x2="770" y2="230" stroke="#334155" stroke-width="1" />
 
-          <!-- Category breakdown -->
+          <!-- Category breakdown (centered) -->
           {#each categories as cat, i}
             {@const score = scoreData.breakdown[cat.key]}
-            {@const y = 234 + i * 48}
+            {@const y = 254 + i * 48}
             {@const barW = Math.max(1, (score.raw / 1000) * 300)}
             <!-- Color dot -->
-            <circle cx="42" cy={y + 6} r="5" fill={cat.color} />
+            <circle cx="127" cy={y + 6} r="5" fill={cat.color} />
             <!-- Label + weight -->
-            <text x="56" y={y + 10} font-family="system-ui, sans-serif" font-size="13" fill="#e2e8f0">{cat.label}</text>
-            <text x="190" y={y + 10} font-family="system-ui, sans-serif" font-size="11" fill="#64748b">{weightPct(cat.key)}</text>
+            <text x="141" y={y + 10} font-family="system-ui, sans-serif" font-size="13" fill="#e2e8f0">{cat.label}</text>
+            <text x="275" y={y + 10} font-family="system-ui, sans-serif" font-size="11" fill="#64748b">{weightPct(cat.key)}</text>
             <!-- Progress bar bg -->
-            <rect x="230" y={y - 2} width="300" height="16" rx="4" fill="#1e293b" />
+            <rect x="315" y={y - 2} width="300" height="16" rx="4" fill="#1e293b" />
             <!-- Progress bar fill -->
-            <rect x="230" y={y - 2} width={barW} height="16" rx="4" fill={cat.color} opacity="0.85" />
+            <rect x="315" y={y - 2} width={barW} height="16" rx="4" fill={cat.color} opacity="0.85" />
             <!-- Score text -->
-            <text x="550" y={y + 10} font-family="monospace" font-size="12" fill="#e2e8f0">{Math.round(score.raw)}</text>
-            <text x="590" y={y + 10} font-family="monospace" font-size="12" fill="#64748b">/ 1000</text>
+            <text x="635" y={y + 10} font-family="monospace" font-size="12" fill="#e2e8f0">{Math.round(score.raw)}</text>
+            <text x="675" y={y + 10} font-family="monospace" font-size="12" fill="#64748b">/ 1000</text>
             <!-- Category description -->
-            <text x="56" y={y + 26} font-family="system-ui, sans-serif" font-size="10" fill="#64748b">{cat.desc}</text>
+            <text x="141" y={y + 26} font-family="system-ui, sans-serif" font-size="10" fill="#64748b">{cat.desc}</text>
           {/each}
 
           <!-- Wallet Insights -->
           {#if cardFindings.length > 0}
-            <line x1="30" y1="470" x2="770" y2="470" stroke="#334155" stroke-width="1" />
-            <text x="400" y="520" font-family="system-ui, sans-serif" font-size="18" font-weight="800" fill="#e2e8f0" text-anchor="middle">Wallet Insights</text>
+            <line x1="30" y1="490" x2="770" y2="490" stroke="#334155" stroke-width="1" />
+            <text x="400" y="540" font-family="system-ui, sans-serif" font-size="18" font-weight="800" fill="#e2e8f0" text-anchor="middle">Wallet Insights</text>
             {#each cardFindings as finding, i}
-              <text x="400" y={560 + i * 30} font-family="system-ui, sans-serif" font-size="16" fill="#cbd5e1" text-anchor="middle">{finding.emoji}  {finding.text}</text>
+              <text x="400" y={580 + i * 30} font-family="system-ui, sans-serif" font-size="16" fill="#cbd5e1" text-anchor="middle">{finding.emoji}  {finding.text}</text>
             {/each}
           {/if}
+          </g>
         </svg>
         <div class="flex gap-3">
           <button
