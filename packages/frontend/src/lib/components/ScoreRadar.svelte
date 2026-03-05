@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ScoreBreakdown } from '@chaincred/common';
 
-  let { breakdown }: { breakdown: ScoreBreakdown } = $props();
+  let { breakdown, address }: { breakdown: ScoreBreakdown; address?: string } = $props();
 
   const categories = [
     { key: 'builder', label: 'Builder', color: '#F97316' },
@@ -11,9 +11,9 @@
     { key: 'complexity', label: 'Complexity', color: '#EF4444' },
   ] as const;
 
-  const cx = 100;
-  const cy = 100;
-  const radius = 75;
+  const cx = 130;
+  const cy = 105;
+  const radius = 65;
   const rings = [0.33, 0.66, 1.0];
 
   function angle(i: number): number {
@@ -66,7 +66,7 @@
   <h2 class="text-lg font-semibold text-[var(--color-text-muted)]">Score Breakdown</h2>
 
   <div class="mt-4 flex justify-center">
-    <svg viewBox="0 0 200 200" class="h-52 w-52">
+    <svg viewBox="0 0 260 210" class="h-52 w-52">
       <!-- Grid rings -->
       {#each rings as scale}
         <path d={ringPath(scale)} fill="none" stroke="var(--color-border)" stroke-width="0.5" />
@@ -124,4 +124,15 @@
       </div>
     {/each}
   </div>
+
+  {#if address}
+    <div class="mt-4 flex justify-center border-t border-[var(--color-border)] pt-4">
+      <a
+        href="/score/{address}/details"
+        class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+      >
+        View Score Details &rarr;
+      </a>
+    </div>
+  {/if}
 </div>
