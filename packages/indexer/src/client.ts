@@ -1,6 +1,8 @@
 import { HypersyncClient as RealHypersyncClient } from '@envio-dev/hypersync-client';
 import type { Query, QueryResponse } from '@envio-dev/hypersync-client';
-import { SUPPORTED_CHAINS } from '@chaincred/common';
+import { SUPPORTED_CHAINS, STARKNET_CHAIN_ID } from '@chaincred/common';
+
+export { STARKNET_CHAIN_ID } from '@chaincred/common';
 
 export interface HypersyncClient {
   chainId: number;

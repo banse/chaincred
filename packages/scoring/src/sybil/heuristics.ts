@@ -333,7 +333,7 @@ export function checkGasPatterns(activity: WalletActivity): SybilPenalty {
   // L2s (Base, Optimism, Arbitrum, zkSync) have structurally stable gas prices —
   // near-zero variance is normal, not a bot signal. Only apply this heuristic
   // to wallets active on mainnet (Ethereum/Polygon) where gas variance is meaningful.
-  const l2Chains = new Set(['base', 'optimism', 'arbitrum', 'zksync']);
+  const l2Chains = new Set(['base', 'optimism', 'arbitrum', 'zksync', 'starknet']);
   const hasMainnetActivity = activity.chainsActive.some((c) => !l2Chains.has(c));
   if (!hasMainnetActivity) {
     return {

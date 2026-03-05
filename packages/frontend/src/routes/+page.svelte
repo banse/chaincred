@@ -2,7 +2,7 @@
   import SearchBar from '$lib/components/SearchBar.svelte';
   import { fetchStats, type StatsResponse } from '$lib/api/client.js';
 
-  let stats = $state<StatsResponse>({ walletsScored: 0, chainsIndexed: 6 });
+  let stats = $state<StatsResponse>({ walletsScored: 0, chainsIndexed: 7 });
 
   $effect(() => {
     fetchStats()

@@ -78,6 +78,7 @@ services:
     environment:
       DATABASE_URL: postgresql://chaincred:chaincred@postgres:5432/chaincred
       HYPERSYNC_API_TOKEN: ${HYPERSYNC_API_TOKEN:-}
+      STARKNET_RPC_URL: ${STARKNET_RPC_URL:-}
 
   # ── Merkle tree generation (run manually: docker compose run merkle-gen) ──
 
@@ -165,6 +166,7 @@ services:
     environment:
       DATABASE_URL: postgresql://chaincred:chaincred@postgres:5432/chaincred
       HYPERSYNC_API_TOKEN: ${HYPERSYNC_API_TOKEN:-}
+      STARKNET_RPC_URL: ${STARKNET_RPC_URL:-}
 
 volumes:
   pgdata:

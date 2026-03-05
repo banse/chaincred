@@ -1,3 +1,5 @@
+import { STARKNET_CHAIN_ID } from './chains.js';
+
 /** PRD 4.5 — Protocol categories for badge assignment */
 export type ProtocolCategory =
   | 'defi'
@@ -285,6 +287,59 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
       8453: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
       324: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
       137: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
+    },
+  },
+  {
+    name: 'JediSwap',
+    category: 'defi',
+    launchTimestamp: 1672531200, // Jan 2023
+    contracts: {
+      // AMM Router
+      [STARKNET_CHAIN_ID]: [
+        '0x041fd22b238fa21cfcf5dd45a8548974d8263b3a531a60388411c5e230f97023',
+      ],
+    },
+  },
+  {
+    name: 'mySwap',
+    category: 'defi',
+    launchTimestamp: 1664582400, // Oct 2022
+    contracts: {
+      [STARKNET_CHAIN_ID]: [
+        '0x010884171baf1914edc28d7afb619b40a4051cfae78a094a55d230f19e944a28',
+      ],
+    },
+  },
+  {
+    name: '10KSwap',
+    category: 'defi',
+    launchTimestamp: 1672531200, // Jan 2023
+    contracts: {
+      [STARKNET_CHAIN_ID]: [
+        '0x07a6f98c03379b9513ca84cca1373ff452a7462a3b61598f0af5bb27ad7f76d1',
+      ],
+    },
+  },
+  {
+    name: 'Ekubo',
+    category: 'defi',
+    launchTimestamp: 1688169600, // Jul 2023
+    contracts: {
+      // Core pool contract
+      [STARKNET_CHAIN_ID]: [
+        '0x00000005dd3d2f4429af886cd1a3b08289dbcea99a294197e9eb43b0e0325b4b',
+      ],
+    },
+  },
+  {
+    name: 'StarkGate',
+    category: 'infrastructure',
+    launchTimestamp: 1664582400, // Oct 2022
+    contracts: {
+      // ETH bridge on Starknet
+      [STARKNET_CHAIN_ID]: [
+        '0x073314940630fd6dcda0d772d4c972c4e0a9946bef9dabf4ef84eda8ef542b82',
+      ],
     },
   },
 ];

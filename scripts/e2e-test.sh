@@ -697,10 +697,10 @@ if [[ -n "$STATS_JSON" ]]; then
   fi
 
   CHAINS=$(echo "$STATS_JSON" | jq -r '.chainsIndexed // 0')
-  if [[ "$CHAINS" -eq 6 ]]; then
-    pass "stats: chainsIndexed == 6"
+  if [[ "$CHAINS" -eq 7 ]]; then
+    pass "stats: chainsIndexed == 7"
   else
-    fail "stats: chainsIndexed != 6" "got $CHAINS"
+    fail "stats: chainsIndexed != 7" "got $CHAINS"
   fi
 else
   fail "stats: GET /v1/stats failed"

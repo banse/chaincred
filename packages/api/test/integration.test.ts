@@ -152,7 +152,7 @@ describe('DB-dependent routes (require PostgreSQL)', () => {
     if (res.status === 200) {
       const body = await res.json();
       expect(body.walletsScored).toBeGreaterThanOrEqual(0);
-      expect(body.chainsIndexed).toBe(6);
+      expect(body.chainsIndexed).toBe(7);
     } else {
       expect(res.status).toBe(500);
     }
