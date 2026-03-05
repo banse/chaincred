@@ -233,6 +233,23 @@
         </div>
       </div>
 
+      <!-- Raw score = weighted category sum -->
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-[var(--color-text-muted)]">
+        <span>Raw Score =</span>
+        {#each categories as cat, i}
+          {@const score = scoreData.breakdown[cat.key]}
+          <span class="whitespace-nowrap">
+            <span style="color: {cat.color}" class="font-semibold">{Math.round(score.weighted)}</span>
+            <span class="text-xs">{cat.label}</span>
+          </span>
+          {#if i < categories.length - 1}
+            <span>+</span>
+          {/if}
+        {/each}
+        <span>=</span>
+        <span class="font-bold text-[var(--color-text)]">{Math.round(scoreData.rawScore)}</span>
+      </div>
+
       <div class="relative mt-6 h-4 overflow-hidden rounded-full bg-[var(--color-bg)]">
         <div
           class="absolute inset-y-0 left-0 rounded-full bg-[var(--color-primary)] opacity-30"

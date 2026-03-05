@@ -122,9 +122,10 @@
                 <td class="px-4 py-3">
                   <a
                     href="/score/{entry.address}"
-                    class="font-mono text-sm text-[var(--color-primary)] hover:underline"
+                    class="text-sm text-[var(--color-primary)] hover:underline"
+                    class:font-mono={!entry.ensName}
                   >
-                    {entry.address.slice(0, 6)}...{entry.address.slice(-4)}
+                    {entry.ensName || `${entry.address.slice(0, 6)}...${entry.address.slice(-4)}`}
                   </a>
                 </td>
                 <td class="px-4 py-3">

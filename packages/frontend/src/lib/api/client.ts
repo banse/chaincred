@@ -26,7 +26,7 @@ export function fetchAttestation(address: string) {
 
 export interface LeaderboardResponse {
   category: string;
-  entries: { address: string; score: number; breakdown: any; sybilMultiplier: number }[];
+  entries: { address: string; ensName?: string | null; score: number; breakdown: any; sybilMultiplier: number }[];
   total: number;
   limit: number;
   offset: number;
