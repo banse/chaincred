@@ -349,7 +349,7 @@ describe('badge evaluation', () => {
       totalCalldataBytes: 1000000,
     });
     const score = calculateScore(a);
-    expect(score.breakdown.protocolDiversity.raw).toBeGreaterThanOrEqual(700);
+    expect(score.breakdown.protocolDiversity.raw).toBeGreaterThanOrEqual(500);
     expect(score.breakdown.complexity.raw).toBeGreaterThanOrEqual(500);
     const badges = evaluateBadges(a, score.breakdown);
     const powerUser = badges.badges.find((b) => b.type === 'power-user');

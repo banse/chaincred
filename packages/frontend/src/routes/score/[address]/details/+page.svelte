@@ -49,10 +49,10 @@
       { name: 'Cross-cycle Persistence', desc: '75 pts per bear/bull cycle', cap: 300 },
     ],
     protocolDiversity: [
-      { name: 'Unique Protocols', desc: '35 pts each', cap: 350 },
-      { name: 'Chain Diversity', desc: '50 pts per chain', cap: 250 },
-      { name: 'Cross-domain Coverage', desc: '80 pts per domain (DeFi, social, etc.)', cap: 400 },
-      { name: 'Early Adoption', desc: '60 pts per protocol used within 6mo of launch', cap: 300 },
+      { name: 'Unique Protocols', desc: '18 pts each', cap: 350 },
+      { name: 'Chain Diversity', desc: '25 pts per chain', cap: 250 },
+      { name: 'Cross-domain Coverage', desc: '40 pts per domain (DeFi, social, etc.)', cap: 400 },
+      { name: 'Early Adoption', desc: '30 pts per protocol used within 6mo of launch', cap: 300 },
     ],
     complexity: [
       { name: 'Transaction Volume', desc: '1.5 pts each', cap: 300 },

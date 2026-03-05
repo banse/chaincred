@@ -17,7 +17,7 @@ export function evaluateBadges(activity: WalletActivity, score: ScoreBreakdown):
       activity.safeExecutions >= 2 &&
       activity.daosParticipated.length >= 3 &&
       activity.delegationEvents >= 3,
-    'power-user': score.protocolDiversity.raw >= 700 && score.complexity.raw >= 500,
+    'power-user': score.protocolDiversity.raw >= 400 && score.complexity.raw >= 300,
   };
 
   const badges: Badge[] = BADGE_DEFINITIONS.map((def) => {
