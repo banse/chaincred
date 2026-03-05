@@ -264,6 +264,22 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
     },
   },
   {
+    name: 'FrenPet',
+    category: 'gaming',
+    launchTimestamp: 1691020800, // Aug 2023
+    contracts: {
+      // Diamond Proxy (V2), V1 Main Contract, V1 Game Manager, FP Token, pGOLD Token, NFT
+      8453: [
+        '0x0e22b5f3e11944578b37ed04f5312dfc246f443c',
+        '0x85b157EbaAF289De5301aE6694B651BF3b8df1C3',
+        '0x773565aadf59f07f6d72f1e1e2a489cffe96b1e9',
+        '0xff0c532fdb8cd566ae169c1cb157ff2bdc83e105',
+        '0x976008031bBc99E05D006f68C7Ea723c2b56101f',
+        '0x5b51Cf49Cb48617084eF35e7c7d7A21914769ff1',
+      ],
+    },
+  },
+  {
     name: 'Deterministic Deployment Proxy',
     category: 'builder-tools',
     launchTimestamp: 1585699200, // Apr 2020
