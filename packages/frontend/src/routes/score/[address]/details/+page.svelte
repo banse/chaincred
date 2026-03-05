@@ -1,8 +1,10 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { fetchScore, fetchSybil, fetchBadges } from '$lib/api/client.js';
+  import { BADGE_DEFINITIONS } from '@chaincred/common';
   import { CATEGORY_WEIGHTS, MAX_CATEGORY_SCORE } from '@chaincred/common';
   import type { WalletScore, ScoreCategory, SybilResult, WalletBadges } from '@chaincred/common';
+  import { generateWalletFindings } from '$lib/utils/wallet-summary.js';
 
   const address = $derived($page.params.address ?? '');
   let scoreData = $state<WalletScore | null>(null);
@@ -170,46 +172,70 @@
   }
 
   let expandedCategories = $state<Record<string, boolean>>({});
-  let downloading = $state(false);
-
-  const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3001/v1';
+  let showCard = $state(false);
+  let copying = $state(false);
 
   function toggleCategory(key: string) {
     expandedCategories = { ...expandedCategories, [key]: !expandedCategories[key] };
   }
 
-  async function downloadCard() {
-    if (downloading) return;
-    downloading = true;
+  function scoreColor(score: number): string {
+    if (score >= 600) return '#10B981';
+    if (score >= 300) return '#F59E0B';
+    return '#EF4444';
+  }
+
+  async function svgToCanvas(): Promise<HTMLCanvasElement | null> {
+    const svgEl = document.getElementById('chaincred-card-svg');
+    if (!svgEl) return null;
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const vb = svgEl.getAttribute('viewBox')?.split(' ') ?? ['0', '0', '800', '570'];
+    const w = parseInt(vb[2]);
+    const h = parseInt(vb[3]);
+    const img = new Image();
+    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = reject;
+      img.src = url;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    return canvas;
+  }
+
+  async function downloadCardPng() {
+    const canvas = await svgToCanvas();
+    if (!canvas) return;
+    canvas.toBlob((pngBlob) => {
+      if (!pngBlob) return;
+      const dl = document.createElement('a');
+      dl.href = URL.createObjectURL(pngBlob);
+      dl.download = `chaincred-${address.slice(0, 8)}.png`;
+      dl.click();
+      URL.revokeObjectURL(dl.href);
+    }, 'image/png');
+  }
+
+  async function copyCardToClipboard() {
+    if (copying) return;
+    copying = true;
     try {
-      const res = await fetch(`${API_BASE}/card/${address}.png`);
-      const svgText = await res.text();
-      const img = new Image();
-      const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = reject;
-        img.src = url;
-      });
-      const canvas = document.createElement('canvas');
-      canvas.width = 800;
-      canvas.height = 418;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, 800, 418);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((pngBlob) => {
-        if (!pngBlob) return;
-        const dl = document.createElement('a');
-        dl.href = URL.createObjectURL(pngBlob);
-        dl.download = `chaincred-${address.slice(0, 8)}.png`;
-        dl.click();
-        URL.revokeObjectURL(dl.href);
-      }, 'image/png');
+      const canvas = await svgToCanvas();
+      if (!canvas) return;
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (blob) {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      }
     } catch {
       // noop
     }
-    downloading = false;
+    setTimeout(() => (copying = false), 1500);
   }
 </script>
 
@@ -257,16 +283,124 @@
           <div class="mt-2 flex justify-end">
             <button
               class="rounded-lg bg-[var(--color-surface)] px-3 py-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-              onclick={downloadCard}
-              disabled={downloading}
+              onclick={() => (showCard = !showCard)}
             >
-              {downloading ? 'Downloading...' : 'Download Card'}
+              {showCard ? 'Hide Card' : 'Show Card'}
             </button>
           </div>
         </div>
       {/if}
     </div>
   </div>
+
+  {#if showCard && scoreData}
+    {@const total = Math.round(scoreData.totalScore)}
+    {@const level = getLevelBadge(total)}
+    {@const earnedBadgeDefs = BADGE_DEFINITIONS.filter((d) => badgeData?.badges.some((b) => b.type === d.type && b.earned))}
+    {@const sybilPct = (scoreData.sybilMultiplier * 100).toFixed(0)}
+    {@const sybilColor = scoreData.sybilMultiplier >= 0.8 ? '#10B981' : scoreData.sybilMultiplier >= 0.5 ? '#F59E0B' : '#EF4444'}
+    {@const cardFindings = generateWalletFindings(scoreData)}
+    {@const cardHeight = 480 + (cardFindings.length > 0 ? 90 + cardFindings.length * 30 + 24 : 0)}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onclick={(e) => { if (e.target === e.currentTarget) showCard = false; }}
+    >
+      <div class="relative flex max-h-[90vh] flex-col items-center gap-4 overflow-y-auto rounded-2xl bg-[var(--color-surface)] p-6">
+        <button
+          class="absolute right-3 top-3 text-lg text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+          onclick={() => (showCard = false)}
+        >
+          &times;
+        </button>
+        <svg
+          id="chaincred-card-svg"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 800 {cardHeight}"
+          class="w-full max-w-[800px] rounded-2xl"
+        >
+          <defs>
+            <linearGradient id="card-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0f172a" />
+              <stop offset="100%" stop-color="#1e293b" />
+            </linearGradient>
+          </defs>
+          <rect width="800" height={cardHeight} rx="16" fill="url(#card-bg)" />
+
+          <!-- Header -->
+          <text x="30" y="38" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#94a3b8">ChainCred</text>
+          {#if scoreData.ensName}
+            <text x="400" y="38" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#e2e8f0" text-anchor="middle">{scoreData.ensName}</text>
+          {/if}
+          <text x="400" y="58" font-family="monospace" font-size="12" fill="#64748b" text-anchor="middle">{address}</text>
+
+          <!-- Score -->
+          <text x="400" y="120" font-family="system-ui, sans-serif" font-size="64" font-weight="800" fill={scoreColor(total)} text-anchor="middle">{total}</text>
+          <text x="400" y="145" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">
+            {level.label} — Expertise Score
+          </text>
+
+          <!-- Badges (centered, below score) -->
+          {#each earnedBadgeDefs as badge, i}
+            {@const bx = (800 - (earnedBadgeDefs.length * 100 + 110)) / 2 + i * 100}
+            <rect x={bx} y="166" width="90" height="30" rx="8" fill="none" stroke={badge.color} stroke-width="1.5" />
+            <text x={bx + 45} y="186" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill={badge.color} text-anchor="middle">{badge.emoji} {badge.label}</text>
+          {/each}
+          <!-- Sybil confidence pseudo-badge -->
+          <rect x={(800 - (earnedBadgeDefs.length * 100 + 110)) / 2 + earnedBadgeDefs.length * 100} y="166" width="110" height="30" rx="8" fill="none" stroke={sybilColor} stroke-width="1.5" />
+          <text x={(800 - (earnedBadgeDefs.length * 100 + 110)) / 2 + earnedBadgeDefs.length * 100 + 55} y="186" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill={sybilColor} text-anchor="middle">🛡️ Sybil {sybilPct}%</text>
+
+          <!-- Divider -->
+          <line x1="30" y1="210" x2="770" y2="210" stroke="#334155" stroke-width="1" />
+
+          <!-- Category breakdown -->
+          {#each categories as cat, i}
+            {@const score = scoreData.breakdown[cat.key]}
+            {@const y = 234 + i * 48}
+            {@const barW = Math.max(1, (score.raw / 1000) * 300)}
+            <!-- Color dot -->
+            <circle cx="42" cy={y + 6} r="5" fill={cat.color} />
+            <!-- Label + weight -->
+            <text x="56" y={y + 10} font-family="system-ui, sans-serif" font-size="13" fill="#e2e8f0">{cat.label}</text>
+            <text x="190" y={y + 10} font-family="system-ui, sans-serif" font-size="11" fill="#64748b">{weightPct(cat.key)}</text>
+            <!-- Progress bar bg -->
+            <rect x="230" y={y - 2} width="300" height="16" rx="4" fill="#1e293b" />
+            <!-- Progress bar fill -->
+            <rect x="230" y={y - 2} width={barW} height="16" rx="4" fill={cat.color} opacity="0.85" />
+            <!-- Score text -->
+            <text x="550" y={y + 10} font-family="monospace" font-size="12" fill="#e2e8f0">{Math.round(score.raw)}</text>
+            <text x="590" y={y + 10} font-family="monospace" font-size="12" fill="#64748b">/ 1000</text>
+            <!-- Category description -->
+            <text x="56" y={y + 26} font-family="system-ui, sans-serif" font-size="10" fill="#64748b">{cat.desc}</text>
+          {/each}
+
+          <!-- Wallet Insights -->
+          {#if cardFindings.length > 0}
+            <line x1="30" y1="470" x2="770" y2="470" stroke="#334155" stroke-width="1" />
+            <text x="400" y="520" font-family="system-ui, sans-serif" font-size="18" font-weight="800" fill="#e2e8f0" text-anchor="middle">Wallet Insights</text>
+            {#each cardFindings as finding, i}
+              <text x="400" y={560 + i * 30} font-family="system-ui, sans-serif" font-size="16" fill="#cbd5e1" text-anchor="middle">{finding.emoji}  {finding.text}</text>
+            {/each}
+          {/if}
+        </svg>
+        <div class="flex gap-3">
+          <button
+            class="rounded-lg bg-[var(--color-bg)] px-4 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+            onclick={copyCardToClipboard}
+          >
+            {copying ? 'Copied!' : 'Copy to Clipboard'}
+          </button>
+          <button
+            class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm text-white hover:opacity-90"
+            onclick={downloadCardPng}
+          >
+            Download PNG
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   {#if loading}
     <div class="space-y-6">
@@ -285,6 +419,22 @@
       </button>
     </div>
   {:else if scoreData}
+    <!-- Wallet Insights -->
+    {@const findings = generateWalletFindings(scoreData)}
+    {#if findings.length > 0}
+      <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+        <h2 class="mb-3 text-lg font-semibold">Wallet Insights</h2>
+        <ul class="space-y-2">
+          {#each findings as finding}
+            <li class="flex items-start gap-2.5 text-sm">
+              <span class="shrink-0 text-base leading-5">{finding.emoji}</span>
+              <span class="text-[var(--color-text-muted)]">{finding.text}</span>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
+
     <!-- Section 1: Score Formula -->
     <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
       <h2 class="mb-4 text-lg font-semibold">Score Formula</h2>
