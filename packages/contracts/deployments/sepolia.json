@@ -1,0 +1,13 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deployedAt": "2026-03-05T00:00:00Z",
+  "deployer": "0xEB91B0BECb42D486E56Ad34Cc2075c6b2530B45b",
+  "contracts": {
+    "ChainCredRegistry": "0x47aDBf81c11E398f133288000e934Adb984BB1DA",
+    "ScoreMerkleRoot": "0x7529417196ad8D7e596c8567856dcAb49B2D8c7e",
+    "BadgeResolver": "0xF881C91592292D11223fB89D79AF04fD2809B4bB"
+  },
+  "eas": "0xC2679fBD37d54388Ce493F1DB75320D236e1815e",
+  "verified": true
+}
