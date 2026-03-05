@@ -48,6 +48,14 @@
       });
   }
 
+  function getLevelBadge(score: number): { label: string; color: string } {
+    if (score >= 801) return { label: 'Maxi', color: '#F59E0B' };
+    if (score >= 601) return { label: 'Native', color: '#10B981' };
+    if (score >= 401) return { label: 'Degen', color: '#A855F7' };
+    if (score >= 201) return { label: 'Tourist', color: '#3B82F6' };
+    return { label: 'Normie', color: '#6B7280' };
+  }
+
   $effect(() => {
     if (!address) return;
     loadScore(address);
@@ -82,9 +90,20 @@
   <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
     <h1 class="text-2xl font-bold">Wallet Score</h1>
     <div class="flex flex-col gap-1">
-      {#if scoreData?.ensName}
-        <span class="text-lg font-semibold text-[var(--color-primary)]">{scoreData.ensName}</span>
-      {/if}
+      <div class="flex items-center gap-2">
+        {#if scoreData?.ensName}
+          <span class="text-lg font-semibold text-[var(--color-primary)]">{scoreData.ensName}</span>
+        {/if}
+        {#if scoreData}
+          {@const level = getLevelBadge(Math.round(scoreData.totalScore))}
+          <span
+            class="rounded-full px-2.5 py-0.5 text-xs font-bold text-white"
+            style="background-color: {level.color}"
+          >
+            {level.label}
+          </span>
+        {/if}
+      </div>
       <code
         class="truncate rounded bg-[var(--color-surface)] px-3 py-1 text-sm text-[var(--color-text-muted)]"
       >
