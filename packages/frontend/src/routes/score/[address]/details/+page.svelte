@@ -19,16 +19,16 @@
 
   const categorySignals: Record<ScoreCategory, Signal[]> = {
     builder: [
-      { name: 'Contract Deployments', desc: '60 pts each', cap: 420 },
-      { name: 'Multi-chain Deploys', desc: '80 pts per chain', cap: 320 },
-      { name: 'Constructor Complexity', desc: 'Based on avg calldata size', cap: 200 },
-      { name: 'Deployment Focus', desc: 'Deploys / total tx ratio', cap: 160 },
-      { name: 'CREATE2 Deployments', desc: '50 pts each', cap: 150 },
-      { name: 'ERC-4337 Operations', desc: '40 pts each', cap: 200 },
-      { name: 'Deployment Longevity', desc: '60 pts per 6-month period', cap: 180 },
-      { name: 'Verified Source', desc: '80 pts per verified deploy', cap: 240 },
-      { name: 'Contract Users', desc: '30 pts per unique caller', cap: 300 },
-      { name: 'Active Contracts', desc: '70 pts per contract (>6mo)', cap: 280 },
+      { name: 'Contract Deployments', desc: '40 pts each', cap: 280 },
+      { name: 'Multi-chain Deploys', desc: '50 pts per chain', cap: 200 },
+      { name: 'Constructor Complexity', desc: 'Based on avg calldata size', cap: 100 },
+      { name: 'Deployment Focus', desc: 'Deploys / total tx ratio', cap: 80 },
+      { name: 'CREATE2 Deployments', desc: '30 pts each', cap: 120 },
+      { name: 'ERC-4337 Operations', desc: '25 pts each', cap: 100 },
+      { name: 'Deployment Longevity', desc: '30 pts per 6-month period', cap: 90 },
+      { name: 'Verified Source', desc: '50 pts per verified deploy', cap: 200 },
+      { name: 'Contract Users', desc: '15 pts per unique caller', cap: 150 },
+      { name: 'Active Contracts', desc: '40 pts per contract (>6mo)', cap: 200 },
     ],
     governance: [
       { name: 'Governance Votes', desc: '40 pts each', cap: 400 },
