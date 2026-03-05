@@ -1,34 +1,36 @@
 import type { WalletActivity, CategoryScore } from '@chaincred/common';
-import { CATEGORY_WEIGHTS, MAX_CATEGORY_SCORE } from '@chaincred/common';
+import { CATEGORY_WEIGHTS, MAX_CATEGORY_SCORE, GOVERNANCE_SIGNALS } from '@chaincred/common';
+
+const S = GOVERNANCE_SIGNALS;
 
 /** PRD 4.3 — Governance score: votes, DAO breadth, proposals, delegation */
 export function calculateGovernanceScore(activity: WalletActivity): CategoryScore {
-  // Votes: 20 pts each, capped at 400
-  const voteScore = Math.min(activity.governanceVotes * 20, 400);
+  // Votes
+  const voteScore = Math.min(activity.governanceVotes * S.votes.perUnit, S.votes.cap);
 
-  // DAO breadth: 60 pts per DAO, capped at 360
-  const daoScore = Math.min(activity.daosParticipated.length * 60, 360);
+  // DAO breadth
+  const daoScore = Math.min(activity.daosParticipated.length * S.daoBreadth.perUnit, S.daoBreadth.cap);
 
-  // Proposals authored: 100 pts each, capped at 150 (rare + very high signal)
-  const proposalScore = Math.min(activity.proposalsCreated * 100, 150);
+  // Proposals authored
+  const proposalScore = Math.min(activity.proposalsCreated * S.proposals.perUnit, S.proposals.cap);
 
-  // Delegation events: 15 pts each, capped at 90
-  const delegateScore = Math.min(activity.delegationEvents * 15, 90);
+  // Delegation events
+  const delegateScore = Math.min(activity.delegationEvents * S.delegation.perUnit, S.delegation.cap);
 
-  // Treasury execution events (queue/execute): 30 pts each, capped at 120
-  const executionScore = Math.min(activity.executionEvents * 30, 120);
+  // Treasury execution events (queue/execute)
+  const executionScore = Math.min(activity.executionEvents * S.treasuryExecution.perUnit, S.treasuryExecution.cap);
 
-  // Cross-chain governance: 25 pts per chain, capped at 150
-  const crossChainGovScore = Math.min(activity.governanceChains.length * 25, 150);
+  // Cross-chain governance
+  const crossChainGovScore = Math.min(activity.governanceChains.length * S.crossChainGov.perUnit, S.crossChainGov.cap);
 
-  // Independent voting (against/abstain votes): 20 pts each, capped at 120
-  const independentVoteScore = Math.min(activity.independentVotes * 20, 120);
+  // Independent voting (against/abstain votes)
+  const independentVoteScore = Math.min(activity.independentVotes * S.independentVotes.perUnit, S.independentVotes.cap);
 
-  // Safe multi-sig execTransaction calls: 25 pts each, capped at 200
-  const safeScore = Math.min(activity.safeExecutions * 25, 200);
+  // Safe multi-sig execTransaction calls
+  const safeScore = Math.min(activity.safeExecutions * S.safeExecutions.perUnit, S.safeExecutions.cap);
 
-  // Reasoned votes (castVoteWithReason): 25 pts each, capped at 150
-  const reasonedScore = Math.min(activity.reasonedVotes * 25, 150);
+  // Reasoned votes (castVoteWithReason)
+  const reasonedScore = Math.min(activity.reasonedVotes * S.reasonedVotes.perUnit, S.reasonedVotes.cap);
 
   const raw = Math.min(
     voteScore + daoScore + proposalScore + delegateScore + executionScore + crossChainGovScore + independentVoteScore + safeScore + reasonedScore,

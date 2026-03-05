@@ -1,23 +1,22 @@
 import type { WalletActivity, Badge, BadgeType, WalletBadges, ScoreBreakdown } from '@chaincred/common';
-import { BADGE_DEFINITIONS } from '@chaincred/common';
+import { BADGE_DEFINITIONS, BADGE_THRESHOLDS } from '@chaincred/common';
 
-/** Unix timestamp for 2020-01-01T00:00:00Z */
-const TIMESTAMP_2020 = 1577836800;
+const B = BADGE_THRESHOLDS;
 
 export function evaluateBadges(activity: WalletActivity, score: ScoreBreakdown): WalletBadges {
   const now = Math.floor(Date.now() / 1000);
 
   const criteriaChecks: Record<BadgeType, boolean> = {
-    builder: activity.contractsDeployed >= 3,
-    governor: activity.daosParticipated.length >= 5 && activity.proposalsCreated >= 1,
-    explorer: activity.uniqueProtocols.length >= 20,
-    og: activity.firstTxTimestamp < TIMESTAMP_2020,
-    multichain: activity.chainsActive.length >= 4,
+    builder: activity.contractsDeployed >= B.builder.minDeployments,
+    governor: activity.daosParticipated.length >= B.governor.minDaos && activity.proposalsCreated >= B.governor.minProposals,
+    explorer: activity.uniqueProtocols.length >= B.explorer.minProtocols,
+    og: activity.firstTxTimestamp < B.og.beforeTimestamp,
+    multichain: activity.chainsActive.length >= B.multichain.minChains,
     trusted:
-      activity.safeExecutions >= 2 &&
-      activity.daosParticipated.length >= 3 &&
-      activity.delegationEvents >= 3,
-    'power-user': score.protocolDiversity.raw >= 400 && score.complexity.raw >= 300,
+      activity.safeExecutions >= B.trusted.minSafeExecutions &&
+      activity.daosParticipated.length >= B.trusted.minDaos &&
+      activity.delegationEvents >= B.trusted.minDelegations,
+    'power-user': score.protocolDiversity.raw >= B.powerUser.minProtocolDiversityRaw && score.complexity.raw >= B.powerUser.minComplexityRaw,
   };
 
   const badges: Badge[] = BADGE_DEFINITIONS.map((def) => {

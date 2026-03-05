@@ -1,20 +1,21 @@
 import type { WalletActivity, CategoryScore } from '@chaincred/common';
-import { CATEGORY_WEIGHTS, MAX_CATEGORY_SCORE } from '@chaincred/common';
+import { CATEGORY_WEIGHTS, MAX_CATEGORY_SCORE, PROTOCOL_DIVERSITY_SIGNALS } from '@chaincred/common';
+
+const S = PROTOCOL_DIVERSITY_SIGNALS;
 
 /** PRD 4.5 — Protocol diversity: unique protocols, chain breadth, domain coverage */
 export function calculateProtocolDiversityScore(activity: WalletActivity): CategoryScore {
-  // Protocol count: 18 pts each, capped at 350
-  const protocolScore = Math.min(activity.uniqueProtocols.length * 18, 350);
+  // Protocol count
+  const protocolScore = Math.min(activity.uniqueProtocols.length * S.protocolCount.perUnit, S.protocolCount.cap);
 
-  // Chain diversity: 40 pts per chain, capped at 250
-  const chainScore = Math.min(activity.chainsActive.length * 40, 250);
+  // Chain diversity
+  const chainScore = Math.min(activity.chainsActive.length * S.chainDiversity.perUnit, S.chainDiversity.cap);
 
-  // Cross-domain coverage: 40 pts per distinct category, capped at 400
-  // Categories: defi, social, governance, infrastructure, gaming, builder-tools
-  const categoryScore = Math.min(activity.protocolCategories.length * 40, 400);
+  // Cross-domain coverage
+  const categoryScore = Math.min(activity.protocolCategories.length * S.crossDomainCoverage.perUnit, S.crossDomainCoverage.cap);
 
-  // Early adoption: 30 pts per protocol used within 6 months of launch, capped at 300
-  const earlyAdoptionScore = Math.min(activity.earlyAdoptions * 30, 300);
+  // Early adoption
+  const earlyAdoptionScore = Math.min(activity.earlyAdoptions * S.earlyAdoption.perUnit, S.earlyAdoption.cap);
 
   const raw = Math.min(protocolScore + chainScore + categoryScore + earlyAdoptionScore, MAX_CATEGORY_SCORE);
   return {
