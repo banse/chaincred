@@ -58,16 +58,21 @@ export function checkActionRepetition(activity: WalletActivity): SybilPenalty {
  * PRD 5.2 — Funding graph clustering detection (penalty 0.50)
  *
  * Sybil clusters are typically funded by a single source wallet that distributes
- * to 10+ wallets with similar behavior. This proxy detects cluster coordinators —
- * wallets that send to many unique recipients with low protocol diversity.
+ * to many wallets with similar behavior. This proxy detects cluster coordinators —
+ * wallets that send to many unique recipients with low protocol diversity AND
+ * spread across multiple chains (single-chain heavy users like gamers are excluded).
  *
- * Heuristic: if uniqueRecipients > 10 AND uniqueProtocols < 3, flag it.
+ * Heuristic: if uniqueRecipients > 50 AND uniqueProtocols < 2 AND chainsActive > 1, flag it.
  */
 export function checkFundingGraph(activity: WalletActivity): SybilPenalty {
-  const manyRecipients = activity.uniqueRecipients > 10;
-  const lowDiversity = activity.uniqueProtocols.length < 3;
+  // Raised recipient threshold to 50 — real coordinators fund dozens/hundreds.
+  // Single-protocol only — gaming/social users may touch 2+ protocols legitimately.
+  // Multi-chain required — single-chain heavy users (gamers, dApp power users) excluded.
+  const manyRecipients = activity.uniqueRecipients > 50;
+  const singleProtocol = activity.uniqueProtocols.length < 2;
+  const multiChain = activity.chainsActive.length > 1;
 
-  const detected = manyRecipients && lowDiversity;
+  const detected = manyRecipients && singleProtocol && multiChain;
 
   return {
     flag: 'funding-graph-clustering',
@@ -325,11 +330,25 @@ export function checkGasPatterns(activity: WalletActivity): SybilPenalty {
     };
   }
 
+  // L2s (Base, Optimism, Arbitrum, zkSync) have structurally stable gas prices —
+  // near-zero variance is normal, not a bot signal. Only apply this heuristic
+  // to wallets active on mainnet (Ethereum/Polygon) where gas variance is meaningful.
+  const l2Chains = new Set(['base', 'optimism', 'arbitrum', 'zksync']);
+  const hasMainnetActivity = activity.chainsActive.some((c) => !l2Chains.has(c));
+  if (!hasMainnetActivity) {
+    return {
+      flag: 'perfect-gas-patterns',
+      label: 'Perfect Gas Patterns',
+      penalty: 0.15,
+      detected: false,
+      details: 'L2-only wallet — gas price variance not applicable',
+    };
+  }
+
   const ratio = activity.distinctGasPrices / activity.totalTransactions;
-  // Post-EIP-1559, base fees are network-set — legitimate high-volume wallets naturally reuse
-  // gas prices. Scale threshold: <0.5% for wallets with <1000 txs, but never flag wallets
-  // with >200 distinct prices (enough entropy to rule out simple bot scripts).
-  const detected = ratio < 0.005 && activity.distinctGasPrices < 200;
+  // Post-EIP-1559, base fees are network-set. Only flag wallets with very few distinct
+  // prices (<10) that suggest a hardcoded gas strategy, not normal network variance.
+  const detected = ratio < 0.005 && activity.distinctGasPrices < 10;
 
   return {
     flag: 'perfect-gas-patterns',

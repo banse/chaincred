@@ -195,22 +195,35 @@ describe('action repetition', () => {
 });
 
 describe('funding graph clustering', () => {
-  test('flags cluster coordinator with many recipients and low diversity', () => {
+  test('flags multi-chain cluster coordinator with many recipients and zero protocols', () => {
     const result = checkFundingGraph(
       activity({
-        uniqueRecipients: 25,
-        uniqueProtocols: ['uniswap'],
+        uniqueRecipients: 100,
+        uniqueProtocols: [],
+        chainsActive: ['ethereum', 'arbitrum'],
       }),
     );
     expect(result.detected).toBe(true);
     expect(result.penalty).toBe(0.50);
   });
 
-  test('does not flag wallet with many recipients but high diversity', () => {
+  test('does not flag wallet with many recipients but multiple protocols', () => {
     const result = checkFundingGraph(
       activity({
-        uniqueRecipients: 25,
-        uniqueProtocols: ['uniswap', 'aave', 'compound', 'curve'],
+        uniqueRecipients: 100,
+        uniqueProtocols: ['uniswap', 'aave'],
+        chainsActive: ['ethereum', 'arbitrum'],
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+
+  test('does not flag single-chain heavy user (gamer/dApp)', () => {
+    const result = checkFundingGraph(
+      activity({
+        uniqueRecipients: 100,
+        uniqueProtocols: [],
+        chainsActive: ['base'],
       }),
     );
     expect(result.detected).toBe(false);
@@ -220,7 +233,8 @@ describe('funding graph clustering', () => {
     const result = checkFundingGraph(
       activity({
         uniqueRecipients: 3,
-        uniqueProtocols: ['uniswap'],
+        uniqueProtocols: [],
+        chainsActive: ['ethereum', 'arbitrum'],
       }),
     );
     expect(result.detected).toBe(false);
@@ -351,11 +365,12 @@ describe('zero failure rate', () => {
 });
 
 describe('perfect gas patterns', () => {
-  test('flags wallet with very few distinct gas prices', () => {
+  test('flags mainnet wallet with very few distinct gas prices', () => {
     const result = checkGasPatterns(
       activity({
         totalTransactions: 500,
         distinctGasPrices: 2, // 0.4% ratio with only 2 prices — bot-like
+        chainsActive: ['ethereum'],
       }),
     );
     expect(result.detected).toBe(true);
@@ -377,6 +392,17 @@ describe('perfect gas patterns', () => {
       activity({
         totalTransactions: 20,
         distinctGasPrices: 1,
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+
+  test('does not flag L2-only wallet even with low gas diversity', () => {
+    const result = checkGasPatterns(
+      activity({
+        totalTransactions: 80000,
+        distinctGasPrices: 14,
+        chainsActive: ['base'],
       }),
     );
     expect(result.detected).toBe(false);
