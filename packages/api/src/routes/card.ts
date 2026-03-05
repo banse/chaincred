@@ -29,7 +29,7 @@ function renderSvg(data: CardData): string {
   ];
 
   // Category breakdown bars
-  const barY = 200;
+  const barY = 195;
   const barHeight = 14;
   const barGap = 22;
   const labelX = 40;
@@ -59,11 +59,11 @@ function renderSvg(data: CardData): string {
     <text x="${cx}" y="${badgeY + 4}" font-size="10" text-anchor="middle" fill="white">${def.emoji}</text>`;
   }).join('\n  ');
 
-  const identityY = badgeY + 40;
+  // Identity above score
   const ensLine = ensName
-    ? `<text x="400" y="${identityY}" font-family="system-ui,sans-serif" font-size="16" font-weight="600" fill="#e2e8f0" text-anchor="middle">${ensName}</text>`
+    ? `<text x="400" y="44" font-family="system-ui,sans-serif" font-size="18" font-weight="600" fill="#e2e8f0" text-anchor="middle">${ensName}</text>`
     : '';
-  const addrY = ensName ? identityY + 22 : identityY;
+  const addrY = ensName ? 64 : 50;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="418" viewBox="0 0 800 418">
   <defs>
@@ -74,15 +74,13 @@ function renderSvg(data: CardData): string {
   </defs>
   <rect width="800" height="418" rx="16" fill="url(#bg)"/>
   <text x="40" y="50" font-family="system-ui,sans-serif" font-size="20" font-weight="700" fill="#94a3b8">ChainCred</text>
-  <text x="400" y="140" font-family="system-ui,sans-serif" font-size="80" font-weight="800" fill="${scoreColor}" text-anchor="middle">${score}</text>
-  <text x="400" y="170" font-family="system-ui,sans-serif" font-size="16" fill="#64748b" text-anchor="middle">Expertise Score</text>
+  ${ensLine}
+  <text x="400" y="${addrY}" font-family="monospace" font-size="13" fill="#94a3b8" text-anchor="middle">${shortAddr}</text>
+  <text x="400" y="140" font-family="system-ui,sans-serif" font-size="64" font-weight="800" fill="${scoreColor}" text-anchor="middle">${score}</text>
+  <text x="400" y="165" font-family="system-ui,sans-serif" font-size="15" fill="#64748b" text-anchor="middle">Expertise Score</text>
   ${bars}
   <text x="${labelX}" y="${badgeY + 4}" font-family="system-ui,sans-serif" font-size="12" fill="#94a3b8">Badges</text>
   ${badgeCircles}
-  ${ensLine}
-  <text x="400" y="${addrY}" font-family="monospace" font-size="14" fill="#94a3b8" text-anchor="middle">${shortAddr}</text>
-  <rect x="20" y="396" width="760" height="4" rx="2" fill="#1e293b"/>
-  <rect x="20" y="396" width="${Math.round((score / 1000) * 760)}" height="4" rx="2" fill="${scoreColor}"/>
 </svg>`;
 }
 

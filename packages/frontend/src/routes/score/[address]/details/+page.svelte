@@ -170,9 +170,46 @@
   }
 
   let expandedCategories = $state<Record<string, boolean>>({});
+  let downloading = $state(false);
+
+  const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3001/v1';
 
   function toggleCategory(key: string) {
     expandedCategories = { ...expandedCategories, [key]: !expandedCategories[key] };
+  }
+
+  async function downloadCard() {
+    if (downloading) return;
+    downloading = true;
+    try {
+      const res = await fetch(`${API_BASE}/card/${address}.png`);
+      const svgText = await res.text();
+      const img = new Image();
+      const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = url;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 418;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, 800, 418);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((pngBlob) => {
+        if (!pngBlob) return;
+        const dl = document.createElement('a');
+        dl.href = URL.createObjectURL(pngBlob);
+        dl.download = `chaincred-${address.slice(0, 8)}.png`;
+        dl.click();
+        URL.revokeObjectURL(dl.href);
+      }, 'image/png');
+    } catch {
+      // noop
+    }
+    downloading = false;
   }
 </script>
 
@@ -217,6 +254,15 @@
           <p class="text-sm text-[var(--color-text-muted)]">Total Score</p>
           <p class="text-4xl font-bold text-[var(--color-primary)]">{Math.round(scoreData.totalScore)}</p>
           <p class="text-xs text-[var(--color-text-muted)]">/ {MAX_CATEGORY_SCORE}</p>
+          <div class="mt-2 flex justify-end">
+            <button
+              class="rounded-lg bg-[var(--color-surface)] px-3 py-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+              onclick={downloadCard}
+              disabled={downloading}
+            >
+              {downloading ? 'Downloading...' : 'Download Card'}
+            </button>
+          </div>
         </div>
       {/if}
     </div>
