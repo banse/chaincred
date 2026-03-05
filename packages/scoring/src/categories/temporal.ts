@@ -6,11 +6,11 @@ export function calculateTemporalScore(activity: WalletActivity): CategoryScore 
   const now = Date.now() / 1000;
   const walletAgeYears = Math.max((now - activity.firstTxTimestamp) / (365 * 86400), 0);
 
-  // Wallet age: 100 pts per year, capped at 400 (4 years)
-  const ageScore = Math.min(walletAgeYears * 100, 400);
+  // Wallet age: 50 pts per year, capped at 400 (8 years)
+  const ageScore = Math.min(walletAgeYears * 50, 400);
 
-  // Bear market activity: 10 pts per bear-market tx, capped at 300
-  const bearScore = Math.min(activity.bearMarketTxs * 10, 300);
+  // Bear market activity: 5 pts per bear-market tx, capped at 300
+  const bearScore = Math.min(activity.bearMarketTxs * 5, 300);
 
   // Consistency: ratio of active months to wallet age in months
   const walletAgeMonths = Math.max(walletAgeYears * 12, 1);
@@ -21,7 +21,7 @@ export function calculateTemporalScore(activity: WalletActivity): CategoryScore 
   const entropyScore = Math.min((activity.distinctTxHours / 24) * 200, 200);
 
   // Cross-cycle persistence: active in multiple bear/bull cycles = very strong long-term signal
-  const crossCycleScore = Math.min(activity.bearMarketPeriodsActive * 150, 300);
+  const crossCycleScore = Math.min(activity.bearMarketPeriodsActive * 75, 300);
 
   const raw = Math.min(
     Math.round(ageScore + bearScore + consistencyScore + entropyScore + crossCycleScore),
