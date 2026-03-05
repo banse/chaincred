@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChainCred — Scoring Deep Dive</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0b0f1a;
+    --surface: #111827;
+    --surface-2: #1a2234;
+    --border: #1e293b;
+    --border-2: #2d3a4f;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #6366f1;
+    --accent-soft: rgba(99, 102, 241, 0.12);
+    --builder: #f97316;
+    --governance: #a855f7;
+    --temporal: #eab308;
+    --diversity: #14b8a6;
+    --complexity: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f97316;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    background: var(--bg);
+  }
+
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  .page-wrap {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar Nav ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 24px 0;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-logo h1 {
+    font-size: 20px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+  }
+
+  .sidebar-logo .tagline {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .nav-section {
+    padding: 8px 16px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+
+  .nav-link {
+    display: block;
+    padding: 6px 20px;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+
+  .nav-link:hover {
+    color: var(--text);
+    background: var(--accent-soft);
+    border-left-color: var(--accent);
+  }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: 260px;
+    flex: 1;
+    max-width: 920px;
+    padding: 48px 56px 120px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    margin-bottom: 56px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero h1 {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 .gradient {
+    background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero p {
+    font-size: 17px;
+    color: var(--text-dim);
+    max-width: 640px;
+    line-height: 1.7;
+  }
+
+  /* ── Sections ── */
+  section {
+    margin-bottom: 56px;
+  }
+
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+    padding-top: 24px;
+    color: #f1f5f9;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    margin-top: 32px;
+    color: #e2e8f0;
+  }
+
+  h4 {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    margin-top: 20px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  p {
+    margin-bottom: 12px;
+    color: var(--text-dim);
+  }
+
+  p + p { margin-top: 0; }
+
+  strong { color: var(--text); font-weight: 600; }
+
+  /* ── Formula Box ── */
+  .formula-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 16px 0 24px;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  .formula-box .dim { color: var(--text-muted); }
+  .formula-box .accent { color: var(--accent); }
+  .formula-box .green { color: var(--green); }
+
+  /* ── Category Cards ── */
+  .category-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .category-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+  }
+
+  .category-card.builder::before { background: var(--builder); }
+  .category-card.governance::before { background: var(--governance); }
+  .category-card.temporal::before { background: var(--temporal); }
+  .category-card.diversity::before { background: var(--diversity); }
+  .category-card.complexity::before { background: var(--complexity); }
+
+  .category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .category-header h3 {
+    margin: 0;
+    font-size: 17px;
+  }
+
+  .weight-badge {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+  }
+
+  .weight-badge.builder { color: var(--builder); }
+  .weight-badge.governance { color: var(--governance); }
+  .weight-badge.temporal { color: var(--temporal); }
+  .weight-badge.diversity { color: var(--diversity); }
+  .weight-badge.complexity { color: var(--complexity); }
+
+  .cap-note {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .cap-note strong {
+    color: var(--text-dim);
+    font-style: normal;
+  }
+
+  .signal-note {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .signal-note strong {
+    color: var(--text-dim);
+  }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-2);
+  }
+
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--text); font-weight: 500; }
+
+  td code {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--accent);
+  }
+
+  p code, li code {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+
+  /* ── Level Tiers ── */
+  .tier-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin: 16px 0;
+  }
+
+  .tier-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .tier-label {
+    font-weight: 700;
+    font-size: 16px;
+    min-width: 90px;
+  }
+
+  .tier-range {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-muted);
+    min-width: 90px;
+  }
+
+  .tier-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .tier-bar {
+    height: 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* ── Badge grid ── */
+  .badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .badge-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .badge-card .badge-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .badge-card .badge-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .badge-card .badge-criteria {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .badge-card .badge-why {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+    line-height: 1.5;
+  }
+
+  /* ── Sybil heuristic list ── */
+  .heuristic {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+
+  .heuristic-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .heuristic-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .heuristic-penalty {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--red);
+  }
+
+  .heuristic p {
+    font-size: 13px;
+    margin: 0 0 4px;
+    color: var(--text-muted);
+  }
+
+  .heuristic .trigger {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--surface-2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* ── Protocol Cards ── */
+  .protocol-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+
+  .protocol-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .protocol-card-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  .protocol-card-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .protocol-cat-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    font-weight: 600;
+  }
+
+  .protocol-cat-badge.defi { color: var(--green); }
+  .protocol-cat-badge.social { color: #f472b6; }
+  .protocol-cat-badge.governance { color: var(--governance); }
+  .protocol-cat-badge.infrastructure { color: var(--temporal); }
+  .protocol-cat-badge.gaming { color: var(--orange); }
+  .protocol-cat-badge.builder-tools { color: var(--complexity); }
+
+  .protocol-card-chains {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+
+  .protocol-card p {
+    font-size: 13px;
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .protocol-card .launch {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  /* ── Domain Summary ── */
+  .domain-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .domain-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .domain-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .domain-count {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  /* ── Calibration table ── */
+  .calibration-row td:nth-child(4) {
+    font-family: var(--mono);
+    font-weight: 600;
+  }
+
+  /* ── Lists ── */
+  ul, ol {
+    margin: 8px 0 16px 20px;
+    color: var(--text-dim);
+  }
+
+  li { margin-bottom: 4px; }
+
+  /* ── Callout ── */
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .callout strong {
+    color: var(--text);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 32px 20px 80px; }
+    .hero h1 { font-size: 28px; }
+    .tier-row { flex-wrap: wrap; gap: 8px; }
+    .protocol-card-header { flex-wrap: wrap; }
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h1>ChainCred</h1>
+    <div class="tagline">Scoring Deep Dive</div>
+  </div>
+
+  <div class="nav-section">Overview</div>
+  <a class="nav-link" href="#overview">What The Score Means</a>
+  <a class="nav-link" href="#formula">Score Formula</a>
+  <a class="nav-link" href="#levels">Level Tiers</a>
+
+  <div class="nav-section">Categories</div>
+  <a class="nav-link" href="#builder">Builder (30%)</a>
+  <a class="nav-link" href="#governance">Governance (25%)</a>
+  <a class="nav-link" href="#temporal">Temporal (20%)</a>
+  <a class="nav-link" href="#diversity">Protocol Diversity (15%)</a>
+  <a class="nav-link" href="#complexity">Complexity (10%)</a>
+
+  <div class="nav-section">Trust</div>
+  <a class="nav-link" href="#sybil">Sybil Detection</a>
+  <a class="nav-link" href="#badges">Badges</a>
+
+  <div class="nav-section">Protocols</div>
+  <a class="nav-link" href="#protocol-overview">Why These Protocols</a>
+  <a class="nav-link" href="#defi-protocols">DeFi (14)</a>
+  <a class="nav-link" href="#social-protocols">Social (3)</a>
+  <a class="nav-link" href="#other-protocols">Governance &middot; Infra &middot; Gaming &middot; Builder</a>
+
+  <div class="nav-section">Validation</div>
+  <a class="nav-link" href="#chains">Supported Chains</a>
+  <a class="nav-link" href="#calibration">Real-World Calibration</a>
+</nav>
+
+<!-- ── Main Content ── -->
+<main class="main">
+
+<!-- ═══ HERO ═══ -->
+<header class="hero" id="overview">
+  <h1>How ChainCred<br><span class="gradient">Scores Work</span></h1>
+  <p>Every wallet gets a single number between 0 and 1000. This document explains every layer of the calculation &mdash; from the final score down to individual protocol-level signals and why each decision was made.</p>
+  <p style="margin-top: 12px">Scores measure <strong>what wallets do</strong>, not what they hold. Depth and breadth of onchain activity across 7 chains, 25 protocols, 35 signals, and 10 sybil heuristics.</p>
+</header>
+
+<!-- ═══ FORMULA ═══ -->
+<section id="formula">
+  <h2>Score Formula</h2>
+  <p>The total score combines five weighted category scores, then applies a sybil confidence multiplier.</p>
+
+  <div class="formula-box">
+    <span class="dim">rawScore</span> = builder<span class="dim">.raw</span> &times; <span class="accent">0.30</span>
+    + governance<span class="dim">.raw</span> &times; <span class="accent">0.25</span>
+    + temporal<span class="dim">.raw</span> &times; <span class="accent">0.20</span>
+    + diversity<span class="dim">.raw</span> &times; <span class="accent">0.15</span>
+    + complexity<span class="dim">.raw</span> &times; <span class="accent">0.10</span><br><br>
+    <span class="green">totalScore</span> = round(<span class="dim">rawScore</span> &times; <span class="green">sybilMultiplier</span>)
+  </div>
+
+  <p>Each category produces a <strong>raw score</strong> (0&ndash;1000) from the sum of its individual signals, capped at 1000. Since the weights add up to 1.0, the raw score naturally ranges 0&ndash;1000.</p>
+  <p>The <strong>sybil multiplier</strong> (0.0&ndash;1.0) is applied last. A clean wallet gets 1.0 (no penalty). A suspicious wallet can be reduced to near-zero.</p>
+
+  <div class="callout">
+    <strong>Design goal:</strong> 1000 is nearly impossible &mdash; even vitalik.eth scores 967 with real indexed data. Most active users land between 400&ndash;800. The score rewards genuine breadth and depth across categories, not just volume.
+  </div>
+</section>
+
+<!-- ═══ LEVELS ═══ -->
+<section id="levels">
+  <h2>Level Tiers</h2>
+  <p>The total score maps to a human-readable level that represents a wallet's onchain archetype.</p>
+
+  <div class="tier-grid">
+    <div class="tier-row">
+      <span class="tier-label" style="color: #F59E0B">Maxi</span>
+      <span class="tier-range">801 &ndash; 1000</span>
+      <div class="tier-bar" style="width: 200px; background: linear-gradient(90deg, #F59E0B, #F97316)"></div>
+      <span class="tier-desc">Deep multi-category expertise across chains and time</span>
+    </div>
+    <div class="tier-row">
+      <span class="tier-label" style="color: #10B981">Native</span>
+      <span class="tier-range">601 &ndash; 800</span>
+      <div class="tier-bar" style="width: 160px; background: linear-gradient(90deg, #10B981, #14B8A6)"></div>
+      <span class="tier-desc">Strong onchain citizen with real DeFi &amp; governance activity</span>
+    </div>
+    <div class="tier-row">
+      <span class="tier-label" style="color: #A855F7">Degen</span>
+      <span class="tier-range">401 &ndash; 600</span>
+      <div class="tier-bar" style="width: 120px; background: linear-gradient(90deg, #A855F7, #8B5CF6)"></div>
+      <span class="tier-desc">Active user exploring multiple protocols and chains</span>
+    </div>
+    <div class="tier-row">
+      <span class="tier-label" style="color: #3B82F6">Tourist</span>
+      <span class="tier-range">201 &ndash; 400</span>
+      <div class="tier-bar" style="width: 80px; background: linear-gradient(90deg, #3B82F6, #6366F1)"></div>
+      <span class="tier-desc">Moderate activity, often concentrated on 1&ndash;2 chains</span>
+    </div>
+    <div class="tier-row">
+      <span class="tier-label" style="color: #6B7280">Normie</span>
+      <span class="tier-range">0 &ndash; 200</span>
+      <div class="tier-bar" style="width: 40px; background: #6B7280"></div>
+      <span class="tier-desc">Minimal onchain footprint &mdash; a few transactions at most</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ BUILDER ═══ -->
+<section id="builder">
+  <div class="category-card builder">
+    <div class="category-header">
+      <h3>Builder</h3>
+      <span class="weight-badge builder">30% &middot; 10 signals</span>
+    </div>
+    <p>Builder activity is the highest-weighted category because deploying contracts requires significant technical skill. A sybil farm doesn't deploy contracts; a developer does. This biases the score toward genuine technical contribution.</p>
+
+    <table>
+      <tr><th>Signal</th><th>Formula</th><th>Cap</th><th>Why</th></tr>
+      <tr>
+        <td>Deployments</td>
+        <td><code>contracts &times; 40</code></td>
+        <td>280</td>
+        <td>Core builder signal &mdash; each deployed contract shows technical capability</td>
+      </tr>
+      <tr>
+        <td>Multi-chain deploys</td>
+        <td><code>deploy_chains &times; 50</code></td>
+        <td>200</td>
+        <td>Cross-chain deployment shows deeper DevOps skill and ecosystem commitment</td>
+      </tr>
+      <tr>
+        <td>Constructor complexity</td>
+        <td><code>sqrt(avg_bytes) &times; 10</code></td>
+        <td>100</td>
+        <td>Large constructor calldata = complex initialization, not simple token clones</td>
+      </tr>
+      <tr>
+        <td>Deployment focus</td>
+        <td><code>(deploys / total_txs) &times; 400</code></td>
+        <td>80</td>
+        <td>High deploy-to-tx ratio distinguishes dedicated builders from one-time deployers</td>
+      </tr>
+      <tr>
+        <td>CREATE2</td>
+        <td><code>create2_deploys &times; 30</code></td>
+        <td>120</td>
+        <td>Deterministic addresses show advanced deployment patterns (upgradeable, counterfactual)</td>
+      </tr>
+      <tr>
+        <td>ERC-4337</td>
+        <td><code>erc4337_ops &times; 25</code></td>
+        <td>100</td>
+        <td>Account abstraction usage signals cutting-edge builder activity</td>
+      </tr>
+      <tr>
+        <td>Longevity</td>
+        <td><code>floor(age_months / 6) &times; 30</code></td>
+        <td>90</td>
+        <td>Points per 6-month period since first deploy &mdash; long-term builders &gt; one-time deployers</td>
+      </tr>
+      <tr>
+        <td>Verified source</td>
+        <td><code>verified &times; 50</code></td>
+        <td>200</td>
+        <td>Publishing source on Etherscan shows commitment to transparency and auditability</td>
+      </tr>
+      <tr>
+        <td>External users</td>
+        <td><code>users &times; 15</code></td>
+        <td>150</td>
+        <td>Contracts with real users prove utility beyond self-interaction</td>
+      </tr>
+      <tr>
+        <td>Active contracts</td>
+        <td><code>active &times; 40</code></td>
+        <td>200</td>
+        <td>Contracts still being used, not abandoned &mdash; ongoing impact</td>
+      </tr>
+    </table>
+
+    <p class="cap-note"><strong>Cap sum: 1,520</strong> &mdash; 52% headroom above the 1000 max. Builders don't need to max every signal.</p>
+    <div class="signal-note"><strong>Signals 8&ndash;10</strong> (verified source, external users, active contracts) require Etherscan API enrichment. Without <code>ETHERSCAN_API_KEY</code>, these signals contribute 0.</div>
+  </div>
+</section>
+
+<!-- ═══ GOVERNANCE ═══ -->
+<section id="governance">
+  <div class="category-card governance">
+    <div class="category-header">
+      <h3>Governance</h3>
+      <span class="weight-badge governance">25% &middot; 9 signals</span>
+    </div>
+    <p>Governance participation is the second most important signal because it requires ongoing, intentional engagement with ecosystem decision-making. Voting, proposing, and delegating require understanding protocol mechanics and caring about outcomes.</p>
+
+    <table>
+      <tr><th>Signal</th><th>Formula</th><th>Cap</th><th>Why</th></tr>
+      <tr>
+        <td>Votes</td>
+        <td><code>votes &times; 20</code></td>
+        <td>400</td>
+        <td>Core governance signal &mdash; actually showing up to vote</td>
+      </tr>
+      <tr>
+        <td>DAO breadth</td>
+        <td><code>daos &times; 60</code></td>
+        <td>360</td>
+        <td>Voting in many DAOs shows broad governance interest, not single-protocol loyalty</td>
+      </tr>
+      <tr>
+        <td>Proposals</td>
+        <td><code>proposals &times; 100</code></td>
+        <td>150</td>
+        <td>Creating proposals is far harder than voting &mdash; each one counts heavily</td>
+      </tr>
+      <tr>
+        <td>Delegation</td>
+        <td><code>delegations &times; 15</code></td>
+        <td>90</td>
+        <td>Delegating tokens shows governance awareness even when not actively voting</td>
+      </tr>
+      <tr>
+        <td>Treasury execution</td>
+        <td><code>executions &times; 30</code></td>
+        <td>120</td>
+        <td>Executing treasury/timelock operations shows trusted governance roles</td>
+      </tr>
+      <tr>
+        <td>Cross-chain governance</td>
+        <td><code>gov_chains &times; 25</code></td>
+        <td>150</td>
+        <td>Governing across multiple chains shows ecosystem-wide commitment</td>
+      </tr>
+      <tr>
+        <td>Independent votes</td>
+        <td><code>independent &times; 20</code></td>
+        <td>120</td>
+        <td>Votes against the majority signal genuine opinion vs. bandwagon voting</td>
+      </tr>
+      <tr>
+        <td>Safe executions</td>
+        <td><code>safe_execs &times; 25</code></td>
+        <td>200</td>
+        <td>Multi-sig signer executing transactions &mdash; high-trust governance role</td>
+      </tr>
+      <tr>
+        <td>Reasoned votes</td>
+        <td><code>reasoned &times; 25</code></td>
+        <td>150</td>
+        <td>Votes with onchain reasoning attached &mdash; deeper governance engagement</td>
+      </tr>
+    </table>
+
+    <p class="cap-note"><strong>Cap sum: 1,740</strong> &mdash; 74% headroom. Governance rewards quality and breadth.</p>
+  </div>
+</section>
+
+<!-- ═══ TEMPORAL ═══ -->
+<section id="temporal">
+  <div class="category-card temporal">
+    <div class="category-header">
+      <h3>Temporal</h3>
+      <span class="weight-badge temporal">20% &middot; 5 signals</span>
+    </div>
+    <p>Time-based signals distinguish genuine long-term participants from short-term farmers. An old wallet that survived bear markets is qualitatively different from a new wallet with the same transaction count. Time cannot be faked &mdash; you can't backdate transactions.</p>
+
+    <table>
+      <tr><th>Signal</th><th>Formula</th><th>Cap</th><th>Why</th></tr>
+      <tr>
+        <td>Wallet age</td>
+        <td><code>age_years &times; 50</code></td>
+        <td>400</td>
+        <td>Each year of age shows the wallet survived through market cycles</td>
+      </tr>
+      <tr>
+        <td>Bear market txs</td>
+        <td><code>bear_txs &times; 5</code></td>
+        <td>300</td>
+        <td>Transacting during 70%+ drawdown periods shows conviction, not speculation</td>
+      </tr>
+      <tr>
+        <td>Consistency</td>
+        <td><code>(active_months / age_months) &times; 300</code></td>
+        <td>300</td>
+        <td>Ratio of active months vs. total age &mdash; consistent usage beats sporadic bursts</td>
+      </tr>
+      <tr>
+        <td>Activity entropy</td>
+        <td><code>(distinct_hours / 24) &times; 200</code></td>
+        <td>200</td>
+        <td>Humans transact at 8&ndash;15+ distinct hours; bots use 2&ndash;3. Anti-automation signal</td>
+      </tr>
+      <tr>
+        <td>Cross-cycle persistence</td>
+        <td><code>bear_periods &times; 75</code></td>
+        <td>300</td>
+        <td>Surviving multiple distinct bear markets is exceptional commitment</td>
+      </tr>
+    </table>
+
+    <p class="cap-note"><strong>Cap sum: 1,500</strong> &mdash; 50% headroom.</p>
+    <div class="signal-note"><strong>Consistency</strong> measures behavior pattern, not duration. A 1-year wallet active every month scores the same as a 5-year wallet active every month. Wallet age already rewards duration separately.</div>
+  </div>
+</section>
+
+<!-- ═══ PROTOCOL DIVERSITY ═══ -->
+<section id="diversity">
+  <div class="category-card diversity">
+    <div class="category-header">
+      <h3>Protocol Diversity</h3>
+      <span class="weight-badge diversity">15% &middot; 4 signals</span>
+    </div>
+    <p>Breadth of protocol usage shows genuine exploration rather than single-protocol farming. A wallet that only uses Uniswap is a trader; a wallet that uses Uniswap + Aave + ENS + Safe + Chainlink is a power user.</p>
+
+    <table>
+      <tr><th>Signal</th><th>Formula</th><th>Cap</th><th>Why</th></tr>
+      <tr>
+        <td>Protocol count</td>
+        <td><code>unique_protocols &times; 18</code></td>
+        <td>350</td>
+        <td>Raw count of distinct protocols from the 25 in the registry</td>
+      </tr>
+      <tr>
+        <td>Chain diversity</td>
+        <td><code>chains_active &times; 40</code></td>
+        <td>250</td>
+        <td>Number of chains with activity (7 indexed &rarr; effective max 280, capped at 250)</td>
+      </tr>
+      <tr>
+        <td>Cross-domain coverage</td>
+        <td><code>categories &times; 40</code></td>
+        <td>400</td>
+        <td>Distinct domains touched: defi, governance, infra, social, gaming, builder-tools (6 max &rarr; effective max 240)</td>
+      </tr>
+      <tr>
+        <td>Early adoption</td>
+        <td><code>early_adoptions &times; 30</code></td>
+        <td>300</td>
+        <td>Protocols used within 6 months of launch &mdash; early adopters take risk on new protocols</td>
+      </tr>
+    </table>
+
+    <p class="cap-note"><strong>Cap sum: 1,300</strong> &mdash; only 30% headroom. The hardest category to max, by design.</p>
+    <div class="signal-note"><strong>Natural scarcity:</strong> Chain diversity is bounded by 7 chains (effective max 280, capped at 250). Cross-domain coverage is bounded by 6 categories (effective max 240). Even perfect coverage can't reach 1000 from these two signals alone, forcing genuine protocol count and early adoption.</div>
+  </div>
+</section>
+
+<!-- ═══ COMPLEXITY ═══ -->
+<section id="complexity">
+  <div class="category-card complexity">
+    <div class="category-header">
+      <h3>Complexity</h3>
+      <span class="weight-badge complexity">10% &middot; 7 signals</span>
+    </div>
+    <p>Transaction sophistication separates power users from basic token transfers. Weighted lowest (10%) because volume and complexity can be gamed more easily than other categories, but still provides meaningful signal.</p>
+
+    <table>
+      <tr><th>Signal</th><th>Formula</th><th>Cap</th><th>Why</th></tr>
+      <tr>
+        <td>Transaction volume</td>
+        <td><code>total_txs &times; 1.5</code></td>
+        <td>300</td>
+        <td>Base activity count &mdash; 200 txs to reach cap</td>
+      </tr>
+      <tr>
+        <td>Fail ratio</td>
+        <td><code>(failed / total) &times; 1000</code></td>
+        <td>300</td>
+        <td>Higher failure rate = pushing limits. Experienced users hit reverts; bots don't fail</td>
+      </tr>
+      <tr>
+        <td>Avg calldata</td>
+        <td><code>sqrt(total_bytes / txs) &times; 10</code></td>
+        <td>400</td>
+        <td>Large calldata = complex function calls, not just ETH transfers</td>
+      </tr>
+      <tr>
+        <td>Permit</td>
+        <td><code>permits &times; 10</code></td>
+        <td>200</td>
+        <td>ERC-2612 permit usage shows DeFi sophistication (gasless approvals)</td>
+      </tr>
+      <tr>
+        <td>Flashloan</td>
+        <td><code>flashloans &times; 50</code></td>
+        <td>300</td>
+        <td>Flashloan execution is one of the most complex DeFi operations</td>
+      </tr>
+      <tr>
+        <td>Smart wallet</td>
+        <td><code>smart_wallet &times; 15</code></td>
+        <td>150</td>
+        <td>Using smart contract wallets (Safe, ERC-4337) shows advanced wallet management</td>
+      </tr>
+      <tr>
+        <td>Internal txs</td>
+        <td><code>sqrt(internal_txs) &times; 8</code></td>
+        <td>200</td>
+        <td>Contract-to-contract calls indicate multi-step operations</td>
+      </tr>
+    </table>
+
+    <p class="cap-note"><strong>Cap sum: 1,850</strong> &mdash; 85% headroom, the most generous category. Compensates for the low 10% weight.</p>
+    <div class="signal-note"><strong>Why do failures score higher?</strong> A wallet with 10,000 txs and zero failures is likely a bot with perfect simulation. Experienced humans interacting with complex protocols naturally hit reverts (slippage, frontrunning, gas estimation).</div>
+  </div>
+</section>
+
+<!-- ═══ SYBIL DETECTION ═══ -->
+<section id="sybil">
+  <h2>Sybil Detection</h2>
+  <p>Every wallet is analyzed by <strong>10 behavioral heuristics</strong>. Each detected flag reduces a confidence multiplier multiplicatively. Wallets are never banned &mdash; just discounted. All flags are transparent and visible.</p>
+
+  <div class="formula-box">
+    <span class="dim">confidence</span> = 1.0<br>
+    <span class="dim">for each detected flag:</span><br>
+    &nbsp;&nbsp;confidence &times;= (1 &minus; <span class="accent">penalty</span>)<br><br>
+    <span class="dim">Example: Temporal Clustering (0.40) + Action Repetition (0.30):</span><br>
+    &nbsp;&nbsp;1.0 &times; 0.60 &times; 0.70 = <span class="accent">0.42</span> <span class="dim">&mdash; wallet keeps 42% of raw score</span>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">1. Temporal Clustering</span>
+      <span class="heuristic-penalty">&minus;40%</span>
+    </div>
+    <p>New wallets with extreme activity are likely farming. Real users don't sustain 20+ txs/day from day one.</p>
+    <span class="trigger">avg_txs_per_day &gt; 20 AND wallet_age &lt; 90 days</span>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">2. Action Repetition</span>
+      <span class="heuristic-penalty">&minus;30%</span>
+    </div>
+    <p>Repetitive single-protocol, single-chain activity suggests scripted farming. Real users explore.</p>
+    <span class="trigger">total_txs &gt; 100 AND unique_protocols &lt; 3 AND chains_active &lt; 2</span>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">3. Funding Graph Clustering</span>
+      <span class="heuristic-penalty">&minus;50%</span>
+    </div>
+    <p>Distributing to 50+ addresses through 1 protocol across chains = distribution bot. Multi-chain requirement excludes gaming users who interact with many addresses on one chain.</p>
+    <span class="trigger">unique_recipients &gt; 50 AND unique_protocols &lt; 2 AND chains_active &gt; 1</span>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">4. Cross-Chain Mirroring</span>
+      <span class="heuristic-penalty">&minus;60%</span>
+    </div>
+    <p>Using the exact same protocols in the exact same order across 3+ chains is a hallmark of scripted sybil farming that replays the same sequence everywhere.</p>
+    <span class="trigger">3+ chains with identical sorted protocol sets (requires chains_active &ge; 3)</span>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">5. CEX Withdrawal Freshness</span>
+      <span class="heuristic-penalty">up to &minus;30%</span>
+    </div>
+    <p>Graduated penalty for brand-new wallets. Full penalty at day 0, linearly decays to zero by day 30.</p>
+    <span class="trigger">wallet_age &lt; 30 days &rarr; penalty = 0.30 &times; (1 &minus; age/30)</span>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">6. Zero Failure Rate</span>
+      <span class="heuristic-penalty">&minus;20%</span>
+    </div>
+    <p>200+ transactions with zero failures suggests perfect simulation &mdash; characteristic of bots. Real users inevitably encounter reverts.</p>
+    <span class="trigger">total_txs &gt; 200 AND failed_txs = 0</span>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">7. Perfect Gas Patterns</span>
+      <span class="heuristic-penalty">&minus;15%</span>
+    </div>
+    <p>Extremely low gas price diversity on mainnet suggests hardcoded gas strategy. <strong>L2-only wallets are exempt</strong> &mdash; L2 gas prices are structurally stable by design.</p>
+    <span class="trigger">total_txs &gt; 50 AND distinct_gas / total_txs &lt; 0.5% AND distinct_gas &lt; 10 AND has mainnet activity</span>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">8. MEV Bot Activity</span>
+      <span class="heuristic-penalty">&minus;15%</span>
+    </div>
+    <p>Wallets where &gt;30% of activity is MEV-related (sandwich attacks, arbitrage) are bots, not humans.</p>
+    <span class="trigger">mev_interactions &gt; 20 AND mev_ratio &gt; 30%</span>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">9. Funding Source Cluster</span>
+      <span class="heuristic-penalty">&minus;50%</span>
+    </div>
+    <p>The wallet's funding source also funded 10&ndash;500 other wallets &mdash; classic sybil coordinator pattern. Below 10 = normal. Above 500 = CEX/bridge/router (exempt).</p>
+    <span class="trigger">funding_source_outbound &gt; 10 AND &le; 500 (requires Etherscan enrichment)</span>
+  </div>
+
+  <div class="heuristic">
+    <div class="heuristic-header">
+      <span class="heuristic-name">10. CEX Fresh Wallet</span>
+      <span class="heuristic-penalty">up to &minus;30%</span>
+    </div>
+    <p>CEX-funded wallets under 90 days old get graduated penalty. Decays to zero by day 90. Older CEX-funded wallets are fine.</p>
+    <span class="trigger">funded_by_cex = true AND age &lt; 90 days &rarr; penalty = 0.30 &times; (1 &minus; age/90)</span>
+  </div>
+
+  <div class="callout" style="margin-top: 24px">
+    <strong>Design principles:</strong> Compound conditions beat single thresholds (each heuristic requires 2&ndash;3 conditions). L2s are exempt from gas entropy checks. Funding source uses a range (10&ndash;500) because sybils fund moderately while CEXes fund thousands. Graduated penalties decay over time instead of binary cutoffs.
+  </div>
+</section>
+
+<!-- ═══ BADGES ═══ -->
+<section id="badges">
+  <h2>Badges</h2>
+  <p>Seven binary achievements evaluated from wallet activity and category scores. Each maps to concrete, verifiable onchain behavior.</p>
+
+  <div class="badge-grid">
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--builder)">&#x1F3D7;</div>
+      <div class="badge-name">Builder</div>
+      <div class="badge-criteria">3+ deployed contracts</div>
+      <div class="badge-why">Proves contract deployment capability</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--governance)">&#x1F5F3;</div>
+      <div class="badge-name">Governor</div>
+      <div class="badge-criteria">5+ DAOs participated, 1+ proposal authored</div>
+      <div class="badge-why">Active governance participant, not just a voter</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--diversity)">&#x1F9EA;</div>
+      <div class="badge-name">Explorer</div>
+      <div class="badge-criteria">20+ unique protocols used</div>
+      <div class="badge-why">Genuine ecosystem exploration across the registry</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--temporal)">&#x26F0;</div>
+      <div class="badge-name">OG</div>
+      <div class="badge-criteria">First transaction before Jan 1, 2020</div>
+      <div class="badge-why">Pre-DeFi-summer wallet age &mdash; can't be faked retroactively</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--complexity)">&#x1F310;</div>
+      <div class="badge-name">Multichain</div>
+      <div class="badge-criteria">Active on 4+ chains</div>
+      <div class="badge-why">Cross-chain fluency across the supported chain set</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:#94a3b8">&#x1F510;</div>
+      <div class="badge-name">Trusted</div>
+      <div class="badge-criteria">2+ Safe executions, 3+ DAOs, 3+ delegations</div>
+      <div class="badge-why">High-trust governance role &mdash; multi-sig signer with broad delegation</div>
+    </div>
+    <div class="badge-card">
+      <div class="badge-icon" style="color:var(--red)">&#x26A1;</div>
+      <div class="badge-name">Power User</div>
+      <div class="badge-criteria">Protocol diversity raw &ge;400, complexity raw &ge;300</div>
+      <div class="badge-why">Cross-category achievement combining breadth and depth</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PROTOCOL OVERVIEW ═══ -->
+<section id="protocol-overview">
+  <h2>Protocol Registry</h2>
+  <p>ChainCred tracks <strong>25 protocols</strong> across <strong>6 domains</strong>. Wallet interactions are detected by matching transaction <code>to</code> addresses against the registry's contract addresses per chain.</p>
+
+  <h3>Selection Criteria</h3>
+  <p>The registry is curated for:</p>
+  <ul>
+    <li><strong>Market dominance</strong> &mdash; the most-used protocol in its category (Uniswap for DEX, Aave for lending)</li>
+    <li><strong>Historical significance</strong> &mdash; protocols that defined their category (MakerDAO for stablecoins, ENS for identity)</li>
+    <li><strong>Chain representation</strong> &mdash; at least one protocol per supported chain where possible</li>
+    <li><strong>Domain coverage</strong> &mdash; ensuring all 6 scoring domains have protocol representation</li>
+  </ul>
+
+  <div class="domain-grid">
+    <div class="domain-item">
+      <span class="domain-name">DeFi</span>
+      <span class="domain-count" style="color: var(--green)">14</span>
+    </div>
+    <div class="domain-item">
+      <span class="domain-name">Social</span>
+      <span class="domain-count" style="color: #f472b6">3</span>
+    </div>
+    <div class="domain-item">
+      <span class="domain-name">Governance</span>
+      <span class="domain-count" style="color: var(--governance)">1</span>
+    </div>
+    <div class="domain-item">
+      <span class="domain-name">Infrastructure</span>
+      <span class="domain-count" style="color: var(--temporal)">3</span>
+    </div>
+    <div class="domain-item">
+      <span class="domain-name">Gaming</span>
+      <span class="domain-count" style="color: var(--orange)">2</span>
+    </div>
+    <div class="domain-item">
+      <span class="domain-name">Builder Tools</span>
+      <span class="domain-count" style="color: var(--complexity)">2</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DEFI PROTOCOLS ═══ -->
+<section id="defi-protocols">
+  <h3>DeFi Protocols</h3>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Uniswap</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; OP &middot; BASE &middot; zkSync &middot; Polygon</span>
+      </div>
+    </div>
+    <p>The dominant DEX by volume across all EVM chains. Uniswap invented the AMM model and remains the liquidity backbone of DeFi. Interaction with Uniswap is the single most common DeFi activity. Tracked contracts: V2 Router, V3 SwapRouter02, UniversalRouter.</p>
+    <div class="launch">Launched November 2018</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Aave</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; OP &middot; BASE &middot; zkSync &middot; Polygon</span>
+      </div>
+    </div>
+    <p>The largest lending protocol by TVL. Using Aave requires understanding supply/borrow mechanics, health factors, and liquidation risk &mdash; a meaningful step up from simple swaps. Tracked: V3 Pool.</p>
+    <div class="launch">Launched January 2020</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Compound</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; BASE &middot; Polygon</span>
+      </div>
+    </div>
+    <p>Pioneer of the lending protocol model. COMP governance token kicked off the "governance token" trend. V3 Comet represents the modern single-asset market architecture. Tracked: V3 Comet (USDC).</p>
+    <div class="launch">Launched September 2018</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Lido</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; OP &middot; BASE &middot; zkSync &middot; Polygon</span>
+      </div>
+    </div>
+    <p>Dominant liquid staking protocol. Using Lido shows understanding of staking derivatives and DeFi composability (stETH is used as collateral across DeFi). Tracked: stETH, wstETH (mainnet); wstETH bridged (L2s).</p>
+    <div class="launch">Launched December 2020</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Curve</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; OP &middot; BASE &middot; zkSync &middot; Polygon</span>
+      </div>
+    </div>
+    <p>Specializes in stablecoin and like-asset swaps. Curve's veTokenomics model influenced dozens of protocols. Using Curve signals understanding of yield optimization and stable asset management. Tracked: Router NG, 3pool.</p>
+    <div class="launch">Launched August 2020</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">1inch</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; OP &middot; BASE &middot; zkSync &middot; Polygon</span>
+      </div>
+    </div>
+    <p>Leading DEX aggregator. Using an aggregator instead of trading directly shows price-optimization awareness &mdash; a DeFi sophistication signal. Same CREATE2 address across all EVM chains except zkSync. Tracked: AggregationRouterV6.</p>
+    <div class="launch">Launched December 2020</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">SushiSwap</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; OP &middot; Polygon</span>
+      </div>
+    </div>
+    <p>The first major Uniswap fork, historically significant as the protocol that proved the "vampire attack" model. Presence on Arbitrum and Optimism makes it relevant for multi-chain scoring. Tracked: V2 Router.</p>
+    <div class="launch">Launched August 2020</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Balancer</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; OP &middot; BASE &middot; Polygon</span>
+      </div>
+    </div>
+    <p>Weighted pool AMM with unique multi-asset pool design. Balancer pools are used as building blocks by other protocols (Aura, Gyroscope), making interaction a signal of advanced DeFi usage. Tracked: V2 Vault (same address across chains).</p>
+    <div class="launch">Launched March 2020</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">MakerDAO</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">Ethereum only</span>
+      </div>
+    </div>
+    <p>The original DeFi protocol and creator of DAI, the first decentralized stablecoin. MakerDAO predates "DeFi" as a term. Interaction shows awareness of the foundational layer of Ethereum DeFi. Tracked: DAI token, Pot (DSR).</p>
+    <div class="launch">Launched November 2017</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">GMX</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">Arbitrum only</span>
+      </div>
+    </div>
+    <p>Dominant perpetual DEX on Arbitrum. Represents the derivatives/perps category and provides Arbitrum-specific coverage. Using GMX shows understanding of leverage trading mechanics onchain. Tracked: V1 Router.</p>
+    <div class="launch">Launched September 2021</div>
+  </div>
+
+  <h4>Starknet DeFi</h4>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">JediSwap</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">Starknet</span>
+      </div>
+    </div>
+    <p>One of the first AMMs on Starknet. Early Starknet DeFi activity signals willingness to explore a new execution environment (Cairo/STARK proofs). Tracked: AMM Router.</p>
+    <div class="launch">Launched January 2023</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">mySwap</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">Starknet</span>
+      </div>
+    </div>
+    <p>Early Starknet AMM that launched during testnet era. Provides additional Starknet DeFi signal and represents early adoption of the ecosystem.</p>
+    <div class="launch">Launched October 2022</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">10KSwap</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">Starknet</span>
+      </div>
+    </div>
+    <p>Concentrated liquidity AMM on Starknet. Multiple Starknet DEXes in the registry allow differentiation between users who tried one DEX vs. explored the ecosystem.</p>
+    <div class="launch">Launched January 2023</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Ekubo</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge defi">DeFi</span>
+        <span class="protocol-card-chains">Starknet</span>
+      </div>
+    </div>
+    <p>Most advanced Starknet DEX with singleton pool design (similar to Uniswap V4). The newest protocol in the registry, making it relevant for early adoption scoring. Tracked: Core pool contract.</p>
+    <div class="launch">Launched July 2023</div>
+  </div>
+</section>
+
+<!-- ═══ SOCIAL PROTOCOLS ═══ -->
+<section id="social-protocols">
+  <h3>Social Protocols</h3>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">ENS</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge social">Social</span>
+        <span class="protocol-card-chains">Ethereum only</span>
+      </div>
+    </div>
+    <p>The identity layer of Ethereum. Registering an ENS name is one of the most common non-financial onchain actions and signals intent to have a persistent onchain identity. Tracked: Base Registrar, ETH Registrar Controller.</p>
+    <div class="launch">Launched May 2017</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Lens Protocol</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge social">Social</span>
+        <span class="protocol-card-chains">Polygon only</span>
+      </div>
+    </div>
+    <p>The leading decentralized social graph. Using Lens shows engagement with web3 social beyond just financial transactions, indicating broader ecosystem participation. Tracked: LensHub Proxy.</p>
+    <div class="launch">Launched February 2022</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Farcaster</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge social">Social</span>
+        <span class="protocol-card-chains">Optimism only</span>
+      </div>
+    </div>
+    <p>Decentralized social network with significant developer community. Onchain registration via Optimism provides a verifiable social identity signal distinct from Lens. Tracked: IdRegistry.</p>
+    <div class="launch">Launched January 2022</div>
+  </div>
+</section>
+
+<!-- ═══ OTHER PROTOCOLS ═══ -->
+<section id="other-protocols">
+  <h3>Governance</h3>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Safe</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge governance">Governance</span>
+        <span class="protocol-card-chains">Ethereum only</span>
+      </div>
+    </div>
+    <p>The dominant multi-sig wallet. Being a Safe signer or executor demonstrates high-trust roles in onchain organizations. Safe interactions are separately scored in the governance category's Safe Executions signal. Tracked: SafeProxyFactory.</p>
+    <div class="launch">Launched July 2018</div>
+  </div>
+
+  <h3>Infrastructure</h3>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Chainlink</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge infrastructure">Infrastructure</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; OP &middot; BASE &middot; zkSync &middot; Polygon</span>
+      </div>
+    </div>
+    <p>Dominant oracle network. Interacting with Chainlink (staking LINK, using VRF, accessing price feeds) signals understanding of the infrastructure layer that DeFi depends on. Tracked: LINK token, Feed Registry (mainnet).</p>
+    <div class="launch">Launched June 2019</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">The Graph</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge infrastructure">Infrastructure</span>
+        <span class="protocol-card-chains">ETH &middot; Arbitrum</span>
+      </div>
+    </div>
+    <p>Indexing and query layer for blockchain data. Using The Graph (delegating GRT, curating subgraphs) shows awareness of the data infrastructure powering dApps. Tracked: GRT token, L2 Staking.</p>
+    <div class="launch">Launched December 2020</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">StarkGate</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge infrastructure">Infrastructure</span>
+        <span class="protocol-card-chains">Starknet</span>
+      </div>
+    </div>
+    <p>The canonical Starknet bridge. Bridging assets to Starknet is the entry point for the ecosystem and represents commitment to exploring a non-EVM execution environment. Tracked: ETH bridge.</p>
+    <div class="launch">Launched October 2022</div>
+  </div>
+
+  <h3>Gaming</h3>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Treasure</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge gaming">Gaming</span>
+        <span class="protocol-card-chains">Arbitrum only</span>
+      </div>
+    </div>
+    <p>The largest gaming ecosystem on Arbitrum. Treasure's MAGIC token and MagicSwap provide gaming-specific DeFi coverage. Gaming represents a distinct domain of onchain activity from financial DeFi. Tracked: MagicSwap Router.</p>
+    <div class="launch">Launched September 2021</div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Aavegotchi</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge gaming">Gaming</span>
+        <span class="protocol-card-chains">Polygon only</span>
+      </div>
+    </div>
+    <p>DeFi-integrated gaming on Polygon. Combines NFTs with Aave's interest-bearing tokens, making it a cross-domain protocol. Also provides Polygon-specific gaming coverage. Tracked: Diamond (EIP-2535).</p>
+    <div class="launch">Launched March 2021</div>
+  </div>
+
+  <h3>Builder Tools</h3>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">Deterministic Deployment Proxy</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge builder-tools">Builder Tools</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; OP &middot; BASE &middot; zkSync &middot; Polygon</span>
+      </div>
+    </div>
+    <p>Enables CREATE2 deterministic deployment addresses. A strong signal of advanced contract deployment &mdash; the deployer knows about address prediction and wants consistent addresses across chains.</p>
+    <div class="launch">Launched April 2020 &middot; <code>0x4e59b44847b379578588920ca78fbf26c0b4956c</code></div>
+  </div>
+
+  <div class="protocol-card">
+    <div class="protocol-card-header">
+      <span class="protocol-card-name">CREATE2 Factory</span>
+      <div class="protocol-card-meta">
+        <span class="protocol-cat-badge builder-tools">Builder Tools</span>
+        <span class="protocol-card-chains">ETH &middot; ARB &middot; OP &middot; BASE &middot; zkSync &middot; Polygon</span>
+      </div>
+    </div>
+    <p>General-purpose CREATE2 factory. Complements the deterministic deployment proxy for wallets using different factory patterns. Together, these two builder tools identify sophisticated multi-chain deployment strategies.</p>
+    <div class="launch">Launched January 2021 &middot; <code>0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2</code></div>
+  </div>
+</section>
+
+<!-- ═══ CHAINS ═══ -->
+<section id="chains">
+  <h2>Supported Chains</h2>
+  <p>ChainCred indexes 7 chains. 6 EVM chains are indexed via <strong>HyperSync</strong> (free, no API key). Starknet is indexed via JSON-RPC.</p>
+
+  <table>
+    <tr><th>Chain</th><th>Chain ID</th><th>Type</th><th>Indexing</th></tr>
+    <tr><td>Ethereum</td><td><code>1</code></td><td>L1</td><td>HyperSync</td></tr>
+    <tr><td>Arbitrum One</td><td><code>42161</code></td><td>L2 (Optimistic)</td><td>HyperSync</td></tr>
+    <tr><td>Optimism</td><td><code>10</code></td><td>L2 (Optimistic)</td><td>HyperSync</td></tr>
+    <tr><td>Base</td><td><code>8453</code></td><td>L2 (Optimistic)</td><td>HyperSync</td></tr>
+    <tr><td>zkSync Era</td><td><code>324</code></td><td>L2 (ZK)</td><td>HyperSync</td></tr>
+    <tr><td>Polygon</td><td><code>137</code></td><td>L2 (Sidechain)</td><td>HyperSync</td></tr>
+    <tr><td>Starknet</td><td><code>0x534e5f4d41494e</code></td><td>L2 (ZK)</td><td>JSON-RPC</td></tr>
+  </table>
+</section>
+
+<!-- ═══ CALIBRATION ═══ -->
+<section id="calibration">
+  <h2>Real-World Calibration</h2>
+  <p>These scores come from real wallets indexed via HyperSync in March 2026. All sybil multipliers were 1.00 (no flags triggered).</p>
+
+  <table class="calibration-row">
+    <tr><th>Wallet</th><th>Transactions</th><th>Chains</th><th>Score</th><th>Level</th></tr>
+    <tr><td>vitalik.eth</td><td>1,714</td><td>5</td><td style="color: var(--temporal)">967</td><td>Maxi</td></tr>
+    <tr><td>lefteris (0xd26a...)</td><td>2,236</td><td>5</td><td style="color: var(--green)">776</td><td>Native</td></tr>
+    <tr><td>sassal.eth</td><td>616</td><td>6</td><td style="color: var(--green)">652</td><td>Native</td></tr>
+    <tr><td>Binance hot wallet</td><td>21,075</td><td>6</td><td style="color: var(--governance)">461</td><td>Degen</td></tr>
+    <tr><td>hayden.eth</td><td>12</td><td>1</td><td style="color: var(--complexity)">205</td><td>Tourist</td></tr>
+    <tr><td>brantly.eth</td><td>7</td><td>1</td><td style="color: var(--text-muted)">60</td><td>Normie</td></tr>
+    <tr><td>coinbase:deployer</td><td>1</td><td>1</td><td style="color: var(--text-muted)">47</td><td>Normie</td></tr>
+  </table>
+
+  <div class="callout" style="margin-top: 20px">
+    <strong>Key takeaways:</strong><br>
+    &bull; vitalik.eth (967) doesn't reach 1000 even with 1,714 txs across 5 chains &mdash; the model prevents trivial max-out<br>
+    &bull; Binance hot wallet (21,075 txs, 6 chains) only scores 461 &mdash; raw volume without governance, building, or protocol diversity doesn't score high<br>
+    &bull; hayden.eth (Uniswap founder) scores 205 with 12 txs &mdash; most activity happens through deployed contracts, not <code>from</code>-address transactions<br>
+    &bull; The level distribution maps to real archetypes: Maxi (ecosystem leader) &gt; Native (power user) &gt; Degen (active) &gt; Tourist (casual) &gt; Normie (minimal)
+  </div>
+</section>
+
+</main>
+</div>
+
+</body>
+</html>
