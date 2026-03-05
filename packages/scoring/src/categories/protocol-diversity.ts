@@ -6,8 +6,8 @@ export function calculateProtocolDiversityScore(activity: WalletActivity): Categ
   // Protocol count: 18 pts each, capped at 350
   const protocolScore = Math.min(activity.uniqueProtocols.length * 18, 350);
 
-  // Chain diversity: 25 pts per chain, capped at 250
-  const chainScore = Math.min(activity.chainsActive.length * 25, 250);
+  // Chain diversity: 40 pts per chain, capped at 250
+  const chainScore = Math.min(activity.chainsActive.length * 40, 250);
 
   // Cross-domain coverage: 40 pts per distinct category, capped at 400
   // Categories: defi, social, governance, infrastructure, gaming, builder-tools

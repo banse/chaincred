@@ -50,7 +50,7 @@
     ],
     protocolDiversity: [
       { name: 'Unique Protocols', desc: '18 pts each', cap: 350 },
-      { name: 'Chain Diversity', desc: '25 pts per chain', cap: 250 },
+      { name: 'Chain Diversity', desc: '40 pts per chain', cap: 250 },
       { name: 'Cross-domain Coverage', desc: '40 pts per domain (DeFi, social, etc.)', cap: 400 },
       { name: 'Early Adoption', desc: '30 pts per protocol used within 6mo of launch', cap: 300 },
     ],
