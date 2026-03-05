@@ -1,6 +1,6 @@
 # ChainCred Features & Functionality
 
-ChainCred scores Ethereum wallets based on what they actually do onchain — not what they hold. It indexes activity across 6 chains, computes a sybil-resistant expertise score from 0 to 1000, and makes the results available through a REST API, a web explorer, and onchain attestations.
+ChainCred scores Ethereum wallets based on what they actually do onchain — not what they hold. It indexes activity across 7 chains (6 EVM + Starknet), computes a sybil-resistant expertise score from 0 to 1000, and makes the results available through a REST API, a web explorer, and onchain attestations.
 
 This document describes what's currently built and working.
 
@@ -8,7 +8,7 @@ This document describes what's currently built and working.
 
 ## Supported Chains
 
-ChainCred indexes wallet activity across six EVM networks:
+ChainCred indexes wallet activity across seven networks:
 
 - **Ethereum** (mainnet)
 - **Arbitrum One**
@@ -16,8 +16,9 @@ ChainCred indexes wallet activity across six EVM networks:
 - **Base**
 - **zkSync Era**
 - **Polygon**
+- **Starknet**
 
-The indexer uses [HyperSync](https://docs.envio.dev/docs/HyperSync/overview) for fast historical backfill with automatic pagination across all chains.
+The 6 EVM chains are indexed via [HyperSync](https://docs.envio.dev/docs/HyperSync/overview) for fast historical backfill with automatic pagination. Starknet is indexed via JSON-RPC with block-by-block scanning, client-side address filtering, and 10 concurrent fetches. The indexer accepts both EVM and Starknet addresses (felt252 format, `0x` + up to 64 hex chars) and processes INVOKE, DEPLOY_ACCOUNT, and DECLARE transaction types.
 
 ---
 
@@ -87,7 +88,7 @@ Measures breadth of protocol engagement across protocols, chains, and domains.
 | Protocol category coverage | 80 per category | 400 |
 | Early protocol adoption | 60 per early-adopted protocol | 300 |
 
-Six protocol categories are tracked: DeFi, Social, Governance, Infrastructure, Gaming, and Builder Tools. Covering more domains shows broader expertise than depth in a single category. Early protocol adoption awards points for using a protocol within 6 months of its launch — each of the 20 tracked protocols has a `launchTimestamp` and interactions before `launch + 6 months` are counted.
+Six protocol categories are tracked: DeFi, Social, Governance, Infrastructure, Gaming, and Builder Tools. Covering more domains shows broader expertise than depth in a single category. Early protocol adoption awards points for using a protocol within 6 months of its launch — each of the 25 tracked protocols has a `launchTimestamp` and interactions before `launch + 6 months` are counted.
 
 ### Complexity Score (10%)
 
@@ -121,7 +122,7 @@ A wallet that has deployed 5 contracts across 2 chains with 15,000 total constru
 
 ## Protocol Detection
 
-The indexer recognizes **20 protocols** across all 6 chains and maps contract interactions to named protocols:
+The indexer recognizes **25 protocols** across all 7 chains and maps contract interactions to named protocols:
 
 | Protocol | Type | Chains |
 |----------|------|--------|
@@ -144,7 +145,12 @@ The indexer recognizes **20 protocols** across all 6 chains and maps contract in
 | Treasure | Gaming | Arbitrum only |
 | Aavegotchi | Gaming | Polygon only |
 | Deterministic Deployment Proxy | Builder Tools | All 6 |
-| CREATE2 Factory | Builder Tools | All 6 |
+| CREATE2 Factory | Builder Tools | All 6 EVM |
+| JediSwap | DeFi | Starknet |
+| mySwap | DeFi | Starknet |
+| 10KSwap | DeFi | Starknet |
+| Ekubo | DeFi | Starknet |
+| StarkGate | Infrastructure | Starknet |
 
 When a wallet interacts with any known contract address, it gets credited for that protocol. The protocol's category (DeFi, Social, etc.) is also tracked for the cross-domain coverage signal in the protocol diversity score.
 
@@ -168,7 +174,7 @@ Tracked DAOs include ENS, Uniswap, Aave, Compound, MakerDAO, Arbitrum DAO, Optim
 
 ## Sybil Detection
 
-Every wallet is analyzed for bot-like behavior using eight heuristics. Each heuristic that fires reduces the wallet's confidence multiplier:
+Every wallet is analyzed for bot-like behavior using ten heuristics. Each heuristic that fires reduces the wallet's confidence multiplier:
 
 ### Temporal Clustering (penalty: -40%)
 Detects wallets with compressed activity windows. If a wallet averages more than 20 transactions per day and is less than 90 days old, it gets flagged. A real user with 500 transactions over 3 years is normal; 500 transactions in 2 weeks is suspicious.
@@ -306,7 +312,8 @@ A SvelteKit frontend at `http://localhost:5173` provides a visual interface:
 - **Home page** — Search any wallet by address, see platform stats
 - **Score page** — SVG radar chart showing all 5 category scores as a filled polygon, with per-category color-coded dots, axis labels, and concentric grid rings. Includes badge display, sybil confidence indicator, and activity timeline with milestone events. OpenGraph and Farcaster Frame meta tags for social sharing with score card images. Shows error states with retry buttons and loading skeletons while data loads.
 - **Expertise card** — Displays total score with animated progress bar, raw score and sybil percentage. Includes share buttons: copy link, share on X (Twitter), and cast on Warpcast (Farcaster).
-- **Leaderboard** — Top wallets with category filtering (overall, builder, governance, temporal, protocol diversity, complexity). Sorted server-side by category raw score when a specific category is selected. Shows inline score progress bars and a category-specific column with raw scores when filtering. Supports pagination.
+- **Score details page** — Deep dive into the score breakdown. Shows the score formula (raw score x sybil multiplier = total), raw score as a weighted category sum with per-category contributions, expandable category sections revealing all individual signal scores (35+ signals with points and caps), full sybil analysis with all 10 heuristic flags and penalties, badge list with earned/locked status and earn dates, verification info with IPFS breakdown link, and a Download Card button that renders the SVG card to PNG for saving. Level badges (Normie/Tourist/Degen/Native/Maxi) appear based on total score.
+- **Leaderboard** — Top wallets with category filtering (overall, builder, governance, temporal, protocol diversity, complexity). Sorted server-side by category raw score when a specific category is selected. Shows inline score progress bars, raw score formula breakdown, ENS names, and a category-specific column with raw scores when filtering. Supports pagination.
 - **Wallet connection** — Connect MetaMask or any EIP-1193 wallet via the nav bar
 
 The frontend is mobile-responsive with horizontal scrolling on the leaderboard table and stacked layouts on smaller screens.
@@ -368,7 +375,7 @@ A live demo is available at `http://localhost:5173/widget` when the dev server i
 
 ## Score Card & Farcaster Frame
 
-The API generates enhanced SVG score cards at `/v1/card/:address.png` for social sharing. Each card displays the wallet's total score with color coding (green >= 700, yellow >= 400, red < 400), five category breakdown bars (builder/governance/temporal/diversity/complexity), a badge row with colored circles for all 7 badges (earned badges filled, unearned grayed out), ENS name (if available), truncated address, and a progress bar.
+The API generates enhanced SVG score cards at `/v1/card/:address.png` for social sharing. Each card displays the ENS name and truncated address at the top, the wallet's total score with color coding (green >= 700, yellow >= 400, red < 400), five category breakdown bars (builder/governance/temporal/diversity/complexity), and a badge row with colored circles for all 7 badges (earned badges filled, unearned grayed out).
 
 The score page includes OpenGraph and Farcaster Frame meta tags:
 
@@ -473,7 +480,7 @@ Migrations run automatically via `bun run migrate`.
 
 **GitHub Actions** runs three workflows:
 
-- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 103 tests (67 scoring + 36 API), builds and tests Solidity contracts, checks Solidity formatting
+- **CI** (on push/PR) — Typechecks all 5 TypeScript packages, runs 111 tests (74 scoring + 37 API), builds and tests Solidity contracts, checks Solidity formatting
 - **Weekly Merkle** (Monday 06:00 UTC, or manual) — Generates the Merkle tree against a PostgreSQL service and outputs the root for onchain submission
 - **Deploy Contracts** (manual trigger) — Deploys all 3 contracts to Sepolia or mainnet via Foundry with Etherscan verification. Supports dry-run mode.
 
@@ -481,10 +488,10 @@ Migrations run automatically via `bun run migrate`.
 
 #### Unit & Integration Tests
 
-108 automated tests cover:
+111 automated tests cover:
 
-- **Scoring engine** (72 tests) — Category calculators with multi-signal formulas, badge evaluation (governor proposal requirement, trusted Safe multi-sig + governance depth, power-user criteria), sybil detection with all 10 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns, MEV bot activity, funding source cluster, CEX fresh wallet), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests (deployment longevity, verified source, contract external users, active contracts), governance signals (execution, cross-chain, independent voting, Safe executions, reasoned votes), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets, internal transactions), protocol diversity signals (early adoption), sybil heuristic differential tests (funding source cluster, CEX fresh wallet graduation)
-- **API** (36 tests) — Health check, address validation, CORS, rate limiting, all route responses, timeline endpoint (validation, fields, badge milestones, DB-dependent), card image (SVG content, validation), Farcaster Frame (valid/invalid address), admin bear-period endpoints (list, auth), webhook CRUD (register, list, validation), appeal validation (invalid address, missing fields), WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup). Tests work with or without PostgreSQL/Redis running.
+- **Scoring engine** (74 tests) — Category calculators with multi-signal formulas, badge evaluation (governor proposal requirement, trusted Safe multi-sig + governance depth, power-user criteria), sybil detection with all 10 heuristics (temporal clustering, action repetition, zero failure rate, funding graph, cross-chain mirroring, CEX freshness, gas patterns, MEV bot activity, funding source cluster, CEX fresh wallet), combined penalty math, enriched signal contribution tests (activity entropy, CREATE2), builder multi-signal tests (deployment longevity, verified source, contract external users, active contracts), governance signals (execution, cross-chain, independent voting, Safe executions, reasoned votes), temporal signals (cross-cycle persistence), complexity signals (permits, flashloans, smart wallets, internal transactions), protocol diversity signals (early adoption), sybil heuristic differential tests (funding source cluster, CEX fresh wallet graduation)
+- **API** (37 tests) — Health check, address validation, CORS, rate limiting, all route responses, timeline endpoint (validation, fields, badge milestones, DB-dependent), card image (SVG content, validation), Farcaster Frame (valid/invalid address), admin bear-period endpoints (list, auth), webhook CRUD (register, list, validation), appeal validation (invalid address, missing fields), WebSocket streaming (connect, invalid address, ping/pong, subscription cleanup), IPFS breakdown CID. Tests work with or without PostgreSQL/Redis running.
 
 ---
 
@@ -522,6 +529,7 @@ All configuration is via environment variables. See `.env.example`:
 | `ETHERSCAN_API_KEY` | Etherscan V2 API key for verified source + internal tx enrichment | — |
 | `PINATA_API_KEY` | Pinata API key for IPFS score breakdown storage | — |
 | `PINATA_API_SECRET` | Pinata API secret for IPFS score breakdown storage | — |
+| `STARKNET_RPC_URL` | Starknet JSON-RPC URL for Starknet chain indexing | — |
 | `FORK_RPC_URL` | RPC URL for Anvil mainnet fork (E2E testing) | `https://eth.llamarpc.com` |
 
 ---
@@ -532,8 +540,9 @@ When an Ethereum RPC endpoint is configured via `RPC_URL`, the score service res
 
 ENS names appear in:
 - The score API response (`ensName` field in WalletScore)
-- The SVG score card (above the truncated address)
-- The frontend score page (displayed above the address code block)
+- The SVG score card (displayed prominently above the score number alongside the truncated address)
+- The frontend score page and details page (displayed above the address code block)
+- The leaderboard (alongside wallet addresses)
 
 The resolution is fail-open — if `RPC_URL` is not set or the RPC is unreachable, the score is returned without an ENS name.
 
@@ -682,7 +691,7 @@ The E2E script runs 10 phases in order:
 | Webhooks | 2 | POST returns id, GET list non-empty |
 | Admin | 1 | bear periods >= 3 |
 | Frame | 1 | fc:frame meta |
-| Stats | 2 | walletsScored >= 10, chainsIndexed == 6 |
+| Stats | 2 | walletsScored >= 10, chainsIndexed == 7 |
 
 Output is colorized with PASS/FAIL per assertion and a summary count at the end. Exit code 0 if all pass, 1 if any fail.
 

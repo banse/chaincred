@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ChainCred is an onchain expertise reputation layer for Ethereum/EVM networks. It indexes wallet activity across 6 chains (Ethereum, Arbitrum, Optimism, Base, zkSync, Polygon), computes sybil-resistant expertise scores (0–1000), and emits them as EAS attestations. See PRD.md for full product requirements.
+ChainCred is an onchain expertise reputation layer for Ethereum/EVM networks and Starknet. It indexes wallet activity across 7 chains (Ethereum, Arbitrum, Optimism, Base, zkSync, Polygon via HyperSync + Starknet via JSON-RPC), computes sybil-resistant expertise scores (0–1000), and emits them as EAS attestations. See PRD.md for full product requirements.
 
 ## Commands
 
@@ -49,7 +49,7 @@ Bun monorepo with 6 workspace packages under `packages/`:
 common → shared types, constants, utilities (all other packages depend on this)
 scoring → core scoring engine with 5 category calculators + sybil detection
 api → Hono REST API with PostgreSQL + Redis
-indexer → HyperSync-based multi-chain blockchain indexer
+indexer → HyperSync (6 EVM chains) + Starknet JSON-RPC blockchain indexer
 contracts → Solidity (Foundry) — ChainCredRegistry, BadgeResolver, ScoreMerkleRoot
 frontend → SvelteKit + Tailwind CSS explorer UI
 ```
