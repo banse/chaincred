@@ -4,7 +4,9 @@ import {
   addBearMarketPeriod,
   removeBearMarketPeriod,
   BEAR_MARKET_PERIODS,
+  getDb,
 } from '@chaincred/common';
+import { enqueueWallet, getQueue } from '../services/indexer-queue.js';
 
 export const adminRoutes = new Hono();
 
@@ -67,4 +69,56 @@ adminRoutes.delete('/bear-periods/:label', (c) => {
   }
 
   return c.json({ ok: true });
+});
+
+/** POST /v1/admin/index-wallet — enqueue a wallet for indexing */
+adminRoutes.post('/index-wallet', async (c) => {
+  if (!isAuthorized(c)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const body = await c.req.json().catch(() => null);
+  if (!body?.address || !body.address.startsWith('0x')) {
+    return c.json({ error: 'Missing or invalid address' }, 400);
+  }
+
+  const job = enqueueWallet(body.address);
+  return c.json({ job }, 202);
+});
+
+/** GET /v1/admin/index-queue — list all indexing jobs */
+adminRoutes.get('/index-queue', (c) => {
+  if (!isAuthorized(c)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  return c.json({ jobs: getQueue() });
+});
+
+/** GET /v1/admin/wallets — list indexed wallets */
+adminRoutes.get('/wallets', async (c) => {
+  if (!isAuthorized(c)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    const sql = getDb();
+    const rows = await sql`
+      SELECT address, ens_name, total_transactions, updated_at
+      FROM wallet_activity
+      ORDER BY updated_at DESC
+      LIMIT 200
+    `;
+
+    return c.json({
+      wallets: rows.map((r: any) => ({
+        address: r.address,
+        ensName: r.ens_name,
+        txCount: r.total_transactions,
+        updatedAt: r.updated_at,
+      })),
+    });
+  } catch {
+    return c.json({ wallets: [] });
+  }
 });

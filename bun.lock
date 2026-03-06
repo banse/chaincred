@@ -10,6 +10,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@chaincred/common": "workspace:*",
+        "@chaincred/indexer": "workspace:*",
         "@chaincred/scoring": "workspace:*",
         "hono": "^4.6.0",
         "ioredis": "^5.4.0",

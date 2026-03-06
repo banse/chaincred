@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@chaincred/common": "workspace:*",
+    "@chaincred/indexer": "workspace:*",
     "@chaincred/scoring": "workspace:*",
     "hono": "^4.6.0",
     "postgres": "^3.4.0",

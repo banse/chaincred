@@ -61,6 +61,50 @@ export function fetchStats() {
   return apiFetch<StatsResponse>('/stats');
 }
 
+// Admin API helpers
+
+async function adminFetch<T>(path: string, adminKey: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: { 'X-Admin-Key': adminKey, 'Content-Type': 'application/json', ...options?.headers },
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+export interface IndexJob {
+  id: string;
+  address: string;
+  status: 'queued' | 'indexing' | 'done' | 'failed';
+  progress: string;
+  txCount: number;
+  startedAt: number;
+  completedAt?: number;
+  error?: string;
+}
+
+export interface AdminWallet {
+  address: string;
+  ensName?: string | null;
+  txCount: number;
+  updatedAt: number;
+}
+
+export function adminIndexWallet(address: string, adminKey: string) {
+  return adminFetch<{ job: IndexJob }>('/admin/index-wallet', adminKey, {
+    method: 'POST',
+    body: JSON.stringify({ address }),
+  });
+}
+
+export function adminGetQueue(adminKey: string) {
+  return adminFetch<{ jobs: IndexJob[] }>('/admin/index-queue', adminKey);
+}
+
+export function adminGetWallets(adminKey: string) {
+  return adminFetch<{ wallets: AdminWallet[] }>('/admin/wallets', adminKey);
+}
+
 /** Subscribe to real-time score updates via WebSocket. Returns cleanup function. */
 export function subscribeToScore(
   address: string,
