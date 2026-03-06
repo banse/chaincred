@@ -34,10 +34,10 @@ export const TEMPORAL_SIGNALS = {
 } as const;
 
 export const PROTOCOL_DIVERSITY_SIGNALS = {
-  protocolCount: { perUnit: 18, cap: 350 },
-  chainDiversity: { perUnit: 40, cap: 250 },
-  crossDomainCoverage: { perUnit: 40, cap: 400 },
-  earlyAdoption: { perUnit: 30, cap: 300 },
+  protocolCount: { perUnit: 25, cap: 400 },
+  chainDiversity: { perUnit: 50, cap: 300 },
+  crossDomainCoverage: { perUnit: 50, cap: 400 },
+  earlyAdoption: { perUnit: 40, cap: 300 },
 } as const;
 
 export const COMPLEXITY_SIGNALS = {
@@ -47,7 +47,7 @@ export const COMPLEXITY_SIGNALS = {
   permit: { perUnit: 10, cap: 200 },
   flashloan: { perUnit: 50, cap: 300 },
   smartWallet: { perUnit: 15, cap: 150 },
-  internalTx: { multiplier: 8, cap: 200 },
+  internalTx: { multiplier: 10, cap: 250 },
 } as const;
 
 export const BADGE_THRESHOLDS = {

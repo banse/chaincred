@@ -52,10 +52,10 @@
       { name: 'Cross-cycle Persistence', key: 'crossCyclePersistence', desc: '75 pts per bear/bull cycle', cap: 300 },
     ],
     protocolDiversity: [
-      { name: 'Unique Protocols', key: 'protocolCount', desc: '18 pts each', cap: 350 },
-      { name: 'Chain Diversity', key: 'chainDiversity', desc: '40 pts per chain', cap: 250 },
-      { name: 'Cross-domain Coverage', key: 'crossDomainCoverage', desc: '40 pts per domain (DeFi, social, etc.)', cap: 400 },
-      { name: 'Early Adoption', key: 'earlyAdoption', desc: '30 pts per protocol used within 6mo of launch', cap: 300 },
+      { name: 'Unique Protocols', key: 'protocolCount', desc: '25 pts each', cap: 400 },
+      { name: 'Chain Diversity', key: 'chainDiversity', desc: '50 pts per chain', cap: 300 },
+      { name: 'Cross-domain Coverage', key: 'crossDomainCoverage', desc: '50 pts per domain (DeFi, social, etc.)', cap: 400 },
+      { name: 'Early Adoption', key: 'earlyAdoption', desc: '40 pts per protocol used within 6mo of launch', cap: 300 },
     ],
     complexity: [
       { name: 'Transaction Volume', key: 'transactionVolume', desc: '1.5 pts each', cap: 300 },
@@ -64,7 +64,7 @@
       { name: 'EIP-712 Permits', key: 'permit', desc: '10 pts each', cap: 200 },
       { name: 'Flashloans', key: 'flashloan', desc: '50 pts each', cap: 300 },
       { name: 'Smart Wallet Interactions', key: 'smartWallet', desc: '15 pts each', cap: 150 },
-      { name: 'Internal Transactions', key: 'internalTx', desc: 'Based on internal call count', cap: 200 },
+      { name: 'Internal Transactions', key: 'internalTx', desc: 'Based on internal call count', cap: 250 },
     ],
   };
 
@@ -252,28 +252,26 @@
     >
       <span>&larr;</span> Back to score
     </a>
+    <h1 class="mt-2 text-2xl font-bold">Score Details</h1>
     <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-        <h1 class="text-2xl font-bold">Score Details</h1>
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center gap-2">
-            {#if scoreData?.ensName}
-              <span class="text-lg font-semibold text-[var(--color-primary)]">{scoreData.ensName}</span>
-            {/if}
-            {#if scoreData}
-              {@const level = getLevelBadge(Math.round(scoreData.totalScore))}
-              <span
-                class="rounded-full px-2.5 py-0.5 text-xs font-bold text-white"
-                style="background-color: {level.color}"
-              >
-                {level.label}
-              </span>
-            {/if}
-          </div>
-          <code class="truncate rounded bg-[var(--color-surface)] px-3 py-1 text-sm text-[var(--color-text-muted)]">
-            {address}
-          </code>
+      <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-2">
+          {#if scoreData?.ensName}
+            <span class="text-lg font-semibold text-[var(--color-primary)]">{scoreData.ensName}</span>
+          {/if}
+          {#if scoreData}
+            {@const level = getLevelBadge(Math.round(scoreData.totalScore))}
+            <span
+              class="rounded-full px-2.5 py-0.5 text-xs font-bold text-white"
+              style="background-color: {level.color}"
+            >
+              {level.label}
+            </span>
+          {/if}
         </div>
+        <code class="truncate rounded bg-[var(--color-surface)] px-3 py-1 text-sm text-[var(--color-text-muted)]">
+          {address}
+        </code>
       </div>
       {#if scoreData}
         <div class="text-right">
@@ -420,21 +418,7 @@
       </button>
     </div>
   {:else if scoreData}
-    <!-- Wallet Insights -->
     {@const findings = generateWalletFindings(scoreData)}
-    {#if findings.length > 0}
-      <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-        <h2 class="mb-3 text-lg font-semibold">Wallet Insights</h2>
-        <ul class="space-y-2">
-          {#each findings as finding}
-            <li class="flex items-start gap-2.5 text-sm">
-              <span class="shrink-0 text-base leading-5">{finding.emoji}</span>
-              <span class="text-[var(--color-text-muted)]">{finding.text}</span>
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/if}
 
     <!-- Section 1: Score Formula -->
     <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
@@ -494,6 +478,21 @@
         <span>1000</span>
       </div>
     </div>
+
+    <!-- Summary -->
+    {#if findings.length > 0}
+      <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+        <h2 class="mb-3 text-lg font-semibold">Summary</h2>
+        <ul class="space-y-2">
+          {#each findings as finding}
+            <li class="flex items-start gap-2.5 text-sm">
+              <span class="shrink-0 text-base leading-5">{finding.emoji}</span>
+              <span class="text-[var(--color-text-muted)]">{finding.text}</span>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
 
     <!-- Section 2: Category Breakdown with Signals -->
     <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">

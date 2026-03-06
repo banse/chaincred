@@ -270,7 +270,7 @@ async function main() {
 
     for (const events of chainResults) {
       if (events.length > 0) chainsActive++;
-      allEvents.push(...events);
+      for (let j = 0; j < events.length; j++) allEvents.push(events[j]);
     }
   }
 
@@ -279,7 +279,7 @@ async function main() {
     try {
       const starknetEvents = await indexStarknet(normalizedAddress);
       if (starknetEvents.length > 0) chainsActive++;
-      allEvents.push(...starknetEvents);
+      for (let j = 0; j < starknetEvents.length; j++) allEvents.push(starknetEvents[j]);
     } catch (err) {
       console.error('  [Starknet] Error:', (err as Error).message);
     }

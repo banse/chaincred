@@ -35,7 +35,7 @@
   }
 </script>
 
-<div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+<div class="flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
   <h2 class="text-lg font-semibold text-[var(--color-text-muted)]">Expertise Score</h2>
   <p class="mt-2 text-6xl font-bold text-[var(--color-primary)]">{Math.round(score.totalScore)}</p>
   <p class="mt-1 text-sm text-[var(--color-text-muted)]">out of 1000</p>
@@ -52,7 +52,7 @@
   </div>
 
   {#if address}
-    <div class="mt-4 flex flex-wrap gap-2 border-t border-[var(--color-border)] pt-4">
+    <div class="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-[var(--color-border)] pt-4">
       <button
         class="rounded-lg bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
         onclick={copyLink}
@@ -71,6 +71,14 @@
       >
         Cast
       </button>
+    </div>
+    <div class="mt-auto flex items-center justify-center pt-3">
+      <a
+        href="/score/{address}/details"
+        class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+      >
+        View Score Details &rarr;
+      </a>
     </div>
   {/if}
 </div>

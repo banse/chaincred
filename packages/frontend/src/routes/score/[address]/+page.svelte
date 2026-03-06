@@ -5,7 +5,7 @@
   import BadgeDisplay from '$lib/components/BadgeDisplay.svelte';
   import SybilIndicator from '$lib/components/SybilIndicator.svelte';
   import { fetchScore, fetchTimeline, type TimelineEvent } from '$lib/api/client.js';
-  import { generateWalletFindings } from '$lib/utils/wallet-summary.js';
+
 
   const address = $derived($page.params.address ?? '');
   let scoreData = $state<any>(null);
@@ -88,9 +88,9 @@
 </svelte:head>
 
 <div class="space-y-8">
-  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+  <div>
     <h1 class="text-2xl font-bold">Wallet Score</h1>
-    <div class="flex flex-col gap-1">
+    <div class="mt-2 flex flex-col gap-1">
       <div class="flex items-center gap-2">
         {#if scoreData?.ensName}
           <span class="text-lg font-semibold text-[var(--color-primary)]">{scoreData.ensName}</span>
@@ -144,20 +144,6 @@
       <SybilIndicator {address} />
     </div>
 
-    {@const findings = generateWalletFindings(scoreData)}
-    {#if findings.length > 0}
-      <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-        <h2 class="mb-3 text-lg font-semibold">Wallet Insights</h2>
-        <ul class="space-y-2">
-          {#each findings as finding}
-            <li class="flex items-start gap-2.5 text-sm">
-              <span class="shrink-0 text-base leading-5">{finding.emoji}</span>
-              <span class="text-[var(--color-text-muted)]">{finding.text}</span>
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/if}
   {:else}
     <div class="py-20 text-center text-[var(--color-text-muted)]">
       No score data found for this wallet.

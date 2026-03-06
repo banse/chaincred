@@ -24,9 +24,21 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
     category: 'defi',
     launchTimestamp: 1541030400, // Nov 2018
     contracts: {
-      // V2 Router, V3 SwapRouter02, UniversalRouter
+      // V1 Factory + V2 Router (legacy contracts for early adoption)
       1: [
-        '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
+        '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95', // V1 Factory
+        '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', // V2 Router
+      ],
+      137: ['0xedf6066a2b290C185783862C7F4776A2C8077AD1'],
+    },
+  },
+  {
+    name: 'Uniswap V3',
+    category: 'defi',
+    launchTimestamp: 1620086400, // May 2021 — concentrated liquidity
+    contracts: {
+      // V3 SwapRouter02 + UniversalRouter (genuinely new: concentrated liquidity pools)
+      1: [
         '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45',
         '0x66a9893cc07d91d95644aedd05d03f95e1dba8af',
       ],
@@ -50,7 +62,6 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
         '0x28731BCC616B5f51dD52CF2e4dF0E78dD1136C06',
       ],
       137: [
-        '0xedf6066a2b290C185783862C7F4776A2C8077AD1',
         '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45',
         '0x1095692A6237d83C6a72F3F5eFEdb9A670C49223',
       ],
@@ -61,7 +72,15 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
     category: 'defi',
     launchTimestamp: 1577836800, // Jan 2020
     contracts: {
-      // V3 Pool
+      // V1 LendingPool (legacy for early adoption)
+      1: ['0x398eC7346DcD622eDc5ae82352F02bE94C62d119'],
+    },
+  },
+  {
+    name: 'Aave V3',
+    category: 'defi',
+    launchTimestamp: 1647302400, // Mar 2022 — isolation mode, e-mode, portals
+    contracts: {
       1: ['0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'],
       42161: ['0x794a61358D6845594F94dc1DB02A252b5b4814aD'],
       10: ['0x794a61358D6845594F94dc1DB02A252b5b4814aD'],
@@ -75,7 +94,18 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
     category: 'defi',
     launchTimestamp: 1535760000, // Sep 2018
     contracts: {
-      // V3 Comet USDC
+      // V1 Money Market + V2 Comptroller (legacy for early adoption)
+      1: [
+        '0x3FDA67f7583380E67ef93072294a7fAc882FD7E7', // V1 Money Market
+        '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B', // V2 Comptroller
+      ],
+    },
+  },
+  {
+    name: 'Compound V3',
+    category: 'defi',
+    launchTimestamp: 1661990400, // Sep 2022 — single-asset Comet
+    contracts: {
       1: ['0xc3d688B66703497DAA19211EEdff47f25384cdc3'],
       42161: ['0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf'],
       8453: ['0xb125E6687d4313864e53df431d5425969c15Eb2F'],
@@ -102,12 +132,14 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: 'Curve',
     category: 'defi',
-    launchTimestamp: 1596240000, // Aug 2020
+    launchTimestamp: 1579564800, // Jan 2020 (first pool: sUSD)
     contracts: {
-      // Router NG on all chains; 3pool on Ethereum
+      // sUSD pool (legacy) + stETH/ETH pool + 3pool + Router NG
       1: [
-        '0x16C6521Dff6baB339122a0FE25a9116693265353',
-        '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
+        '0xA5407eAE9Ba41422680e2e00537571bcC53efBfD', // sUSD pool (legacy, Jan 2020)
+        '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022', // stETH/ETH pool
+        '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7', // 3pool
+        '0x16C6521Dff6baB339122a0FE25a9116693265353', // Router NG
       ],
       42161: ['0x2191718CD32d02B8E60BAdFFeA33E4B5DD9A0A0D'],
       10: ['0x0DCDED3545D565bA3B19E683431381007245d983'],
@@ -119,10 +151,14 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
   {
     name: '1inch',
     category: 'defi',
-    launchTimestamp: 1607904000, // Dec 2020
+    launchTimestamp: 1577836800, // Jan 2020 (V1 aggregator)
     contracts: {
-      // AggregationRouterV6 — same CREATE2 address on all EVM chains except zkSync
-      1: ['0x111111125421cA6dc452d289314280a0f8842A65'],
+      // V2 + V3 (legacy) + V6 current
+      1: [
+        '0x111111125434b319222CdBf8C261674aDB56F3ae', // V2 (legacy)
+        '0x11111112542D85B3EF69AE05771c2dCCff4fAa26', // V3 (legacy)
+        '0x111111125421cA6dc452d289314280a0f8842A65', // V6
+      ],
       42161: ['0x111111125421cA6dc452d289314280a0f8842A65'],
       10: ['0x111111125421cA6dc452d289314280a0f8842A65'],
       8453: ['0x111111125421cA6dc452d289314280a0f8842A65'],
@@ -147,8 +183,11 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
     category: 'defi',
     launchTimestamp: 1583020800, // Mar 2020
     contracts: {
-      // V2 Vault — same address on all supported chains
-      1: ['0xBA12222222228d8Ba445958a75a0704d566BF2C8'],
+      // V1 BFactory (legacy) + V2 Vault
+      1: [
+        '0x9424B1412450D0f8Fc2255FAf6046b98213B76Bd', // V1 BFactory (legacy)
+        '0xBA12222222228d8Ba445958a75a0704d566BF2C8', // V2 Vault
+      ],
       42161: ['0xBA12222222228d8Ba445958a75a0704d566BF2C8'],
       10: ['0xBA12222222228d8Ba445958a75a0704d566BF2C8'],
       8453: ['0xBA12222222228d8Ba445958a75a0704d566BF2C8'],
@@ -160,10 +199,12 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
     category: 'defi',
     launchTimestamp: 1509494400, // Nov 2017
     contracts: {
-      // DAI token + Pot (DSR)
+      // SAI (Single-Collateral DAI) + SaiTub (legacy) + MCD DAI + DSR Pot
       1: [
-        '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-        '0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7',
+        '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359', // SAI token (legacy)
+        '0x448a5065aeBB8E423F0896E6c5D525C040f59af3', // SaiTub CDP engine (legacy)
+        '0x6B175474E89094C44Da98b954EedeAC495271d0F', // MCD DAI
+        '0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7', // Pot (DSR)
       ],
     },
   },
@@ -181,10 +222,12 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
     category: 'social',
     launchTimestamp: 1493596800, // May 2017
     contracts: {
-      // Base Registrar + ETH Registrar Controller
+      // Old Auction Registrar (legacy) + Registry + Base Registrar + ETH Registrar Controller
       1: [
-        '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85',
-        '0x253553366Da8546fC250F225fe3d25d0C782303b',
+        '0x6090A6e47849629b7245Dfa1Ca21D94cd15878Ef', // Old auction registrar (legacy)
+        '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e', // ENS Registry
+        '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85', // Base Registrar
+        '0x253553366Da8546fC250F225fe3d25d0C782303b', // ETH Registrar Controller
       ],
     },
   },
@@ -211,8 +254,11 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
     category: 'governance',
     launchTimestamp: 1530403200, // Jul 2018
     contracts: {
-      // SafeProxyFactory
-      1: ['0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2'],
+      // GnosisSafe V1 Mastercopy (legacy) + SafeProxyFactory V1.3
+      1: [
+        '0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552', // GnosisSafe V1.3 mastercopy
+        '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2', // SafeProxyFactory
+      ],
     },
   },
   {
@@ -348,6 +394,184 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
       8453: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
       324: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
       137: ['0x13b0d85ccb8bf860b6b79af3029fca081ae9bef2'],
+    },
+  },
+  {
+    name: 'WETH',
+    category: 'defi',
+    launchTimestamp: 1513728000, // Dec 2017
+    contracts: {
+      // Canonical WETH9 on Ethereum + L2s
+      1: ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'],
+      42161: ['0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'],
+      10: ['0x4200000000000000000000000000000000000006'],
+      8453: ['0x4200000000000000000000000000000000000006'],
+      324: ['0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91'],
+      137: ['0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619'],
+    },
+  },
+  {
+    name: 'OpenSea',
+    category: 'defi',
+    launchTimestamp: 1514332800, // Dec 2017
+    contracts: {
+      // Wyvern V1 + V2 (legacy) + Seaport 1.5 + 1.6
+      1: [
+        '0x7Be8076f4EA4A4AD08075C2508e481d6C946D12b', // Wyvern V1 (legacy)
+        '0x7f268357A8c2552623316e2562D90e642bB538E5', // Wyvern V2 (legacy)
+        '0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC', // Seaport 1.5
+        '0x0000000000000068F116a894984e2DB1123eB395', // Seaport 1.6
+      ],
+      42161: ['0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC'],
+      10: ['0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC'],
+      8453: ['0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC'],
+      137: ['0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC'],
+    },
+  },
+  {
+    name: 'Gitcoin',
+    category: 'social',
+    launchTimestamp: 1536364800, // Sep 2018
+    contracts: {
+      // Gitcoin Grants: Allo V2 Registry + BulkCheckout
+      1: [
+        '0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3',
+        '0x7d655c57f71464B6f83811C55D84009Cd9f5221C',
+      ],
+    },
+  },
+  {
+    name: 'EigenLayer',
+    category: 'infrastructure',
+    launchTimestamp: 1686614400, // Jun 2023
+    contracts: {
+      // StrategyManager + DelegationManager
+      1: [
+        '0x858646372CC42E1A627fcE94aa7A7033e7CF075A',
+        '0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A',
+      ],
+    },
+  },
+  {
+    name: 'Rocket Pool',
+    category: 'defi',
+    launchTimestamp: 1635724800, // Nov 2021
+    contracts: {
+      // rETH token + Deposit Pool
+      1: [
+        '0xae78736Cd615f374D3085123A210448E74Fc6393',
+        '0xDD3f50F8A6CafbE9b31a427582963f465E745AF8',
+      ],
+    },
+  },
+  {
+    name: 'Across Bridge',
+    category: 'infrastructure',
+    launchTimestamp: 1636934400, // Nov 2021
+    contracts: {
+      // SpokePool on each chain
+      1: ['0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5'],
+      42161: ['0xe35e9842fceaCA96570B734083f4a58e8F7C5f2A'],
+      10: ['0x6f26Bf09B1C792e3228e5467807a900A503c0281'],
+      8453: ['0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64'],
+      137: ['0x9295ee1d8C5b022Be115A2AD3c30C72E34e7F096'],
+    },
+  },
+  {
+    name: 'Stargate',
+    category: 'infrastructure',
+    launchTimestamp: 1647302400, // Mar 2022
+    contracts: {
+      // Router V2
+      1: ['0x8731d54E9D02c286767d56ac03e8037C07e01e98'],
+      42161: ['0x53Bf833A5d6c4ddA888F69c22C88C9f356a41614'],
+      10: ['0xB0D502E938ed5f4df2E681fE6E419ff29631d62b'],
+      8453: ['0x45f1A95A4D3f3836523F5c83673c797f4d4d263B'],
+      137: ['0x45A01E4e04F14f7A4a6702c74187c5F6222033cd'],
+    },
+  },
+  {
+    name: 'Zora',
+    category: 'social',
+    launchTimestamp: 1619827200, // May 2021
+    contracts: {
+      // ERC1155 Minter + ZoraCreator1155
+      1: [
+        '0x04E2516A2c207E84a1839755675dfd8eF6302F0a',
+        '0x777777C338d93e2C7adf08D102d45CA7CC4Ed021',
+      ],
+      8453: ['0x777777C338d93e2C7adf08D102d45CA7CC4Ed021'],
+      10: ['0x777777C338d93e2C7adf08D102d45CA7CC4Ed021'],
+    },
+  },
+  {
+    name: 'Pendle',
+    category: 'defi',
+    launchTimestamp: 1624406400, // Jun 2021
+    contracts: {
+      // PendleRouter V4
+      1: ['0x888888888889758F76e7103c6CbF23ABbF58F946'],
+      42161: ['0x888888888889758F76e7103c6CbF23ABbF58F946'],
+    },
+  },
+  {
+    name: 'Morpho',
+    category: 'defi',
+    launchTimestamp: 1656633600, // Jul 2022
+    contracts: {
+      // Morpho Blue
+      1: ['0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb'],
+      8453: ['0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb'],
+    },
+  },
+  {
+    name: 'Permit2',
+    category: 'infrastructure',
+    launchTimestamp: 1668556800, // Nov 2022
+    contracts: {
+      // Universal Permit2 — same CREATE2 address on all chains
+      1: ['0x000000000022D473030F116dDEE9F6B43aC78BA3'],
+      42161: ['0x000000000022D473030F116dDEE9F6B43aC78BA3'],
+      10: ['0x000000000022D473030F116dDEE9F6B43aC78BA3'],
+      8453: ['0x000000000022D473030F116dDEE9F6B43aC78BA3'],
+      324: ['0x000000000022D473030F116dDEE9F6B43aC78BA3'],
+      137: ['0x000000000022D473030F116dDEE9F6B43aC78BA3'],
+    },
+  },
+  {
+    name: 'Cowswap',
+    category: 'defi',
+    launchTimestamp: 1616457600, // Mar 2021
+    contracts: {
+      // GPv2Settlement
+      1: ['0x9008D19f58AAbD9eD0D60971565AA8510560ab41'],
+      42161: ['0x9008D19f58AAbD9eD0D60971565AA8510560ab41'],
+      8453: ['0x9008D19f58AAbD9eD0D60971565AA8510560ab41'],
+    },
+  },
+  {
+    name: 'Hop Protocol',
+    category: 'infrastructure',
+    launchTimestamp: 1625616000, // Jul 2021
+    contracts: {
+      // ETH Bridge
+      1: ['0xb8901acB165ed027E32754E0FFe830802919727f'],
+      42161: ['0x33ceb27b39d2Bb7D2b25f7A34a748dB826B31e6d'],
+      10: ['0x86cA30bEF97fB651b8d866D45503684b90cb3312'],
+      137: ['0xb98454270065A31D71Bf635F6F7Ee6A518dFb849'],
+    },
+  },
+  {
+    name: 'Yearn',
+    category: 'defi',
+    launchTimestamp: 1581984000, // Feb 2020
+    contracts: {
+      // V1 yDAI vault (legacy) + V2 Registry + V3 Router
+      1: [
+        '0xACd43E627e64355f1861cEC6d3a6688B31a6F952', // V1 yDAI (legacy)
+        '0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804', // V2 Registry
+        '0x1ab62413e0cf2571E90Ce4F2E5B3e55a4C6e03B8', // V3 Router
+      ],
     },
   },
   {

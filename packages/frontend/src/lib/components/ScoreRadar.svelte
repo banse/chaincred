@@ -125,14 +125,4 @@
     {/each}
   </div>
 
-  {#if address}
-    <div class="mt-4 flex justify-center border-t border-[var(--color-border)] pt-4">
-      <a
-        href="/score/{address}/details"
-        class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
-      >
-        View Score Details &rarr;
-      </a>
-    </div>
-  {/if}
 </div>
