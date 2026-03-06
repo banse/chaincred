@@ -4,4 +4,15 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
+  define: {
+    global: 'globalThis',
+  },
+  resolve: {
+    alias: {
+      buffer: 'buffer/',
+    },
+  },
+  optimizeDeps: {
+    include: ['buffer'],
+  },
 });
