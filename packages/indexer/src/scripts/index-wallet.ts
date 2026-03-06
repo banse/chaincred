@@ -30,7 +30,7 @@ import { processStarknetTx } from '../starknet-processor.js';
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 
-const MAX_NUM_BLOCKS = 10_000;
+const MAX_NUM_BLOCKS = 50_000;
 const SIX_MONTHS = 15_768_000;
 
 /** Starknet scanning config */
@@ -99,11 +99,10 @@ function enrichTransaction(chainId: number, tx: any, timestamp: number): Process
 async function indexChain(
   client: HypersyncClient,
   address: string,
-  storage: ReturnType<typeof createStorage>,
-): Promise<number> {
+): Promise<ProcessedEvent[]> {
   const archiveHeight = await client.getHeight();
   let fromBlock = 0;
-  let totalTxs = 0;
+  const events: ProcessedEvent[] = [];
 
   console.log(`  [${client.chainName}] Scanning blocks 0 → ${archiveHeight.toLocaleString()}...`);
 
@@ -128,39 +127,34 @@ async function indexChain(
 
     for (const tx of result.data.transactions) {
       const timestamp = blockTimestamps.get(tx.blockNumber ?? 0) ?? 0;
-      const event = enrichTransaction(client.chainId, tx, timestamp);
-      await storage.saveEvent(event);
-      totalTxs++;
+      events.push(enrichTransaction(client.chainId, tx, timestamp));
     }
 
     if (result.nextBlock <= fromBlock) break;
     fromBlock = result.nextBlock;
   }
 
-  if (totalTxs > 0) {
-    console.log(`  [${client.chainName}] Done — ${totalTxs} transactions`);
+  if (events.length > 0) {
+    console.log(`  [${client.chainName}] Done — ${events.length} transactions`);
   } else {
     console.log(`  [${client.chainName}] No activity`);
   }
 
-  return totalTxs;
+  return events;
 }
 
 /** Scan Starknet blocks for transactions from a specific address */
-async function indexStarknet(
-  address: string,
-  storage: ReturnType<typeof createStorage>,
-): Promise<number> {
+async function indexStarknet(address: string): Promise<ProcessedEvent[]> {
   const rpcUrl = process.env.STARKNET_RPC_URL;
   if (!rpcUrl) {
     console.log('  [Starknet] Skipped — STARKNET_RPC_URL not set');
-    return 0;
+    return [];
   }
 
   const client = createStarknetClient(rpcUrl);
   const currentBlock = await client.getBlockNumber();
   const normalizedAddr = normalizeStarknetAddress(address);
-  let totalTxs = 0;
+  const events: ProcessedEvent[] = [];
 
   console.log(`  [Starknet] Scanning blocks 0 → ${currentBlock.toLocaleString()} (RPC, filtered client-side)...`);
 
@@ -196,26 +190,24 @@ async function indexStarknet(
             : null;
           if (senderNorm !== normalizedAddr) continue;
 
-          const event = processStarknetTx(tx, block.block_number, block.timestamp, STARKNET_CHAIN_ID);
-          await storage.saveEvent(event);
-          totalTxs++;
+          events.push(processStarknetTx(tx, block.block_number, block.timestamp, STARKNET_CHAIN_ID));
         }
       }
     }
 
     // Progress logging every 1000 blocks
     if (pageStart > 0 && pageStart % 1000 === 0) {
-      console.log(`  [Starknet] Scanned ${pageStart.toLocaleString()} / ${currentBlock.toLocaleString()} blocks (${totalTxs} txs found)`);
+      console.log(`  [Starknet] Scanned ${pageStart.toLocaleString()} / ${currentBlock.toLocaleString()} blocks (${events.length} txs found)`);
     }
   }
 
-  if (totalTxs > 0) {
-    console.log(`  [Starknet] Done — ${totalTxs} transactions`);
+  if (events.length > 0) {
+    console.log(`  [Starknet] Done — ${events.length} transactions`);
   } else {
     console.log(`  [Starknet] No activity`);
   }
 
-  return totalTxs;
+  return events;
 }
 
 async function main() {
@@ -243,12 +235,11 @@ async function main() {
   console.log(`\nIndexing wallet: ${address}${isStarknet ? ' (Starknet)' : ''}`);
   const startTime = Date.now();
 
-  const storage = createStorage();
-  let totalTxs = 0;
+  let allEvents: ProcessedEvent[] = [];
   let chainsActive = 0;
 
   if (isEvm) {
-    // Index all 6 EVM chains via HyperSync
+    // Index all 6 EVM chains via HyperSync — collect events in memory
     const clients = await createClients();
     const activeClients = Object.values(clients).filter((client) => {
       const nameLC = client.chainName.toLowerCase();
@@ -258,30 +249,41 @@ async function main() {
       }
       return true;
     });
-    const results = await Promise.all(
+    const chainResults = await Promise.all(
       activeClients.map(async (client) => {
         try {
-          return await indexChain(client, normalizedAddress, storage);
+          return await indexChain(client, normalizedAddress);
         } catch (err) {
           console.error(`  [${client.chainName}] Error:`, (err as Error).message);
-          return 0;
+          return [] as ProcessedEvent[];
         }
       }),
     );
 
-    totalTxs = results.reduce((sum, n) => sum + n, 0);
-    chainsActive = results.filter((n) => n > 0).length;
+    for (const events of chainResults) {
+      if (events.length > 0) chainsActive++;
+      allEvents.push(...events);
+    }
   }
 
   if (isStarknet) {
-    // Index Starknet via RPC
+    // Index Starknet via RPC — collect events in memory
     try {
-      const starknetTxs = await indexStarknet(normalizedAddress, storage);
-      totalTxs += starknetTxs;
-      if (starknetTxs > 0) chainsActive++;
+      const starknetEvents = await indexStarknet(normalizedAddress);
+      if (starknetEvents.length > 0) chainsActive++;
+      allEvents.push(...starknetEvents);
     } catch (err) {
       console.error('  [Starknet] Error:', (err as Error).message);
     }
+  }
+
+  // Batch write phase — all events at once
+  const totalTxs = allEvents.length;
+  if (totalTxs > 0) {
+    console.log(`\nWriting ${totalTxs} events to database...`);
+    const storage = createStorage();
+    await storage.saveEvents(allEvents);
+    await storage.computeAndSaveActivity(normalizedAddress, allEvents);
   }
 
   // Resolve ENS name for EVM addresses and cache in DB

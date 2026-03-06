@@ -3,6 +3,8 @@ import type { ProcessedEvent } from '../processor.js';
 
 export interface StorageLayer {
   saveEvent(event: ProcessedEvent): Promise<void>;
+  saveEvents(events: ProcessedEvent[]): Promise<void>;
+  computeAndSaveActivity(address: string, events: ProcessedEvent[]): Promise<void>;
   getLastProcessedBlock(chainId: number): Promise<number>;
   setLastProcessedBlock(chainId: number, block: number): Promise<void>;
 }
@@ -197,6 +199,226 @@ export function createStorage(): StorageLayer {
             ELSE wallet_activity.earliest_deployment_timestamp
           END,
           updated_at = ${Date.now()}
+      `;
+    },
+
+    async saveEvents(events: ProcessedEvent[]) {
+      if (events.length === 0) return;
+
+      const BATCH_SIZE = 1000;
+      for (let i = 0; i < events.length; i += BATCH_SIZE) {
+        const batch = events.slice(i, i + BATCH_SIZE);
+        const rows = batch.map((event) => ({
+          chain_id: event.chainId,
+          block_number: event.blockNumber,
+          tx_hash: event.txHash,
+          from_address: event.from.toLowerCase(),
+          to_address: event.to?.toLowerCase() ?? null,
+          type: event.type,
+          protocol: event.protocol ?? null,
+          timestamp: event.timestamp,
+        }));
+        await sql`
+          INSERT INTO events ${sql(rows, 'chain_id', 'block_number', 'tx_hash', 'from_address', 'to_address', 'type', 'protocol', 'timestamp')}
+        `;
+      }
+    },
+
+    async computeAndSaveActivity(address: string, events: ProcessedEvent[]) {
+      if (events.length === 0) return;
+
+      const addr = address.toLowerCase();
+
+      // Accumulate all counters and sets in JS
+      let firstTxTimestamp = Infinity;
+      let totalTransactions = 0;
+      let contractsDeployed = 0;
+      let deploymentCalldataBytes = 0;
+      let governanceVotes = 0;
+      let proposalsCreated = 0;
+      let delegationEvents = 0;
+      let bearMarketTxs = 0;
+      let failedTransactions = 0;
+      let totalCalldataBytes = 0;
+      let create2Deployments = 0;
+      let executionEvents = 0;
+      let permitInteractions = 0;
+      let flashloanTransactions = 0;
+      let smartWalletInteractions = 0;
+      let erc4337Operations = 0;
+      let earlyAdoptions = 0;
+      let independentVotes = 0;
+      let safeExecutions = 0;
+      let reasonedVotes = 0;
+      let mevInteractions = 0;
+      let earliestDeploymentTimestamp = 0;
+
+      const deploymentChains = new Set<string>();
+      const uniqueProtocols = new Set<string>();
+      const chainsActive = new Set<string>();
+      const daosParticipated = new Set<string>();
+      const activeMonthSet = new Set<string>();
+      const protocolCategories = new Set<string>();
+      const recipientAddresses = new Set<string>();
+      const chainProtocolPairs = new Set<string>();
+      const gasPriceSet = new Set<string>();
+      const txHourSet = new Set<string>();
+      const bearMarketPeriods = new Set<string>();
+      const governanceChains = new Set<string>();
+
+      for (const event of events) {
+        const chainSlug = chainSlugById.get(event.chainId) ?? String(event.chainId);
+
+        totalTransactions++;
+        firstTxTimestamp = Math.min(firstTxTimestamp, event.timestamp);
+        totalCalldataBytes += event.calldataBytes;
+        chainsActive.add(chainSlug);
+
+        const monthStr = new Date(event.timestamp * 1000).toISOString().slice(0, 7);
+        activeMonthSet.add(monthStr);
+
+        const txHour = new Date(event.timestamp * 1000).getUTCHours().toString();
+        txHourSet.add(txHour);
+
+        gasPriceSet.add(event.gasPriceGwei);
+
+        if (event.to) recipientAddresses.add(event.to.toLowerCase());
+        if (event.protocol) {
+          uniqueProtocols.add(event.protocol);
+          chainProtocolPairs.add(`${chainSlug}:${event.protocol}`);
+        }
+        if (event.protocolCategory) protocolCategories.add(event.protocolCategory);
+
+        if (event.type === 'deployment') {
+          contractsDeployed++;
+          deploymentChains.add(chainSlug);
+          deploymentCalldataBytes += event.calldataBytes;
+          if (earliestDeploymentTimestamp === 0 || event.timestamp < earliestDeploymentTimestamp) {
+            earliestDeploymentTimestamp = event.timestamp;
+          }
+        }
+
+        if (event.type === 'governance') {
+          governanceVotes++;
+          governanceChains.add(chainSlug);
+          if (event.dao) daosParticipated.add(event.dao);
+          if (event.governanceSubtype === 'propose') proposalsCreated++;
+          if (event.governanceSubtype === 'delegate') delegationEvents++;
+          if (event.governanceSubtype === 'queue' || event.governanceSubtype === 'execute') executionEvents++;
+          if (event.voteSupport !== undefined && event.voteSupport !== 1) independentVotes++;
+        }
+
+        if (isInBearMarket(event.timestamp)) {
+          bearMarketTxs++;
+          const period = BEAR_MARKET_PERIODS.find(
+            (p) => event.timestamp >= p.startTimestamp && event.timestamp <= p.endTimestamp,
+          );
+          if (period) bearMarketPeriods.add(period.label);
+        }
+
+        if (event.txStatus === 0) failedTransactions++;
+        if (event.isCreate2) create2Deployments++;
+        if (event.isPermit) permitInteractions++;
+        if (event.isFlashloan) flashloanTransactions++;
+        if (event.isSmartWallet) smartWalletInteractions++;
+        if (event.isErc4337) erc4337Operations++;
+        if (event.isEarlyAdoption) earlyAdoptions++;
+        if (event.isSafeExec) safeExecutions++;
+        if (event.isReasonedVote) reasonedVotes++;
+        if (event.isMevInteraction) mevInteractions++;
+      }
+
+      // Single UPSERT with final computed values
+      await sql`
+        INSERT INTO wallet_activity (
+          address, first_tx_timestamp, total_transactions, contracts_deployed,
+          deployment_chains, deployment_calldata_bytes,
+          unique_protocols, chains_active, governance_votes, daos_participated,
+          proposals_created, delegation_events, bear_market_txs,
+          active_month_set, protocol_categories,
+          failed_transactions, total_calldata_bytes,
+          recipient_addresses, chain_protocol_pairs, gas_price_set,
+          tx_hour_set, create2_deployments,
+          bear_market_periods, execution_events, governance_chains,
+          permit_interactions, flashloan_transactions, smart_wallet_interactions,
+          erc4337_operations,
+          early_adoptions, independent_votes, earliest_deployment_timestamp,
+          safe_executions, reasoned_votes, mev_interactions, updated_at
+        )
+        VALUES (
+          ${addr},
+          ${firstTxTimestamp === Infinity ? 0 : firstTxTimestamp},
+          ${totalTransactions},
+          ${contractsDeployed},
+          ${sql.array([...deploymentChains])},
+          ${deploymentCalldataBytes},
+          ${sql.array([...uniqueProtocols])},
+          ${sql.array([...chainsActive])},
+          ${governanceVotes},
+          ${sql.array([...daosParticipated])},
+          ${proposalsCreated},
+          ${delegationEvents},
+          ${bearMarketTxs},
+          ${sql.array([...activeMonthSet])},
+          ${sql.array([...protocolCategories])},
+          ${failedTransactions},
+          ${totalCalldataBytes},
+          ${sql.array([...recipientAddresses])},
+          ${sql.array([...chainProtocolPairs])},
+          ${sql.array([...gasPriceSet])},
+          ${sql.array([...txHourSet])},
+          ${create2Deployments},
+          ${sql.array([...bearMarketPeriods])},
+          ${executionEvents},
+          ${sql.array([...governanceChains])},
+          ${permitInteractions},
+          ${flashloanTransactions},
+          ${smartWalletInteractions},
+          ${erc4337Operations},
+          ${earlyAdoptions},
+          ${independentVotes},
+          ${earliestDeploymentTimestamp},
+          ${safeExecutions},
+          ${reasonedVotes},
+          ${mevInteractions},
+          ${Date.now()}
+        )
+        ON CONFLICT (address) DO UPDATE SET
+          first_tx_timestamp = EXCLUDED.first_tx_timestamp,
+          total_transactions = EXCLUDED.total_transactions,
+          contracts_deployed = EXCLUDED.contracts_deployed,
+          deployment_chains = EXCLUDED.deployment_chains,
+          deployment_calldata_bytes = EXCLUDED.deployment_calldata_bytes,
+          unique_protocols = EXCLUDED.unique_protocols,
+          chains_active = EXCLUDED.chains_active,
+          governance_votes = EXCLUDED.governance_votes,
+          daos_participated = EXCLUDED.daos_participated,
+          proposals_created = EXCLUDED.proposals_created,
+          delegation_events = EXCLUDED.delegation_events,
+          bear_market_txs = EXCLUDED.bear_market_txs,
+          active_month_set = EXCLUDED.active_month_set,
+          protocol_categories = EXCLUDED.protocol_categories,
+          failed_transactions = EXCLUDED.failed_transactions,
+          total_calldata_bytes = EXCLUDED.total_calldata_bytes,
+          recipient_addresses = EXCLUDED.recipient_addresses,
+          chain_protocol_pairs = EXCLUDED.chain_protocol_pairs,
+          gas_price_set = EXCLUDED.gas_price_set,
+          tx_hour_set = EXCLUDED.tx_hour_set,
+          create2_deployments = EXCLUDED.create2_deployments,
+          bear_market_periods = EXCLUDED.bear_market_periods,
+          execution_events = EXCLUDED.execution_events,
+          governance_chains = EXCLUDED.governance_chains,
+          permit_interactions = EXCLUDED.permit_interactions,
+          flashloan_transactions = EXCLUDED.flashloan_transactions,
+          smart_wallet_interactions = EXCLUDED.smart_wallet_interactions,
+          erc4337_operations = EXCLUDED.erc4337_operations,
+          early_adoptions = EXCLUDED.early_adoptions,
+          independent_votes = EXCLUDED.independent_votes,
+          earliest_deployment_timestamp = EXCLUDED.earliest_deployment_timestamp,
+          safe_executions = EXCLUDED.safe_executions,
+          reasoned_votes = EXCLUDED.reasoned_votes,
+          mev_interactions = EXCLUDED.mev_interactions,
+          updated_at = EXCLUDED.updated_at
       `;
     },
 
