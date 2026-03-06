@@ -216,6 +216,51 @@ export const PROTOCOL_REGISTRY: ProtocolDefinition[] = [
     },
   },
   {
+    name: 'OpenZeppelin Governor',
+    category: 'governance',
+    launchTimestamp: 1617235200, // Apr 2021 (OZ Gov v4.3)
+    contracts: {
+      1: [
+        '0x408ed6354d4973f66138c91495f2f2fcbd8724c3', // Uniswap
+        '0x323a76393544d5ecca80cd6ef2a560c6a395b7e3', // ENS
+        '0x6f3e6272a167e8accb32072d08e0957f9c79223d', // Nouns
+        '0xdd1492570beb290a2f309541e1fddeb9ac484a65', // Nouns V3
+        '0xdbd27635a534a3d3169ef0498beb56fb9c937489', // Gitcoin
+        '0xed8bdb5895b8b7f9fdb3c087628fd8389bfce8ec', // Hop
+      ],
+      42161: [
+        '0xf07ded9dc292157749b6fd268e37df6ea38395b9', // Arbitrum Core
+        '0x789fc99093b09ad01c34dc7251d0c89ce743e5a4', // Arbitrum Treasury
+      ],
+      10: [
+        '0xcdf27f107725988f2261ce2256bdfcde8b382b10', // Optimism
+      ],
+    },
+  },
+  {
+    name: 'Compound Governor',
+    category: 'governance',
+    launchTimestamp: 1535760000, // Sep 2018
+    contracts: {
+      1: [
+        '0xc0da02939e1441f497fd74f78ce7decb17b66529', // Compound Bravo
+        '0xc0da01a04c3f3e0be433606045bb7017a7323e38', // Compound Delegator
+        '0xec568fffba86c094cf06b22134b23074dfe2252c', // Aave Gov V2
+        '0x9aee0b04504cef83a65ac3f0e838d0593bcb2bc7', // Aave Gov V3
+      ],
+    },
+  },
+  {
+    name: 'Aragon',
+    category: 'governance',
+    launchTimestamp: 1510531200, // Nov 2017
+    contracts: {
+      1: [
+        '0x2e59a20f205bb85a89c53f1936454680651e618e', // Lido DAO (Aragon)
+      ],
+    },
+  },
+  {
     name: 'Chainlink',
     category: 'infrastructure',
     launchTimestamp: 1559347200, // Jun 2019

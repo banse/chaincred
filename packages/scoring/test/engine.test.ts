@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { calculateScore } from '../src/engine.js';
 import { evaluateBadges } from '../src/badges/evaluator.js';
+import { DAO_REGISTRY, PROTOCOL_REGISTRY } from '@chaincred/common';
 import type { WalletActivity } from '@chaincred/common';
 
 /** Helper to build a WalletActivity with defaults for all fields */
@@ -463,6 +464,85 @@ describe('active contracts signal', () => {
     const withActive = calculateScore(activity({ activeContracts: 4 }));
     const without = calculateScore(activity({ activeContracts: 0 }));
     expect(withActive.breakdown.builder.raw).toBeGreaterThan(without.breakdown.builder.raw);
+  });
+});
+
+describe('governance protocol coverage', () => {
+  test('DAO registry contains expanded governance contracts', () => {
+    // Ethereum DAOs added in expansion
+    expect(DAO_REGISTRY.get('0xe8a2386a7472c82396bb1ec293407dc57fabca87')).toBe('Frax');
+    expect(DAO_REGISTRY.get('0x7e9b1672616ff6d6629ef2879419644f0ee4c29e')).toBe('dYdX');
+    expect(DAO_REGISTRY.get('0xaeaa54b5f7b3e52e7067ef30e0f56cead6d6d7d0')).toBe('ApeCoin');
+    expect(DAO_REGISTRY.get('0xba37b002abafdd8e89a1995da52740bbc013d992')).toBe('Yearn');
+    // Timelocks
+    expect(DAO_REGISTRY.get('0x6d903f6003cca6255d85cca4d3b5e5146dc33925')).toBe('Compound');
+    expect(DAO_REGISTRY.get('0x1a9c8182c09f50c8318d769245beaa52c32be35d')).toBe('Uniswap');
+    expect(DAO_REGISTRY.get('0xfe89cc7abb2c4183683ab71653c4cdc9b02d44b7')).toBe('ENS');
+    // Arbitrum L2 DAOs
+    expect(DAO_REGISTRY.get('0xd3b2b4ebe3a3e36abcd0ccf880aca0b3d91eb23e')).toBe('Radiant');
+    expect(DAO_REGISTRY.get('0x8aa89e29e40893e81e10eea96efef7bdf16b7a8b')).toBe('Camelot');
+    // Optimism
+    expect(DAO_REGISTRY.get('0x098a224d62e8f0c63e7234abb6b8aee6ab0f4016')).toBe('Synthetix');
+    // Polygon
+    expect(DAO_REGISTRY.get('0xf29f70d8b81fce73c9b84fcf0fdd20a069250f99')).toBe('QuickSwap');
+  });
+
+  test('protocol registry includes governance protocol families', () => {
+    const govProtocols = PROTOCOL_REGISTRY.filter((p) => p.category === 'governance');
+    const names = govProtocols.map((p) => p.name);
+    expect(names).toContain('Safe');
+    expect(names).toContain('OpenZeppelin Governor');
+    expect(names).toContain('Compound Governor');
+    expect(names).toContain('Aragon');
+    expect(govProtocols.length).toBe(4);
+  });
+
+  test('OZ Governor protocol contains known governor contracts', () => {
+    const ozGov = PROTOCOL_REGISTRY.find((p) => p.name === 'OpenZeppelin Governor')!;
+    expect(ozGov.contracts[1]).toContain('0x408ed6354d4973f66138c91495f2f2fcbd8724c3'); // Uniswap
+    expect(ozGov.contracts[1]).toContain('0x323a76393544d5ecca80cd6ef2a560c6a395b7e3'); // ENS
+    expect(ozGov.contracts[42161]).toContain('0xf07ded9dc292157749b6fd268e37df6ea38395b9'); // Arbitrum
+    expect(ozGov.contracts[10]).toContain('0xcdf27f107725988f2261ce2256bdfcde8b382b10'); // Optimism
+  });
+
+  test('more DAOs improve governance score via daoBreadth signal', () => {
+    const manyDaos = calculateScore(
+      activity({
+        governanceVotes: 10,
+        daosParticipated: ['Compound', 'Uniswap', 'ENS', 'Frax', 'dYdX', 'Radiant'],
+      }),
+    );
+    const fewDaos = calculateScore(
+      activity({ governanceVotes: 10, daosParticipated: ['Compound'] }),
+    );
+    expect(manyDaos.breakdown.governance.raw).toBeGreaterThan(fewDaos.breakdown.governance.raw);
+    expect(manyDaos.breakdown.governance.signals.daoBreadth).toBe(360); // 6 × 60 = 360 (cap)
+  });
+
+  test('timelock execution events boost governance score', () => {
+    const base = { governanceVotes: 5, daosParticipated: ['Compound'], proposalsCreated: 0, delegationEvents: 0 };
+    const withTimelock = calculateScore(activity({ ...base, executionEvents: 4 }));
+    const without = calculateScore(activity({ ...base, executionEvents: 0 }));
+    expect(withTimelock.breakdown.governance.signals.treasuryExecution).toBe(120); // 4 × 30 = 120 (cap)
+    expect(without.breakdown.governance.signals.treasuryExecution).toBe(0);
+  });
+
+  test('governance protocols give protocol diversity credit', () => {
+    const withGovProtocols = calculateScore(
+      activity({
+        uniqueProtocols: ['Uniswap', 'Aave', 'OpenZeppelin Governor', 'Compound Governor', 'Aragon'],
+        protocolCategories: ['defi', 'governance'],
+      }),
+    );
+    const defiOnly = calculateScore(
+      activity({
+        uniqueProtocols: ['Uniswap', 'Aave'],
+        protocolCategories: ['defi'],
+      }),
+    );
+    expect(withGovProtocols.breakdown.protocolDiversity.raw).toBeGreaterThan(
+      defiOnly.breakdown.protocolDiversity.raw,
+    );
   });
 });
 

@@ -9,11 +9,13 @@ const VOTE_SELECTORS = [
   '0x5f398a14', // castVoteWithReasonAndParams(uint256,uint8,string,bytes)
   '0x3bccf4fd', // castVoteBySig(uint256,uint8,uint8,bytes32,bytes32)
   '0x15373e3d', // castVoteWithReasonAndParamsBySig(...)
+  '0xa9b1d507', // vote(uint256,uint8,bool) — Aragon TokenVoting
 ];
 
 const PROPOSE_SELECTORS = [
   '0x7d5e81e2', // propose(address[],uint256[],bytes[],string)
   '0xda95691a', // propose(address[],uint256[],string[],bytes[],string) (GovernorBravo)
+  '0xb6040634', // createProposal(...) — Aragon TokenVoting
 ];
 
 const DELEGATE_SELECTORS = [
@@ -27,6 +29,7 @@ const QUEUE_SELECTORS = [
 
 const EXECUTE_SELECTORS = [
   '0xfe0d94c1', // execute(uint256)
+  '0x1798de81', // execute(uint256) — Aragon DAO
 ];
 
 const ALL_GOVERNANCE_SELECTORS = [
