@@ -1,12 +1,12 @@
 import type { ScoreCategory } from '../types/score.js';
 
-/** PRD 4.1 — Category weights for expertise score (v2: governance reduced, see scoring-history.ts) */
+/** PRD 4.1 — Category weights for expertise score (v3: diversity boosted, see scoring-history.ts) */
 export const CATEGORY_WEIGHTS: Record<ScoreCategory, number> = {
   builder: 0.3,
   governance: 0.1,
   temporal: 0.25,
-  protocolDiversity: 0.2,
-  complexity: 0.15,
+  protocolDiversity: 0.25,
+  complexity: 0.1,
 } as const;
 
 /** Maximum raw score per category before weighting */

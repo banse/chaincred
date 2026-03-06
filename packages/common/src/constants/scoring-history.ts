@@ -163,4 +163,31 @@ export const SCORING_HISTORY = [
       note: 'Projected scores after rebalance',
     },
   },
+  {
+    version: 'v3',
+    date: '2026-03-06',
+    reason:
+      'Shift 5% from complexity to protocolDiversity. Complexity signals (permit, flashloan, ' +
+      'smartWallet) are niche DeFi patterns that even top wallets score 0 on. Protocol diversity ' +
+      'better rewards broad onchain expertise. Target: vitalik.eth ≈ 897.',
+    weights: {
+      builder: 0.3,
+      governance: 0.1,
+      temporal: 0.25,
+      protocolDiversity: 0.25,
+      complexity: 0.1,
+    },
+    referenceWallet: {
+      address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+      name: 'vitalik.eth',
+      totalScore: 897,
+      breakdown: {
+        builder: { raw: 1000, weighted: 300 },
+        governance: { raw: 320, weighted: 32 },
+        temporal: { raw: 1000, weighted: 250 },
+        protocolDiversity: { raw: 1000, weighted: 250 },
+        complexity: { raw: 649, weighted: 65 },
+      },
+    },
+  },
 ] as const;
