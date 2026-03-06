@@ -195,22 +195,49 @@ describe('action repetition', () => {
 });
 
 describe('funding graph clustering', () => {
-  test('flags multi-chain cluster coordinator with many recipients and zero protocols', () => {
+  test('flags fresh multi-chain cluster coordinator (50+ recipients, <180 days)', () => {
+    const now = Math.floor(Date.now() / 1000);
     const result = checkFundingGraph(
       activity({
-        uniqueRecipients: 100,
+        uniqueRecipients: 60,
         uniqueProtocols: [],
         chainsActive: ['ethereum', 'arbitrum'],
+        firstTxTimestamp: now - 90 * 86400, // 90 days old
       }),
     );
     expect(result.detected).toBe(true);
     expect(result.penalty).toBe(0.50);
   });
 
+  test('flags old wallet with very high recipients (100+)', () => {
+    const result = checkFundingGraph(
+      activity({
+        uniqueRecipients: 150,
+        uniqueProtocols: [],
+        chainsActive: ['ethereum', 'arbitrum'],
+        // default timestamp is 2020 — well over 180 days
+      }),
+    );
+    expect(result.detected).toBe(true);
+    expect(result.penalty).toBe(0.50);
+  });
+
+  test('does not flag old wallet with moderate recipients (50-100)', () => {
+    const result = checkFundingGraph(
+      activity({
+        uniqueRecipients: 79,
+        uniqueProtocols: ['ENS'],
+        chainsActive: ['ethereum', 'arbitrum', 'optimism', 'base', 'polygon'],
+        // default timestamp is 2020 — old wallet, threshold is 100
+      }),
+    );
+    expect(result.detected).toBe(false);
+  });
+
   test('does not flag wallet with many recipients but multiple protocols', () => {
     const result = checkFundingGraph(
       activity({
-        uniqueRecipients: 100,
+        uniqueRecipients: 150,
         uniqueProtocols: ['uniswap', 'aave'],
         chainsActive: ['ethereum', 'arbitrum'],
       }),
@@ -221,7 +248,7 @@ describe('funding graph clustering', () => {
   test('does not flag single-chain heavy user (gamer/dApp)', () => {
     const result = checkFundingGraph(
       activity({
-        uniqueRecipients: 100,
+        uniqueRecipients: 150,
         uniqueProtocols: [],
         chainsActive: ['base'],
       }),
@@ -242,23 +269,41 @@ describe('funding graph clustering', () => {
 });
 
 describe('cross-chain mirroring', () => {
-  test('flags wallet with identical protocol sets on 3+ chains', () => {
+  test('flags wallet with identical protocol sets on 3+ chains (≥3 protocols each)', () => {
     const result = checkCrossChainMirror(
       activity({
         chainsActive: ['ethereum', 'arbitrum', 'optimism', 'base'],
         chainProtocolPairs: [
           'ethereum:uniswap',
           'ethereum:aave',
+          'ethereum:curve',
           'arbitrum:uniswap',
           'arbitrum:aave',
+          'arbitrum:curve',
           'optimism:uniswap',
           'optimism:aave',
-          'base:curve',
+          'optimism:curve',
+          'base:sushiswap',
         ],
       }),
     );
     expect(result.detected).toBe(true);
     expect(result.penalty).toBe(0.60);
+  });
+
+  test('does not flag thin per-chain sets (1-2 protocols) even if identical', () => {
+    const result = checkCrossChainMirror(
+      activity({
+        chainsActive: ['ethereum', 'arbitrum', 'optimism', 'base'],
+        chainProtocolPairs: [
+          'ethereum:uniswap',
+          'arbitrum:uniswap',
+          'optimism:uniswap',
+          'base:uniswap',
+        ],
+      }),
+    );
+    expect(result.detected).toBe(false);
   });
 
   test('does not flag wallet with different protocol sets per chain', () => {

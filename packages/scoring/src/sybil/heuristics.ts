@@ -62,15 +62,21 @@ export function checkActionRepetition(activity: WalletActivity): SybilPenalty {
  * wallets that send to many unique recipients with low protocol diversity AND
  * spread across multiple chains (single-chain heavy users like gamers are excluded).
  *
- * Heuristic: if uniqueRecipients > 50 AND uniqueProtocols < 2 AND chainsActive > 1, flag it.
+ * Graduated recipient threshold: young wallets (<180 days) flag at 50+ recipients,
+ * older wallets require 100+ recipients. Legitimate investors/grantors accumulate
+ * many recipients over time; sybil coordinators distribute quickly from fresh wallets.
  */
 export function checkFundingGraph(activity: WalletActivity): SybilPenalty {
-  // Raised recipient threshold to 50 — real coordinators fund dozens/hundreds.
-  // Single-protocol only — gaming/social users may touch 2+ protocols legitimately.
-  // Multi-chain required — single-chain heavy users (gamers, dApp power users) excluded.
-  const manyRecipients = activity.uniqueRecipients > 50;
   const singleProtocol = activity.uniqueProtocols.length < 2;
   const multiChain = activity.chainsActive.length > 1;
+
+  // Graduated threshold: fresh wallets are more suspicious at lower recipient counts.
+  // Sybil coordinators distribute quickly from new wallets; legitimate grantors/investors
+  // accumulate recipients organically over months/years.
+  const now = Date.now() / 1000;
+  const walletAgeDays = Math.max((now - activity.firstTxTimestamp) / 86400, 1);
+  const recipientThreshold = walletAgeDays < 180 ? 50 : 100;
+  const manyRecipients = activity.uniqueRecipients > recipientThreshold;
 
   const detected = manyRecipients && singleProtocol && multiChain;
 
@@ -92,8 +98,9 @@ export function checkFundingGraph(activity: WalletActivity): SybilPenalty {
  * multiple chains simultaneously. If 3+ chains show the same protocol set,
  * the wallet is likely mirroring behavior programmatically.
  *
- * Heuristic: group chainProtocolPairs by chain, find the largest set of chains
- * that share an identical protocol set. If 3+ chains match, flag it.
+ * Only chains with ≥3 protocols participate in the comparison — thin
+ * single-protocol chains (e.g., using Uniswap on every L2) are normal
+ * behavior for legitimate multi-chain users, not a sybil signal.
  */
 export function checkCrossChainMirror(activity: WalletActivity): SybilPenalty {
   if (activity.chainProtocolPairs.length === 0 || activity.chainsActive.length < 3) {
@@ -118,9 +125,12 @@ export function checkCrossChainMirror(activity: WalletActivity): SybilPenalty {
     chainProtocols.set(chain, list);
   }
 
-  // Create sorted set signature per chain
+  // Only compare chains with ≥3 protocols — thin per-chain activity (1-2 protocols)
+  // is meaningless for mirroring detection. Real users commonly use Uniswap/Aave on
+  // every L2 without any other protocols, which is not suspicious.
   const setSignatures = new Map<string, number>();
   for (const [, protocols] of chainProtocols) {
+    if (protocols.length < 3) continue;
     const sig = [...protocols].sort().join(',');
     setSignatures.set(sig, (setSignatures.get(sig) ?? 0) + 1);
   }
@@ -139,7 +149,7 @@ export function checkCrossChainMirror(activity: WalletActivity): SybilPenalty {
     penalty: 0.60,
     detected,
     details: detected
-      ? `${maxMirror} chains with identical protocol sets`
+      ? `${maxMirror} chains with identical protocol sets (≥3 protocols each)`
       : 'No cross-chain mirroring detected',
   };
 }
