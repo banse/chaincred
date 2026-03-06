@@ -30,7 +30,16 @@ import { processStarknetTx } from '../starknet-processor.js';
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 
-const MAX_NUM_BLOCKS = 50_000;
+/** Per-chain batch sizes — L2s with sub-second blocks need smaller ranges to avoid HyperSync 5s timeout */
+const MAX_NUM_BLOCKS: Record<number, number> = {
+  1: 100_000, // Ethereum — 12s blocks, moderate density
+  42161: 10_000, // Arbitrum — 0.25s blocks, very dense
+  10: 100_000, // Optimism — 2s blocks, moderate
+  8453: 100_000, // Base — 2s blocks, moderate
+  324: 100_000, // zkSync — moderate density
+  137: 25_000, // Polygon — 2s blocks, fairly dense
+};
+const DEFAULT_MAX_BLOCKS = 50_000;
 const SIX_MONTHS = 15_768_000;
 
 /** Starknet scanning config */
@@ -109,8 +118,7 @@ async function indexChain(
   while (fromBlock < archiveHeight) {
     const result = await client.query({
       fromBlock,
-      includeAllBlocks: true,
-      maxNumBlocks: MAX_NUM_BLOCKS,
+      maxNumBlocks: MAX_NUM_BLOCKS[client.chainId] ?? DEFAULT_MAX_BLOCKS,
       transactions: [{ from: [address] }],
       fieldSelection: {
         transaction: ['Hash', 'From', 'To', 'Input', 'Value', 'BlockNumber', 'Status', 'GasPrice'],
